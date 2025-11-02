@@ -1,3 +1,52 @@
+# MajaNaaber - management and communication platform
+
+A platform meant for building managers and residents for better communication.
+
+## Wireframe
+
+<img alt="MajaNaaber" src="https://www.upload.ee/image/18760238/New_Wireframe_1.png">
+
+## Features
+
+### User management
+
+- Registration
+  - email/phone verification
+- Login
+  - Account recovery
+- Roles
+  - Resident
+    - Tenant
+    - Owner
+  - Manager
+
+### Building/Apartment management
+
+- Manager
+  - Add building and apartments
+  - Assign residents to existing building/apt
+  - Remove residents
+  - Send invoices
+  - Share documentation
+  - Invoice overview and marking
+    - Paid
+    - Unpaid
+
+### Communication
+
+- Manager
+  - Announcement board
+    - Push notifications
+  - Assign bills to apartments
+- Chat for whole building
+  - Image sharing
+  - Mute of unruly users
+- P2P messaging
+
+## Team Members
+
+- Kristjan Põldmets
+
 <a href="https://demo-nextjs-with-supabase.vercel.app/">
   <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
   <h1 align="center">Next.js and Supabase Starter Kit</h1>
@@ -75,16 +124,17 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
 
 4. Rename `.env.example` to `.env.local` and update the following:
 
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+```env
+NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
+```
 
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+> [!NOTE]
+> This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
+> Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
+> See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+
+Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
 
 5. You can now run the Next.js local development server:
 
