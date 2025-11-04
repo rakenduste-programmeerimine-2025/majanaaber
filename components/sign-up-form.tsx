@@ -20,6 +20,7 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const [role, setRole] = useState<"building_owner" | "apartment_owner" | "resident">("resident");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +44,12 @@ export function SignUpForm({
       return;
     }
 
+    if (role !== "building_owner" && !apartmentNumber.trim()) {
+      setError("Apartment number is required for apartment owners and residents");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -58,9 +65,10 @@ export function SignUpForm({
           .from("profiles")
           .insert({
             id: data.user.id,
+            role: role,
             first_name: firstName,
             last_name: lastName,
-            apartment_number: apartmentNumber,
+            apartment_number: apartmentNumber || null,
             phone_number: phoneNumber,
           });
 
@@ -85,6 +93,20 @@ export function SignUpForm({
         <CardContent>
           <form onSubmit={handleSignUp}>
             <div className="flex flex-col gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="role">I am a</Label>
+                <select
+                  id="role"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as typeof role)}
+                  required
+                >
+                  <option value="resident">Resident (Renter/Tenant)</option>
+                  <option value="apartment_owner">Apartment Owner</option>
+                  <option value="building_owner">Building Owner</option>
+                </select>
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="firstName">First Name</Label>
                 <Input
@@ -118,17 +140,19 @@ export function SignUpForm({
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="apartment">Apartment Number</Label>
-                <Input
-                  id="apartment"
-                  type="text"
-                  placeholder="101"
-                  required
-                  value={apartmentNumber}
-                  onChange={(e) => setApartmentNumber(e.target.value)}
-                />
-              </div>
+              {role !== "building_owner" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="apartment">Apartment Number</Label>
+                  <Input
+                    id="apartment"
+                    type="text"
+                    placeholder="101"
+                    required
+                    value={apartmentNumber}
+                    onChange={(e) => setApartmentNumber(e.target.value)}
+                  />
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
