@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PasswordStrengthInput } from "@/components/password-strength-input";
+import { checkPasswordStrength } from "@/lib/password-strength";
 
 export function SignUpForm({
   className,
@@ -40,6 +42,13 @@ export function SignUpForm({
 
     if (password !== repeatPassword) {
       setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    const { score } = checkPasswordStrength(password);
+    if (score < 4) {
+      setError("Password must meet all requirements.");
       setIsLoading(false);
       return;
     }
@@ -160,22 +169,16 @@ export function SignUpForm({
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
               </div>
+              <PasswordStrengthInput
+                id="password"
+                label="Password"
+                value={password}
+                onChange={setPassword}
+                required
+                showRequirements
+              />
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
+                <Label htmlFor="repeat-password">Repeat Password</Label>
                 <Input
                   id="repeat-password"
                   type="password"
