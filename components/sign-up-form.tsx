@@ -56,27 +56,23 @@ export function SignUpForm({
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
-        },
-      });
-      if (error) throw error;
-
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert({
-            id: data.user.id,
+          data: {
             role: role,
             first_name: firstName,
             last_name: lastName,
             apartment_number: apartmentNumber || null,
             phone_number: phoneNumber,
-          });
-
-        if (profileError) throw profileError;
+          },
+        },
+      });
+      if (error) {
+        console.error("Auth signup error:", error);
+        throw error;
       }
 
-      router.push("/auth/sign-up-success");
+      router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`);
     } catch (error: unknown) {
+      console.error("Sign-up error:", error);
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsLoading(false);
