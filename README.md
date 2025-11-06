@@ -2,9 +2,23 @@
 
 A platform meant for building managers and residents for better communication.
 
-## Wireframe
+## Wireframes
 
-<img alt="MajaNaaber" src="https://www.upload.ee/image/18760238/New_Wireframe_1.png">
+### Opening dashboard
+
+<img alt="MajaNaaber wireframe 1" src="https://www.upload.ee/image/18773716/Kasutaja_home_dashboard.png">
+
+### Building dashboard - manager view
+
+<img alt="MajaNaaber wireframe 2" src="https://www.upload.ee/image/18773723/Majavaade_-_haldur.png">
+
+### Adding/changing residents
+
+<img alt="MajaNaaber wireframe 3" src="https://www.upload.ee/image/18773718/Maja_elanike_haldus.png">
+
+### Adding buildings
+
+<img alt="MajaNaaber wireframe 5" src="https://www.upload.ee/image/18773717/Add_Edit_building.png">
 
 ## Features
 
@@ -24,7 +38,7 @@ A platform meant for building managers and residents for better communication.
   - Manager
 - Account Management
   - Profile management (update personal info, contact details)
-    
+
 ### Building/Apartment management
 
 - Manager
@@ -59,8 +73,8 @@ A platform meant for building managers and residents for better communication.
 ### Problem Reporting & Maintenance
 
 - Issue Management
- - Issue/problem reporting system
- - Assignment system (assign to maintenance personnel)
+- Issue/problem reporting system
+- Assignment system (assign to maintenance personnel)
 
 - Maintenance Scheduling
   - Maintenance calendar
@@ -72,13 +86,12 @@ A platform meant for building managers and residents for better communication.
 ### Voting
 
 - Decision Making
- - Vote on building decisions
- - Proposal submission (residents submit topics)
- - Vote history and results
-   
+- Vote on building decisions
+- Proposal submission (residents submit topics)
+- Vote history and results
+
 ## Team Members
 
 - Kristjan Põldmets
 - Martin Toomas Kripsaar
 - Henry Pajuri
-
