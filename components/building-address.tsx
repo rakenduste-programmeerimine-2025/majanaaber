@@ -79,7 +79,7 @@ export function BuildingAddress({
             type="text"
             value={formData.postal_code}
             onChange={e => onInputChange("postal_code", e.target.value)}
-            placeholder="10119"
+            placeholder="e.g., 10119"
           />
         </div>
         <div>
@@ -89,7 +89,7 @@ export function BuildingAddress({
             type="number"
             value={formData.apartment_count}
             onChange={e => onInputChange("apartment_count", e.target.value)}
-            placeholder="24"
+            placeholder="e.g., 24"
             min="1"
           />
         </div>
