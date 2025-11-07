@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS public.buildings (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   
-  -- Address information (manual entry only)
+  -- Address information
   street_name TEXT,
   house_number TEXT,
   apartment_count INTEGER,
@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS public.buildings (
   county TEXT,
   postal_code TEXT,
   full_address TEXT NOT NULL,
+  
+  -- Estonian ADS information
+  ads_code TEXT, -- Estonian ADS system code (aadress_id)
   
   -- Creator/manager information
   manager_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -26,6 +29,7 @@ ALTER TABLE public.buildings ENABLE ROW LEVEL SECURITY;
 -- Create indexes
 CREATE INDEX idx_buildings_manager_id ON public.buildings(manager_id);
 CREATE INDEX idx_buildings_city ON public.buildings(city);
+CREATE INDEX idx_buildings_ads_code ON public.buildings(ads_code);
 
 -- RLS Policies
 -- Everyone can view buildings (needed for residents to see their building)
