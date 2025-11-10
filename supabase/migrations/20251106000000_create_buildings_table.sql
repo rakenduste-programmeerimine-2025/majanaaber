@@ -34,11 +34,14 @@ CREATE POLICY "Anyone can view buildings"
   FOR SELECT
   USING (true);
 
--- Any authenticated user can insert buildings
-CREATE POLICY "Authenticated users can insert buildings"
+-- Authenticated users can only insert buildings for themselves
+CREATE POLICY "Users can only insert buildings for themselves"
   ON public.buildings
   FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+  WITH CHECK (
+    auth.uid() IS NOT NULL 
+    AND manager_id = auth.uid()
+  );
 
 -- Only the user who added the building can update it
 CREATE POLICY "Building creators can update their buildings"
