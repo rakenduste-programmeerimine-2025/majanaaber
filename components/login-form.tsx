@@ -45,7 +45,21 @@ export function LoginForm({
         return
       }
 
-      router.push("/protected")
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single()
+
+        if (profile?.role === "building_owner") {
+          router.push("/admin")
+        } else {
+          router.push("/protected")
+        }
+      } else {
+        router.push("/protected")
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
