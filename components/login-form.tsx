@@ -40,7 +40,7 @@ export function LoginForm({
     setIsLockoutError(false);
 
     try {
-      const { data: userId, error: userIdError } = await supabase.rpc(
+      const { data: userId } = await supabase.rpc(
         "get_user_id_by_email",
         {
           user_email: email,
@@ -48,7 +48,7 @@ export function LoginForm({
       );
 
       if (userId) {
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileData } = await supabase
           .rpc("get_profile_login_info", { user_id: userId });
 
         const profile = profileData && profileData.length > 0 ? profileData[0] : null;
@@ -78,7 +78,7 @@ export function LoginForm({
 
       if (error) {
         if (userId) {
-          const { data: profileData, error: profileError } = await supabase
+          const { data: profileData } = await supabase
             .rpc("get_profile_login_info", { user_id: userId });
 
           const profile = profileData && profileData.length > 0 ? profileData[0] : null;
@@ -114,9 +114,21 @@ export function LoginForm({
 
       if (data.user) {
         await resetFailedAttempts(supabase, data.user.id);
-      }
 
-      router.push("/protected");
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profile?.role === "building_owner") {
+          router.push("/admin");
+        } else {
+          router.push("/protected");
+        }
+      } else {
+        router.push("/protected");
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
