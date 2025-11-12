@@ -61,12 +61,21 @@ export async function updateSession(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, deactivated_at")
       .eq("id", user.sub)
       .single();
 
     const userRole = profile?.role;
     const pathname = request.nextUrl.pathname;
+    const isDeactivated = profile && profile.deactivated_at !== null;
+
+    if (isDeactivated && !pathname.startsWith("/auth")) {
+      await supabase.auth.signOut();
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      url.searchParams.set("deactivated", "true");
+      return NextResponse.redirect(url);
+    }
 
     if (pathname.startsWith("/admin") && userRole !== "building_owner") {
       const url = request.nextUrl.clone();
