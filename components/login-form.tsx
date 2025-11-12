@@ -37,6 +37,7 @@ export function LoginForm({
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
+    setIsLockoutError(false)
 
     try {
       const { data: userId } = await supabase.rpc("get_user_id_by_email", {
@@ -150,7 +151,17 @@ export function LoginForm({
                   onChange={e => setPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error && (
+                <div
+                  className={`p-3 rounded-md text-sm ${
+                    isLockoutError
+                      ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+                      : "text-red-500"
+                  }`}
+                >
+                  {error}
+                </div>
+              )}
               <Button
                 type="submit"
                 className="w-full"
