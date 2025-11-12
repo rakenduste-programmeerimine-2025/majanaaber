@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PasswordStrengthInput } from "@/components/password-strength-input";
+import { checkPasswordStrength } from "@/lib/password-strength";
 
 export function SignUpForm({
   className,
@@ -44,6 +46,13 @@ export function SignUpForm({
       return;
     }
 
+    const { score } = checkPasswordStrength(password);
+    if (score < 4) {
+      setError("Password must meet all requirements.");
+      setIsLoading(false);
+      return;
+    }
+
     if (role !== "building_owner" && !apartmentNumber.trim()) {
       setError("Apartment number is required for apartment owners and residents");
       setIsLoading(false);
@@ -51,32 +60,32 @@ export function SignUpForm({
     }
 
     try {
+      const signUpData = {
+        role: role,
+        first_name: firstName,
+        last_name: lastName,
+        apartment_number: apartmentNumber || null,
+        phone_number: phoneNumber,
+      };
+      console.log("Sign-up metadata:", signUpData);
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
+          data: signUpData,
         },
       });
-      if (error) throw error;
-
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert({
-            id: data.user.id,
-            role: role,
-            first_name: firstName,
-            last_name: lastName,
-            apartment_number: apartmentNumber || null,
-            phone_number: phoneNumber,
-          });
-
-        if (profileError) throw profileError;
+      if (error) {
+        console.error("Auth signup error:", error);
+        throw error;
       }
+      console.log("Sign-up successful, user:", data.user?.id);
 
-      router.push("/auth/sign-up-success");
+      router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`);
     } catch (error: unknown) {
+      console.error("Sign-up error:", error);
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsLoading(false);
@@ -164,22 +173,16 @@ export function SignUpForm({
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
               </div>
+              <PasswordStrengthInput
+                id="password"
+                label="Password"
+                value={password}
+                onChange={setPassword}
+                required
+                showRequirements
+              />
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
+                <Label htmlFor="repeat-password">Repeat Password</Label>
                 <Input
                   id="repeat-password"
                   type="password"

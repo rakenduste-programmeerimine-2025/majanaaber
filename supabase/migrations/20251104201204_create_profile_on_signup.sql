@@ -5,6 +5,8 @@ SET search_path = public, auth
 LANGUAGE plpgsql
 AS $$
 BEGIN
+  RAISE LOG 'Creating profile for user % with metadata: %', NEW.id, NEW.raw_user_meta_data;
+
   INSERT INTO public.profiles (
     id,
     role,
@@ -21,6 +23,8 @@ BEGIN
     NEW.raw_user_meta_data->>'apartment_number',
     COALESCE(NEW.raw_user_meta_data->>'phone_number', '')
   );
+
+  RAISE LOG 'Profile created successfully for user %', NEW.id;
   RETURN NEW;
 END;
 $$;
