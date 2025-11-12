@@ -15,6 +15,11 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import {
+  incrementFailedAttempts,
+  resetFailedAttempts,
+  formatLockoutTime,
+} from "@/lib/login-attempts"
 
 export function LoginForm({
   className,
@@ -23,6 +28,7 @@ export function LoginForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [isLockoutError, setIsLockoutError] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -31,6 +37,7 @@ export function LoginForm({
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
+    setIsLockoutError(false)
 
     try {
       const { data: userId } = await supabase.rpc(
@@ -144,7 +151,17 @@ export function LoginForm({
                   onChange={e => setPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error && (
+                <div
+                  className={`p-3 rounded-md text-sm ${
+                    isLockoutError
+                      ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+                      : "text-red-500"
+                  }`}
+                >
+                  {error}
+                </div>
+              )}
               <Button
                 type="submit"
                 className="w-full"
