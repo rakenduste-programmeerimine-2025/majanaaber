@@ -33,6 +33,37 @@ export function LoginForm({
     setError(null)
 
     try {
+      const { data: userId } = await supabase.rpc(
+        "get_user_id_by_email",
+        {
+          user_email: email,
+        }
+      );
+
+      if (userId) {
+        const { data: profileData } = await supabase
+          .rpc("get_profile_login_info", { user_id: userId });
+
+        const profile = profileData && profileData.length > 0 ? profileData[0] : null;
+
+        if (profile) {
+          const lockedUntil = profile.locked_until
+            ? new Date(profile.locked_until)
+            : null;
+          const now = new Date();
+
+          if (lockedUntil && lockedUntil > now) {
+            const minutesRemaining = Math.ceil(
+              (lockedUntil.getTime() - now.getTime()) / (1000 * 60)
+            );
+            setIsLockoutError(true);
+            throw new Error(
+              `Account is temporarily locked. Please try again in ${formatLockoutTime(minutesRemaining)}.`
+            );
+          }
+        }
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -46,6 +77,8 @@ export function LoginForm({
       }
 
       if (data.user) {
+        await resetFailedAttempts(supabase, data.user.id);
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
