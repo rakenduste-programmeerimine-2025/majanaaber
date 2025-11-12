@@ -37,7 +37,6 @@ export function LoginForm({
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
-    setIsLockoutError(false)
 
     try {
       const { data: userId } = await supabase.rpc("get_user_id_by_email", {
@@ -75,39 +74,7 @@ export function LoginForm({
         email,
         password,
       })
-
-      if (error) {
-        if (userId) {
-          const { data: profileData } = await supabase.rpc(
-            "get_profile_login_info",
-            { user_id: userId },
-          )
-
-          const profile =
-            profileData && profileData.length > 0 ? profileData[0] : null
-
-          if (profile) {
-            const newAttemptCount = await incrementFailedAttempts(
-              supabase,
-              profile.id,
-            )
-            const remainingAttempts = Math.max(0, 5 - newAttemptCount)
-
-            if (remainingAttempts > 0) {
-              throw new Error(
-                `Invalid email or password. You have ${remainingAttempts} attempt${remainingAttempts !== 1 ? "s" : ""} remaining before your account is locked.`,
-              )
-            } else {
-              setIsLockoutError(true)
-              throw new Error(
-                "Account locked due to too many failed login attempts. Please try again in 15 minutes.",
-              )
-            }
-          }
-        }
-
-        throw error
-      }
+      if (error) throw error
 
       if (data.user && !data.user.email_confirmed_at) {
         await supabase.auth.signOut()
@@ -183,17 +150,7 @@ export function LoginForm({
                   onChange={e => setPassword(e.target.value)}
                 />
               </div>
-              {error && (
-                <div
-                  className={`p-3 rounded-md text-sm ${
-                    isLockoutError
-                      ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
-                      : "text-red-500"
-                  }`}
-                >
-                  {error}
-                </div>
-              )}
+              {error && <p className="text-sm text-red-500">{error}</p>}
               <Button
                 type="submit"
                 className="w-full"

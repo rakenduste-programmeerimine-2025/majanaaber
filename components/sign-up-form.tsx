@@ -74,7 +74,13 @@ export function SignUpForm({
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
-          data: signUpData,
+          data: {
+            role: role,
+            first_name: firstName,
+            last_name: lastName,
+            apartment_number: apartmentNumber || null,
+            phone_number: phoneNumber,
+          },
         },
       });
       if (error) {
