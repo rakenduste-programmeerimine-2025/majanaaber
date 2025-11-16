@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 interface Building {
   id: string
@@ -186,8 +187,11 @@ export default function ProtectedPage() {
                         variant="outline"
                         size="sm"
                         className="flex-1"
+                        asChild
                       >
-                        View Details
+                        <Link href={`/manager?building=${building.id}`}>
+                          Manage Building
+                        </Link>
                       </Button>
                       <Button
                         variant="destructive"
