@@ -1,15 +1,71 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+import { NoticeBoard } from "@/components/notice-board"
+
+interface Building {
+  id: string
+  name: string
+  full_address: string
+}
 
 export default function ManagerDashboard() {
   const [messages, setMessages] = useState<string[]>([])
   const [input, setInput] = useState("")
+  const [building, setBuilding] = useState<Building | null>(null)
+  const [loading, setLoading] = useState(true)
+  const searchParams = useSearchParams()
+  const buildingId = searchParams.get("building")
+
+  useEffect(() => {
+    const loadBuilding = async () => {
+      if (!buildingId) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from("buildings")
+          .select("id, name, full_address")
+          .eq("id", buildingId)
+          .single()
+
+        if (error) throw error
+        setBuilding(data)
+      } catch (err) {
+        console.error("Error loading building:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadBuilding()
+  }, [buildingId])
 
   const sendMessage = () => {
     if (!input.trim()) return
     setMessages([...messages, input])
     setInput("")
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!buildingId || !building) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg">No building selected</p>
+      </div>
+    )
   }
 
   return (
@@ -20,21 +76,11 @@ export default function ManagerDashboard() {
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
           {/* Notices */}
           <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
-            <h2 className="text-xl font-bold mb-3">Apartment #12</h2>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold">Notices</h3>
-              <button className="bg-blue-500 text-white px-3 py-1 rounded">
-                + Add Notice
-              </button>
-            </div>
-            <ul className="space-y-2 overflow-y-auto max-h-[60vh]">
-              <li className="p-2 bg-gray-100 rounded">
-                Water shutoff on Nov 7
-              </li>
-              <li className="p-2 bg-gray-100 rounded">
-                Elevator maintenance Nov 10
-              </li>
-            </ul>
+            <h2 className="text-xl font-bold mb-3">{building.name}</h2>
+            <NoticeBoard
+              buildingId={buildingId}
+              isManager={true}
+            />
           </div>
 
           {/* Calendar */}
