@@ -9,6 +9,7 @@ interface Building {
   id: string
   name: string
   full_address: string
+  manager_id: string
 }
 
 export default function ManagerDashboard() {
@@ -28,16 +29,34 @@ export default function ManagerDashboard() {
 
       try {
         const supabase = createClient()
+
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+        if (userError || !user) {
+          throw new Error("You must be logged in to access this page")
+        }
+
+        // Fetch building and verify ownership
         const { data, error } = await supabase
           .from("buildings")
-          .select("id, name, full_address")
+          .select("id, name, full_address, manager_id")
           .eq("id", buildingId)
           .single()
 
         if (error) throw error
+
+        // Verify the current user is the manager
+        if (data.manager_id !== user.id) {
+          throw new Error("You are not authorized to manage this building")
+        }
+
         setBuilding(data)
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error loading building:", err)
+        setBuilding(null)
       } finally {
         setLoading(false)
       }
@@ -63,7 +82,12 @@ export default function ManagerDashboard() {
   if (!buildingId || !building) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg">No building selected</p>
+        <div className="text-center">
+          <p className="text-lg mb-2">Unable to load building</p>
+          <p className="text-sm text-gray-600">
+            You may not have permission to manage this building.
+          </p>
+        </div>
       </div>
     )
   }
