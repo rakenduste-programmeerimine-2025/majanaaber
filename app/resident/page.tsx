@@ -58,9 +58,9 @@ export default function ManagerDashboard() {
         </section>
 
         {/* Right: Chat + User Info */}
-        <div className="flex flex-col w-[30%]">
-          {/* Username + Icons + Nav buttons above the chat box */}
-          <div className="flex flex-col mb-2">
+        <section className="flex flex-col bg-white p-6 shadow-lg border border-gray-300 w-[30%] h-[70vh]">
+          {/* Username + Icons + Nav buttons */}
+          <div className="flex flex-col mb-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <span className="font-semibold text-lg">John Doe</span>
@@ -79,7 +79,7 @@ export default function ManagerDashboard() {
           </div>
 
           {/* Chat box */}
-          <section className="flex flex-col bg-white p-6 shadow-lg border border-gray-300 h-[70vh]">
+          <div className="flex flex-col flex-1">
             <h3 className="text-xl font-semibold mb-2">
               Talk to your neighbour
             </h3>
@@ -108,8 +108,8 @@ export default function ManagerDashboard() {
                 Send
               </button>
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
       </main>
 
       {/* Empty space at bottom */}
