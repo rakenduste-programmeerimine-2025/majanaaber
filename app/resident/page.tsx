@@ -1,15 +1,231 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
+import { createClient } from "@/lib/supabase/client"
 
-export default function ManagerDashboard() {
-  const [messages, setMessages] = useState<string[]>([])
+interface Message {
+  id: string
+  content: string
+  created_at: string
+  sender: {
+    first_name: string
+    last_name: string
+  } | null
+}
+
+interface Building {
+  id: string
+  name: string
+}
+
+export default function ResidentDashboard() {
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
+  const [building, setBuilding] = useState<Building | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const supabase = createClient()
 
-  const sendMessage = () => {
-    if (!input.trim()) return
-    setMessages([...messages, input])
-    setInput("")
+  // Scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  // Fetch user's building and messages
+  useEffect(() => {
+    const loadBuildingAndMessages = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setError("You must be logged in")
+          setLoading(false)
+          return
+        }
+
+        let userBuilding = null
+
+        // First, check if user is a manager of any building
+        const { data: managerBuilding } = await supabase
+          .from("buildings")
+          .select("id, name")
+          .eq("manager_id", user.id)
+          .limit(1)
+          .single()
+
+        if (managerBuilding) {
+          userBuilding = managerBuilding
+        } else {
+          // If not a manager, check if they're an approved resident
+          const { data: residentData, error: residentError } = await supabase
+            .from("building_residents")
+            .select("building_id, buildings(id, name)")
+            .eq("profile_id", user.id)
+            .eq("is_approved", true)
+            .limit(1)
+            .single()
+
+          if (residentError || !residentData) {
+            setError("You are not assigned to any building yet")
+            setLoading(false)
+            return
+          }
+
+          userBuilding = (residentData.buildings as any)
+        }
+
+        if (!userBuilding) {
+          setError("You are not assigned to any building yet")
+          setLoading(false)
+          return
+        }
+
+        setBuilding({ id: userBuilding.id, name: userBuilding.name })
+
+        // Fetch messages for this building
+        await loadMessages(userBuilding.id)
+      } catch (err: any) {
+        console.error("Error loading building:", err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadBuildingAndMessages()
+  }, [])
+
+  // Real-time subscription for new messages
+  useEffect(() => {
+    if (!building) return
+
+    const channel = supabase
+      .channel(`building_messages:${building.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "building_messages",
+          filter: `building_id=eq.${building.id}`,
+        },
+        async payload => {
+          // Fetch the full message with sender info
+          const { data } = await supabase
+            .from("building_messages")
+            .select(
+              `
+              id,
+              content,
+              created_at,
+              sender:profiles(first_name, last_name)
+            `,
+            )
+            .eq("id", payload.new.id)
+            .single()
+
+          if (data) {
+            setMessages(prev => [...prev, data])
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [building])
+
+  const loadMessages = async (buildingId: string) => {
+    const { data, error } = await supabase
+      .from("building_messages")
+      .select(
+        `
+        id,
+        content,
+        created_at,
+        sender:profiles(first_name, last_name)
+      `,
+      )
+      .eq("building_id", buildingId)
+      .order("created_at", { ascending: true })
+
+    if (error) {
+      console.error("Error loading messages:", error)
+      return
+    }
+
+    setMessages(data || [])
+  }
+
+  const sendMessage = async () => {
+    if (!input.trim() || !building) return
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase.from("building_messages").insert({
+        building_id: building.id,
+        sender_id: user.id,
+        content: input.trim(),
+      })
+
+      if (error) throw error
+
+      setInput("")
+      // Real-time subscription will automatically add the new message
+    } catch (err: any) {
+      console.error("Error sending message:", err)
+      alert("Failed to send message: " + err.message)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg">Loading...</p>
+      </div>
+    )
+  }
+
+  if (error || !building) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-4">No Building Found</h2>
+          <p className="text-gray-600 mb-6">
+            {error || "You need to create a building or be assigned to one to access the chat."}
+          </p>
+          <div className="space-y-3">
+            <a
+              href="/protected"
+              className="inline-block bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 transition"
+            >
+              Go to Building Management
+            </a>
+            <p className="text-sm text-gray-500">
+              Create a building or ask your building manager to add you as a resident.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -20,19 +236,13 @@ export default function ManagerDashboard() {
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
           {/* Notices */}
           <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
-            <h2 className="text-xl font-bold mb-3">Apartment #12-2</h2>
+            <h2 className="text-xl font-bold mb-3">{building.name}</h2>
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-semibold">Notices</h3>
-              <button className="bg-blue-500 text-white px-3 py-1 rounded">
-                + Add Notice
-              </button>
             </div>
             <ul className="space-y-2 overflow-y-auto max-h-[60vh]">
-              <li className="p-2 bg-gray-100 rounded">
-                Water shutoff on Nov 7
-              </li>
-              <li className="p-2 bg-gray-100 rounded">
-                Elevator maintenance Nov 10
+              <li className="p-2 bg-gray-100 rounded text-gray-500 text-sm">
+                No notices yet
               </li>
             </ul>
           </div>
@@ -48,7 +258,7 @@ export default function ManagerDashboard() {
               {[...Array(30)].map((_, i) => (
                 <button
                   key={i}
-                  className="p-2 bg-gray-100 rounded hover:bg-blue-100"
+                  className="p-2 bg-gray-100 rounded hover:bg-blue-100 text-sm"
                 >
                   {i + 1}
                 </button>
@@ -63,47 +273,57 @@ export default function ManagerDashboard() {
           <div className="flex flex-col mb-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <span className="font-semibold text-lg">John Doe</span>
-                <div className="flex gap-2 text-xl">
-                  <button>🏠</button>
-                  <button>🔔</button>
-                  <button>✉️</button>
-                </div>
+                <span className="font-semibold text-lg">{building.name}</span>
               </div>
-            </div>
-            <div className="flex justify-between mb-2">
-              <button className="text-blue-600">Invoices</button>
-              <button className="text-blue-600">Documents</button>
-              <button className="text-red-500">Log Out</button>
             </div>
           </div>
 
           {/* Chat box */}
           <div className="flex flex-col flex-1">
-            <h3 className="text-xl font-semibold mb-2">
-              Talk to your neighbour
-            </h3>
-            <div className="flex-1 overflow-y-auto border p-2 mb-2 space-y-1">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className="bg-gray-100 p-2"
-                >
-                  {msg}
-                </div>
-              ))}
+            <h3 className="text-xl font-semibold mb-2">Building Chat</h3>
+            <div className="flex-1 overflow-y-auto border rounded p-3 mb-2 space-y-2 bg-gray-50">
+              {messages.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center">
+                  No messages yet. Start the conversation!
+                </p>
+              ) : (
+                messages.map(msg => (
+                  <div
+                    key={msg.id}
+                    className="bg-white p-3 rounded shadow-sm"
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-semibold text-sm text-blue-600">
+                        {msg.sender
+                          ? `${msg.sender.first_name} ${msg.sender.last_name}`
+                          : "Unknown User"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(msg.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-800">{msg.content}</p>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
             </div>
-            <div className="flex">
+            <div className="flex gap-2">
               <input
                 type="text"
-                className="border p-2 flex-1"
+                className="border rounded p-2 flex-1"
                 value={input}
                 onChange={e => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
                 placeholder="Type a message..."
               />
               <button
                 onClick={sendMessage}
-                className="bg-blue-500 text-white px-4"
+                disabled={!input.trim()}
+                className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Send
               </button>

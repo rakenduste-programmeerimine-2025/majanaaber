@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.building_messages (
 -- Enable RLS
 ALTER TABLE public.building_messages ENABLE ROW LEVEL SECURITY;
 
+-- Enable Realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.building_messages;
+
 -- Create indexes
 CREATE INDEX idx_building_messages_building_id ON public.building_messages(building_id);
 CREATE INDEX idx_building_messages_created_at ON public.building_messages(created_at DESC);
