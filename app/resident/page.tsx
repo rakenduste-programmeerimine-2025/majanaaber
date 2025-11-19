@@ -279,9 +279,9 @@ export default function ResidentDashboard() {
           </div>
 
           {/* Chat box */}
-          <div className="flex flex-col flex-1">
+          <div className="flex flex-col flex-1 min-h-0">
             <h3 className="text-xl font-semibold mb-2">Building Chat</h3>
-            <div className="flex-1 overflow-y-auto border rounded p-3 mb-2 space-y-2 bg-gray-50">
+            <div className="flex-1 overflow-y-auto border rounded p-3 mb-2 space-y-2 bg-gray-50 min-h-0">
               {messages.length === 0 ? (
                 <p className="text-gray-500 text-sm text-center">
                   No messages yet. Start the conversation!
