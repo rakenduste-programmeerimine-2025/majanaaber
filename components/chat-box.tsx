@@ -21,6 +21,9 @@ interface ChatBoxProps {
   typingUsers: TypingUser[]
   onTypingStart: () => void
   onTypingStop: () => void
+  onAddReaction: (messageId: string, emoji: string) => Promise<void>
+  onRemoveReaction: (messageId: string, reactionId: string) => Promise<void>
+  onMarkAsRead: (messageId: string) => Promise<void>
 }
 
 export function ChatBox({
@@ -33,10 +36,14 @@ export function ChatBox({
   typingUsers,
   onTypingStart,
   onTypingStop,
+  onAddReaction,
+  onRemoveReaction,
+  onMarkAsRead,
 }: ChatBoxProps) {
   const [input, setInput] = useState("")
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null)
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -69,6 +76,29 @@ export function ChatBox({
     return () => container.removeEventListener("scroll", handleScroll)
   }, [])
 
+  useEffect(() => {
+    if (!currentUserId) return
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const messageId = entry.target.getAttribute("data-message-id")
+            if (messageId) {
+              onMarkAsRead(messageId)
+            }
+          }
+        })
+      },
+      { threshold: 0.5 },
+    )
+
+    const messageElements = document.querySelectorAll("[data-message-id]")
+    messageElements.forEach(el => observer.observe(el))
+
+    return () => observer.disconnect()
+  }, [messages, currentUserId, onMarkAsRead])
+
   const handleSendMessage = async () => {
     if (!input.trim() || input.length > MAX_MESSAGE_LENGTH) return
 
@@ -96,6 +126,47 @@ export function ChatBox({
 
   const cancelDelete = () => {
     setMessageToDelete(null)
+  }
+
+  const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😀"]
+
+  const handleEmojiClick = async (messageId: string, emoji: string) => {
+    const message = messages.find(m => m.id === messageId)
+    if (!message) return
+
+    const existingReaction = message.reactions?.find(
+      r => r.emoji === emoji && r.user_id === currentUserId,
+    )
+
+    if (existingReaction) {
+      await onRemoveReaction(messageId, existingReaction.id)
+    } else {
+      await onAddReaction(messageId, emoji)
+    }
+  }
+
+  const groupReactions = (reactions:any[] | undefined) => {
+    if (!reactions) return []
+
+    const groups: Record<string, { emoji: string; count: number; users: string[]; hasCurrentUser: boolean }> = {}
+
+    reactions.forEach(reaction => {
+      if (!groups[reaction.emoji]) {
+        groups[reaction.emoji] = {
+          emoji: reaction.emoji,
+          count: 0,
+          users: [],
+          hasCurrentUser: false,
+        }
+      }
+      groups[reaction.emoji].count++
+      groups[reaction.emoji].users.push(reaction.user_id)
+      if (reaction.user_id === currentUserId) {
+        groups[reaction.emoji].hasCurrentUser = true
+      }
+    })
+
+    return Object.values(groups)
   }
 
   return (
@@ -135,10 +206,12 @@ export function ChatBox({
           ) : (
             messages.map(msg => {
               const isOwnMessage = msg.sender_id === currentUserId
+              const readCount = msg.read_receipts?.length || 0
               return (
                 <div
                   key={msg.id}
                   className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                  data-message-id={msg.id}
                 >
                   <div
                     className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
@@ -166,14 +239,86 @@ export function ChatBox({
                       </div>
                     )}
                     <p className="text-sm break-words">{msg.content}</p>
-                    <span
-                      className={`text-xs mt-1 block ${
-                        isOwnMessage ? "text-blue-100" : "text-gray-500"
-                      }`}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span
+                        className={`text-xs ${
+                          isOwnMessage ? "text-blue-100" : "text-gray-500"
+                        }`}
+                      >
+                        {formatTimestamp(msg.created_at)}
+                      </span>
+                      {isOwnMessage && readCount > 0 && (
+                        <span
+                          className="text-xs text-blue-100 flex items-center gap-1"
+                          title={`Read by ${readCount} ${readCount === 1 ? "person" : "people"}`}
+                        >
+                          <span>✓✓</span>
+                          <span>{readCount}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        setShowEmojiPicker(
+                          showEmojiPicker === msg.id ? null : msg.id,
+                        )
+                      }
+                      className="absolute -bottom-2 -left-2 bg-gray-200 text-gray-600 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-sm hover:bg-gray-300"
+                      title="Add reaction"
                     >
-                      {formatTimestamp(msg.created_at)}
-                    </span>
+                      +
+                    </button>
+
+                    {showEmojiPicker === msg.id && (
+                      <div className={`absolute -bottom-10 ${isOwnMessage ? 'right-0' : 'left-0'} bg-white border border-gray-300 rounded-lg shadow-lg p-2 flex gap-1 z-20`}>
+                        {EMOJIS.map(emoji => (
+                          <button
+                            key={emoji}
+                            onClick={() => {
+                              handleEmojiClick(msg.id, emoji)
+                              setShowEmojiPicker(null)
+                            }}
+                            className="hover:bg-gray-100 rounded p-1 text-lg"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
+
+                  {groupReactions(msg.reactions).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {groupReactions(msg.reactions).map(group => {
+                        const userReaction = msg.reactions?.find(
+                          r =>
+                            r.emoji === group.emoji &&
+                            r.user_id === currentUserId,
+                        )
+                        return (
+                          <button
+                            key={group.emoji}
+                            onClick={() => {
+                              if (userReaction) {
+                                onRemoveReaction(msg.id, userReaction.id)
+                              } else {
+                                onAddReaction(msg.id, group.emoji)
+                              }
+                            }}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                              group.hasCurrentUser
+                                ? "bg-blue-100 border border-blue-300"
+                                : "bg-gray-100 border border-gray-300"
+                            } hover:bg-blue-50 transition`}
+                          >
+                            <span>{group.emoji}</span>
+                            <span className="text-xs">{group.count}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })
