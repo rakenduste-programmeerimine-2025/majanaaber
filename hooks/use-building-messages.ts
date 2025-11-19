@@ -60,20 +60,50 @@ export function useBuildingMessages(buildingId: string | null) {
               content,
               created_at,
               sender_id,
-              sender:profiles(first_name, last_name)
+              sender:profiles(first_name, last_name),
+              reactions:message_reactions(id, user_id, emoji, created_at),
+              read_receipts:message_read_receipts(id, user_id, read_at)
             `,
               )
               .eq("id", payload.new.id)
               .single()
 
             if (data) {
-              setMessages(prev => [...prev, data])
+              setMessages(prev => [...prev, data as unknown as Message])
             }
           },
         )
         .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
           const { messageId } = payload
           setMessages(prev => prev.filter(msg => msg.id !== messageId))
+        })
+        .on("broadcast", { event: "reaction_added" }, ({ payload }) => {
+          const { messageId, reaction } = payload
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    reactions: [...(msg.reactions || []), reaction],
+                  }
+                : msg,
+            ),
+          )
+        })
+        .on("broadcast", { event: "reaction_removed" }, ({ payload }) => {
+          const { messageId, reactionId } = payload
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    reactions: (msg.reactions || []).filter(
+                      r => r.id !== reactionId,
+                    ),
+                  }
+                : msg,
+            ),
+          )
         })
         .on("broadcast", { event: "typing" }, ({ payload }) => {
           const { userId, userName, isTyping } = payload
@@ -86,6 +116,19 @@ export function useBuildingMessages(buildingId: string | null) {
           } else {
             setTypingUsers(prev => prev.filter(u => u.userId !== userId))
           }
+        })
+        .on("broadcast", { event: "read_receipt_added" }, ({ payload }) => {
+          const { messageId, readReceipt } = payload
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    read_receipts: [...(msg.read_receipts || []), readReceipt],
+                  }
+                : msg,
+            ),
+          )
         })
         .subscribe()
 
@@ -111,7 +154,9 @@ export function useBuildingMessages(buildingId: string | null) {
         content,
         created_at,
         sender_id,
-        sender:profiles(first_name, last_name)
+        sender:profiles(first_name, last_name),
+        reactions:message_reactions(id, user_id, emoji, created_at),
+        read_receipts:message_read_receipts(id, user_id, read_at)
       `,
       )
       .eq("building_id", buildingId)
@@ -122,7 +167,7 @@ export function useBuildingMessages(buildingId: string | null) {
       return
     }
 
-    setMessages(data || [])
+    setMessages((data || []) as unknown as Message[])
   }
 
   const sendMessage = async (content: string) => {
@@ -213,6 +258,132 @@ export function useBuildingMessages(buildingId: string | null) {
     broadcastTyping(false)
   }
 
+  const addReaction = async (messageId: string, emoji: string) => {
+    if (!userIdRef.current) return
+
+    try {
+      const { data, error } = await supabase
+        .from("message_reactions")
+        .insert({
+          message_id: messageId,
+          user_id: userIdRef.current,
+          emoji,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      if (data && channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "reaction_added",
+          payload: { messageId, reaction: data },
+        })
+
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === messageId
+              ? {
+                  ...msg,
+                  reactions: [...(msg.reactions || []), data],
+                }
+              : msg,
+          ),
+        )
+      }
+    } catch (err: any) {
+      console.error("Error adding reaction:", err)
+      if (!err.message.includes("duplicate")) {
+        alert("Failed to add reaction: " + err.message)
+      }
+    }
+  }
+
+  const removeReaction = async (messageId: string, reactionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("message_reactions")
+        .delete()
+        .eq("id", reactionId)
+
+      if (error) throw error
+
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "reaction_removed",
+          payload: { messageId, reactionId },
+        })
+      }
+
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId
+            ? {
+                ...msg,
+                reactions: (msg.reactions || []).filter(r => r.id !== reactionId),
+              }
+            : msg,
+        ),
+      )
+    } catch (err: any) {
+      console.error("Error removing reaction:", err)
+      alert("Failed to remove reaction: " + err.message)
+    }
+  }
+
+  const markMessageAsRead = async (messageId: string) => {
+    if (!userIdRef.current) return
+
+    const message = messages.find(m => m.id === messageId)
+    if (!message) return
+
+    const alreadyRead = message.read_receipts?.some(
+      r => r.user_id === userIdRef.current,
+    )
+    if (alreadyRead) return
+
+    if (message.sender_id === userIdRef.current) return
+
+    try {
+      const { data, error } = await supabase
+        .from("message_read_receipts")
+        .insert({
+          message_id: messageId,
+          user_id: userIdRef.current,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      if (data && channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "read_receipt_added",
+          payload: { messageId, readReceipt: data },
+        })
+
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === messageId
+              ? {
+                  ...msg,
+                  read_receipts: [...(msg.read_receipts || []), data],
+                }
+              : msg,
+          ),
+        )
+      }
+    } catch (err: any) {
+      console.error("Error marking message as read:", err)
+      if (!err.message.includes("duplicate")) {
+        console.error("Failed to mark message as read: " + err.message)
+      }
+    }
+  }
+
   return {
     messages,
     sendMessage,
@@ -221,5 +392,8 @@ export function useBuildingMessages(buildingId: string | null) {
     typingUsers,
     handleTypingStart,
     handleTypingStop,
+    addReaction,
+    removeReaction,
+    markMessageAsRead,
   }
 }
