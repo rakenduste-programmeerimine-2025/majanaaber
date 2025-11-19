@@ -25,6 +25,15 @@ export interface Message {
   } | null
   reactions?: Reaction[]
   read_receipts?: ReadReceipt[]
+  reply_to_message_id?: string | null
+  replied_message?: {
+    id: string
+    content: string
+    sender: {
+      first_name: string
+      last_name: string
+    } | null
+  } | null
 }
 
 export interface Building {

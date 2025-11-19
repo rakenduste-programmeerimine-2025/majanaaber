@@ -61,13 +61,31 @@ export function useBuildingMessages(buildingId: string | null) {
               created_at,
               edited_at,
               sender_id,
-              sender:profiles(first_name, last_name),
+              reply_to_message_id,
+              sender:profiles!building_messages_sender_id_fkey(first_name, last_name),
               reactions:message_reactions(id, user_id, emoji, created_at),
               read_receipts:message_read_receipts(id, user_id, read_at)
             `,
               )
               .eq("id", payload.new.id)
               .single()
+
+            // Fetch replied message separately if it exists
+            if (data && data.reply_to_message_id) {
+              const { data: repliedMsg } = await supabase
+                .from("building_messages")
+                .select(`
+                  id,
+                  content,
+                  sender:profiles!building_messages_sender_id_fkey(first_name, last_name)
+                `)
+                .eq("id", data.reply_to_message_id)
+                .single()
+
+              if (repliedMsg) {
+                data.replied_message = repliedMsg
+              }
+            }
 
             if (data) {
               setMessages(prev => [...prev, data as unknown as Message])
@@ -166,7 +184,8 @@ export function useBuildingMessages(buildingId: string | null) {
         created_at,
         edited_at,
         sender_id,
-        sender:profiles(first_name, last_name),
+        reply_to_message_id,
+        sender:profiles!building_messages_sender_id_fkey(first_name, last_name),
         reactions:message_reactions(id, user_id, emoji, created_at),
         read_receipts:message_read_receipts(id, user_id, read_at)
       `,
@@ -179,10 +198,30 @@ export function useBuildingMessages(buildingId: string | null) {
       return
     }
 
-    setMessages((data || []) as unknown as Message[])
+    // Fetch replied messages separately for any messages that have replies
+    const messagesWithReplies = await Promise.all(
+      (data || []).map(async (msg: any) => {
+        if (msg.reply_to_message_id) {
+          const { data: repliedMsg } = await supabase
+            .from("building_messages")
+            .select(`
+              id,
+              content,
+              sender:profiles!building_messages_sender_id_fkey(first_name, last_name)
+            `)
+            .eq("id", msg.reply_to_message_id)
+            .single()
+
+          return { ...msg, replied_message: repliedMsg || null }
+        }
+        return msg
+      })
+    )
+
+    setMessages(messagesWithReplies as unknown as Message[])
   }
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, replyToMessageId?: string | null) => {
     if (!content.trim() || !buildingId || content.length > MAX_MESSAGE_LENGTH)
       return
 
@@ -198,6 +237,7 @@ export function useBuildingMessages(buildingId: string | null) {
         building_id: buildingId,
         sender_id: user.id,
         content: content.trim(),
+        reply_to_message_id: replyToMessageId || null,
       })
 
       if (error) throw error

@@ -15,7 +15,7 @@ interface ChatBoxProps {
   buildingName: string
   messages: Message[]
   currentUserId: string | null
-  onSendMessage: (content: string) => Promise<void>
+  onSendMessage: (content: string, replyToMessageId?: string | null) => Promise<void>
   onDeleteMessage: (messageId: string) => Promise<void>
   onEditMessage: (messageId: string, newContent: string) => Promise<void>
   isSending: boolean
@@ -48,6 +48,7 @@ export function ChatBox({
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editInput, setEditInput] = useState("")
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -107,8 +108,9 @@ export function ChatBox({
   const handleSendMessage = async () => {
     if (!input.trim() || input.length > MAX_MESSAGE_LENGTH) return
 
-    await onSendMessage(input)
+    await onSendMessage(input, replyingTo?.id)
     setInput("")
+    setReplyingTo(null)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -159,6 +161,15 @@ export function ChatBox({
     } else if (e.key === "Escape") {
       handleEditCancel()
     }
+  }
+
+  const handleReply = (message: Message) => {
+    setReplyingTo(message)
+    inputRef.current?.focus()
+  }
+
+  const cancelReply = () => {
+    setReplyingTo(null)
   }
 
   const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😀"]
@@ -254,24 +265,33 @@ export function ChatBox({
                           : "bg-white text-gray-800"
                       }`}
                     >
-                    {isOwnMessage && (
-                      <>
-                        <button
-                          onClick={() => handleEditClick(msg.id, msg.content)}
-                          className="absolute -top-2 -left-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-blue-700"
-                          title="Edit message"
-                        >
-                          ✎
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(msg.id)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
-                          title="Delete message"
-                        >
-                          ×
-                        </button>
-                      </>
-                    )}
+                    <>
+                      {isOwnMessage && (
+                        <>
+                          <button
+                            onClick={() => handleEditClick(msg.id, msg.content)}
+                            className="absolute -top-2 -left-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-blue-700"
+                            title="Edit message"
+                          >
+                            ✎
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(msg.id)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
+                            title="Delete message"
+                          >
+                            ×
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleReply(msg)}
+                        className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? '-left-8' : '-right-8'} bg-gray-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-gray-700`}
+                        title="Reply"
+                      >
+                        ↩
+                      </button>
+                    </>
                     {!isOwnMessage && (
                       <div className="flex justify-between items-start mb-1">
                         <span className="font-semibold text-sm text-blue-600">
@@ -325,6 +345,18 @@ export function ChatBox({
                       </div>
                     ) : (
                       <>
+                        {msg.replied_message && (
+                          <div className={`border-l-2 pl-2 mb-2 text-xs ${isOwnMessage ? 'border-blue-300' : 'border-gray-400'}`}>
+                            <div className={`font-semibold ${isOwnMessage ? 'text-blue-200' : 'text-gray-600'}`}>
+                              {msg.replied_message.sender
+                                ? `${msg.replied_message.sender.first_name} ${msg.replied_message.sender.last_name}`
+                                : 'Unknown User'}
+                            </div>
+                            <div className={`${isOwnMessage ? 'text-blue-100' : 'text-gray-500'} truncate`}>
+                              {msg.replied_message.content}
+                            </div>
+                          </div>
+                        )}
                         <p className="text-sm break-words">{msg.content}</p>
                         {msg.edited_at && (
                           <span
@@ -444,6 +476,27 @@ export function ChatBox({
         )}
       </div>
       <div className="flex flex-col gap-1 mt-2">
+        {replyingTo && (
+          <div className="bg-gray-100 border-l-2 border-blue-500 p-2 rounded flex justify-between items-start">
+            <div className="flex-1">
+              <div className="text-xs font-semibold text-gray-700">
+                Replying to {replyingTo.sender
+                  ? `${replyingTo.sender.first_name} ${replyingTo.sender.last_name}`
+                  : 'Unknown User'}
+              </div>
+              <div className="text-xs text-gray-600 truncate">
+                {replyingTo.content}
+              </div>
+            </div>
+            <button
+              onClick={cancelReply}
+              className="text-gray-500 hover:text-gray-700 ml-2"
+              title="Cancel reply"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -462,7 +515,7 @@ export function ChatBox({
             }}
             onKeyPress={handleKeyPress}
             onBlur={onTypingStop}
-            placeholder="Type a message..."
+            placeholder={replyingTo ? `Reply to ${replyingTo.sender?.first_name}...` : "Type a message..."}
             disabled={isSending}
             maxLength={MAX_MESSAGE_LENGTH}
           />
