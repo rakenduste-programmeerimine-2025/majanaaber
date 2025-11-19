@@ -1,21 +1,131 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import type { Message } from "@/lib/types/chat"
+import { useState, useEffect, useRef, memo } from "react"
+import type { Message, Attachment } from "@/lib/types/chat"
 import { formatTimestamp } from "@/lib/utils/date-formatting"
+import { createClient } from "@/lib/supabase/client"
 
 const MAX_MESSAGE_LENGTH = 1000
+const MAX_FILES_PER_MESSAGE = 5
 
 interface TypingUser {
   userId: string
   userName: string
 }
 
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + " B"
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB"
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB"
+}
+
+const AttachmentDisplay = memo(({ attachment, isOwnMessage }: { attachment: Attachment; isOwnMessage: boolean }) => {
+  const [fileUrl, setFileUrl] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [imageError, setImageError] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    console.log('[IMAGE] AttachmentDisplay mounted for:', attachment.file_name)
+
+    const getFileUrl = async () => {
+      try {
+        const { data, error } = await supabase.storage
+          .from("message-attachments")
+          .createSignedUrl(attachment.file_path, 3600)
+
+        if (error) {
+          console.error('[IMAGE] Storage error:', error)
+          setIsLoading(false)
+          return
+        }
+
+        if (data?.signedUrl) {
+          console.log('[IMAGE] Got signed URL for:', attachment.file_name)
+          setFileUrl(data.signedUrl)
+        }
+      } catch (err) {
+        console.error('[IMAGE] Failed to get file URL:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    getFileUrl()
+  }, [attachment.file_path])
+
+  if (isLoading) {
+    const isImage = attachment.file_type.startsWith("image/")
+    return (
+      <div className={`flex items-center gap-2 p-2 rounded bg-gray-100 animate-pulse ${isImage ? 'min-h-[200px]' : ''}`}>
+        <div className="w-12 h-12 bg-gray-300 rounded"></div>
+        <div className="flex-1">
+          <div className="h-3 bg-gray-300 rounded w-24 mb-1"></div>
+          <div className="h-2 bg-gray-300 rounded w-16"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!fileUrl) {
+    return (
+      <div className="flex items-center gap-2 p-2 rounded bg-red-50 border border-red-200">
+        <span className="text-sm text-red-600">Failed to load file</span>
+      </div>
+    )
+  }
+
+  const isImage = attachment.file_type.startsWith("image/")
+
+  return (
+    <div className="max-w-full">
+      {isImage ? (
+        <div className="relative">
+          {imageError ? (
+            <div className="flex items-center gap-2 p-2 rounded bg-gray-100 border border-gray-300">
+              <span className="text-sm text-gray-600">📷 {attachment.file_name}</span>
+            </div>
+          ) : (
+            <img
+              src={fileUrl}
+              alt={attachment.file_name}
+              className="max-w-full max-h-96 w-auto h-auto rounded cursor-pointer hover:opacity-90"
+              onClick={() => window.open(fileUrl, '_blank')}
+              onLoad={() => console.log('[IMAGE] Loaded:', attachment.file_name)}
+              onError={() => {
+                console.log('[IMAGE] Error loading:', attachment.file_name)
+                setImageError(true)
+              }}
+            />
+          )}
+        </div>
+      ) : (
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-2 p-2 rounded border ${isOwnMessage ? 'bg-blue-600 border-blue-500' : 'bg-gray-100 border-gray-300'} hover:opacity-90 max-w-full`}
+        >
+          <span className="text-2xl flex-shrink-0">📄</span>
+          <div className="flex-1 min-w-0">
+            <div className={`text-sm font-medium truncate ${isOwnMessage ? 'text-white' : 'text-gray-800'}`}>
+              {attachment.file_name}
+            </div>
+            <div className={`text-xs ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
+              {formatFileSize(attachment.file_size)}
+            </div>
+          </div>
+        </a>
+      )}
+    </div>
+  )
+})
+
 interface ChatBoxProps {
   buildingName: string
   messages: Message[]
   currentUserId: string | null
-  onSendMessage: (content: string, replyToMessageId?: string | null) => Promise<void>
+  onSendMessage: (content: string, replyToMessageId?: string | null, files?: File[]) => Promise<void>
   onDeleteMessage: (messageId: string) => Promise<void>
   onEditMessage: (messageId: string, newContent: string) => Promise<void>
   isSending: boolean
@@ -50,21 +160,30 @@ export function ChatBox({
   const [editInput, setEditInput] = useState("")
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
   const [showMessageMenu, setShowMessageMenu] = useState<string | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const markedAsReadRef = useRef<Set<string>>(new Set())
 
   const scrollToBottom = () => {
+    console.log('[SCROLL] Scrolling to bottom')
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   const prevMessagesLengthRef = useRef(messages.length)
+  const isUserSendingRef = useRef(false)
 
+  // Simple scroll: only when user sends a message
   useEffect(() => {
-    // Only scroll to bottom when a new message is added, not when reactions/edits happen
-    if (messages.length > prevMessagesLengthRef.current) {
-      scrollToBottom()
+    console.log('[MESSAGES] Messages updated. Count:', messages.length, 'Previous:', prevMessagesLengthRef.current, 'isUserSending:', isUserSendingRef.current)
+
+    if (messages.length > prevMessagesLengthRef.current && isUserSendingRef.current) {
+      console.log('[SCROLL] Scheduling scroll to bottom in 100ms')
+      setTimeout(() => scrollToBottom(), 100)
+      isUserSendingRef.current = false
     }
     prevMessagesLengthRef.current = messages.length
   }, [messages])
@@ -98,6 +217,9 @@ export function ChatBox({
     const handleScroll = () => {
       const isAtBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight < 50
+
+      console.log('[SCROLL EVENT] scrollTop:', container.scrollTop, 'scrollHeight:', container.scrollHeight, 'clientHeight:', container.clientHeight, 'isAtBottom:', isAtBottom)
+
       setShowScrollButton(!isAtBottom)
     }
 
@@ -113,7 +235,8 @@ export function ChatBox({
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const messageId = entry.target.getAttribute("data-message-id")
-            if (messageId) {
+            if (messageId && !markedAsReadRef.current.has(messageId)) {
+              markedAsReadRef.current.add(messageId)
               onMarkAsRead(messageId)
             }
           }
@@ -129,11 +252,41 @@ export function ChatBox({
   }, [messages, currentUserId, onMarkAsRead])
 
   const handleSendMessage = async () => {
-    if (!input.trim() || input.length > MAX_MESSAGE_LENGTH) return
+    if ((!input.trim() && selectedFiles.length === 0) || input.length > MAX_MESSAGE_LENGTH) return
 
-    await onSendMessage(input, replyingTo?.id)
+    isUserSendingRef.current = true
+    await onSendMessage(input, replyingTo?.id, selectedFiles.length > 0 ? selectedFiles : undefined)
     setInput("")
     setReplyingTo(null)
+    setSelectedFiles([])
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const currentCount = selectedFiles.length
+    const availableSlots = MAX_FILES_PER_MESSAGE - currentCount
+
+    if (availableSlots <= 0) {
+      alert(`Maximum ${MAX_FILES_PER_MESSAGE} files per message`)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+      return
+    }
+
+    const filesToAdd = files.slice(0, availableSlots)
+    if (files.length > availableSlots) {
+      alert(`Only adding ${availableSlots} file(s). Maximum ${MAX_FILES_PER_MESSAGE} files per message.`)
+    }
+
+    setSelectedFiles(prev => [...prev, ...filesToAdd])
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -415,7 +568,20 @@ export function ChatBox({
                             </div>
                           </div>
                         )}
-                        <p className="text-sm break-words">{msg.content}</p>
+                        {msg.content && msg.content !== "(attached file)" && (
+                          <p className="text-sm break-words">{msg.content}</p>
+                        )}
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-2 flex flex-col gap-2 overflow-hidden">
+                            {msg.attachments.map(attachment => (
+                              <AttachmentDisplay
+                                key={attachment.id}
+                                attachment={attachment}
+                                isOwnMessage={isOwnMessage}
+                              />
+                            ))}
+                          </div>
+                        )}
                         {msg.edited_at && (
                           <span
                             className={`text-xs italic ${
@@ -546,7 +712,60 @@ export function ChatBox({
             </button>
           </div>
         )}
+        {selectedFiles.length > 0 && (
+          <div className="bg-gray-50 border border-gray-300 rounded p-2">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-gray-600 font-medium">
+                {selectedFiles.length} / {MAX_FILES_PER_MESSAGE} files
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="relative bg-white border border-gray-300 rounded p-2 flex items-center gap-2 max-w-xs">
+                  {file.type.startsWith("image/") ? (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-2xl">
+                      📄
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{file.name}</div>
+                    <div className="text-xs text-gray-500">{formatFileSize(file.size)}</div>
+                  </div>
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
+                    title="Remove file"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-gray-200 text-gray-700 px-3 rounded hover:bg-gray-300"
+            title="Attach file"
+            disabled={isSending}
+          >
+            📎
+          </button>
           <input
             ref={inputRef}
             type="text"
@@ -570,7 +789,7 @@ export function ChatBox({
           />
           <button
             onClick={handleSendMessage}
-            disabled={!input.trim() || input.length > MAX_MESSAGE_LENGTH || isSending}
+            disabled={(!input.trim() && selectedFiles.length === 0) || input.length > MAX_MESSAGE_LENGTH || isSending}
             className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {isSending ? "Sending..." : "Send"}
