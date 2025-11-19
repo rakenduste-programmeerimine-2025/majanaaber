@@ -49,6 +49,7 @@ export function ChatBox({
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editInput, setEditInput] = useState("")
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
+  const [showMessageMenu, setShowMessageMenu] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -58,8 +59,14 @@ export function ChatBox({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
+  const prevMessagesLengthRef = useRef(messages.length)
+
   useEffect(() => {
-    scrollToBottom()
+    // Only scroll to bottom when a new message is added, not when reactions/edits happen
+    if (messages.length > prevMessagesLengthRef.current) {
+      scrollToBottom()
+    }
+    prevMessagesLengthRef.current = messages.length
   }, [messages])
 
   useEffect(() => {
@@ -67,6 +74,22 @@ export function ChatBox({
       inputRef.current?.focus()
     }
   }, [isSending, input])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showMessageMenu) {
+        setShowMessageMenu(null)
+      }
+      if (showEmojiPicker) {
+        setShowEmojiPicker(null)
+      }
+    }
+
+    if (showMessageMenu || showEmojiPicker) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showMessageMenu, showEmojiPicker])
 
   useEffect(() => {
     const container = messagesContainerRef.current
@@ -266,31 +289,66 @@ export function ChatBox({
                       }`}
                     >
                     <>
-                      {isOwnMessage && (
-                        <>
-                          <button
-                            onClick={() => handleEditClick(msg.id, msg.content)}
-                            className="absolute -top-2 -left-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-blue-700"
-                            title="Edit message"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(msg.id)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
-                            title="Delete message"
-                          >
-                            ×
-                          </button>
-                        </>
-                      )}
                       <button
-                        onClick={() => handleReply(msg)}
-                        className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? '-left-8' : '-right-8'} bg-gray-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-gray-700`}
-                        title="Reply"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowEmojiPicker(showEmojiPicker === msg.id ? null : msg.id)
+                        }}
+                        className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? '-left-12' : '-right-12'} bg-gray-200 text-gray-600 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-300`}
+                        title="Add reaction"
                       >
-                        ↩
+                        😊
                       </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowMessageMenu(showMessageMenu === msg.id ? null : msg.id)
+                        }}
+                        className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? '-left-6' : '-right-6'} bg-gray-700 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-600`}
+                        title="More actions"
+                      >
+                        ⋮
+                      </button>
+
+                      {showMessageMenu === msg.id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute top-0 ${isOwnMessage ? '-left-32' : '-right-32'} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                        >
+                          <button
+                            onClick={() => {
+                              handleReply(msg)
+                              setShowMessageMenu(null)
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
+                          >
+                            Reply
+                          </button>
+                          {isOwnMessage && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleEditClick(msg.id, msg.content)
+                                  setShowMessageMenu(null)
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleDeleteClick(msg.id)
+                                  setShowMessageMenu(null)
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 text-sm"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </>
                     {!isOwnMessage && (
                       <div className="flex justify-between items-start mb-1">
@@ -388,20 +446,11 @@ export function ChatBox({
                       )}
                     </div>
 
-                    <button
-                      onClick={() =>
-                        setShowEmojiPicker(
-                          showEmojiPicker === msg.id ? null : msg.id,
-                        )
-                      }
-                      className="absolute -bottom-2 -left-2 bg-gray-200 text-gray-600 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-sm hover:bg-gray-300"
-                      title="Add reaction"
-                    >
-                      +
-                    </button>
-
                     {showEmojiPicker === msg.id && (
-                      <div className={`absolute -bottom-8 ${isOwnMessage ? 'right-0' : 'left-0'} bg-white border border-gray-300 rounded shadow-lg p-1 flex gap-0.5 z-20`}>
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className={`absolute top-full mt-1 ${isOwnMessage ? 'right-0' : 'left-0'} bg-white border border-gray-300 rounded shadow-lg p-1 flex gap-0.5 z-20`}
+                      >
                         {EMOJIS.map(emoji => (
                           <button
                             key={emoji}
