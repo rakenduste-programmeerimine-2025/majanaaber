@@ -59,6 +59,7 @@ export function useBuildingMessages(buildingId: string | null) {
               id,
               content,
               created_at,
+              edited_at,
               sender_id,
               sender:profiles(first_name, last_name),
               reactions:message_reactions(id, user_id, emoji, created_at),
@@ -76,6 +77,16 @@ export function useBuildingMessages(buildingId: string | null) {
         .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
           const { messageId } = payload
           setMessages(prev => prev.filter(msg => msg.id !== messageId))
+        })
+        .on("broadcast", { event: "message_edited" }, ({ payload }) => {
+          const { messageId, content, edited_at } = payload
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === messageId
+                ? { ...msg, content, edited_at }
+                : msg,
+            ),
+          )
         })
         .on("broadcast", { event: "reaction_added" }, ({ payload }) => {
           const { messageId, reaction } = payload
@@ -153,6 +164,7 @@ export function useBuildingMessages(buildingId: string | null) {
         id,
         content,
         created_at,
+        edited_at,
         sender_id,
         sender:profiles(first_name, last_name),
         reactions:message_reactions(id, user_id, emoji, created_at),
@@ -218,6 +230,42 @@ export function useBuildingMessages(buildingId: string | null) {
     } catch (err: any) {
       console.error("Error deleting message:", err)
       alert("Failed to delete message: " + err.message)
+    }
+  }
+
+  const editMessage = async (messageId: string, newContent: string) => {
+    if (!newContent.trim() || newContent.length > MAX_MESSAGE_LENGTH) return
+
+    try {
+      const { error } = await supabase
+        .from("building_messages")
+        .update({
+          content: newContent.trim(),
+          edited_at: new Date().toISOString(),
+        })
+        .eq("id", messageId)
+
+      if (error) throw error
+
+      const edited_at = new Date().toISOString()
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, content: newContent.trim(), edited_at }
+            : msg,
+        ),
+      )
+
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "message_edited",
+          payload: { messageId, content: newContent.trim(), edited_at },
+        })
+      }
+    } catch (err: any) {
+      console.error("Error editing message:", err)
+      alert("Failed to edit message: " + err.message)
     }
   }
 
@@ -388,6 +436,7 @@ export function useBuildingMessages(buildingId: string | null) {
     messages,
     sendMessage,
     deleteMessage,
+    editMessage,
     isSending,
     typingUsers,
     handleTypingStart,

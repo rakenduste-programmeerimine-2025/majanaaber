@@ -19,6 +19,7 @@ export default function ResidentDashboard() {
     messages,
     sendMessage,
     deleteMessage,
+    editMessage,
     isSending,
     typingUsers,
     handleTypingStart,
@@ -134,6 +135,7 @@ export default function ResidentDashboard() {
           currentUserId={currentUserId}
           onSendMessage={sendMessage}
           onDeleteMessage={deleteMessage}
+          onEditMessage={editMessage}
           isSending={isSending}
           typingUsers={typingUsers}
           onTypingStart={handleTypingStart}

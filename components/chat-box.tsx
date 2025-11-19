@@ -17,6 +17,7 @@ interface ChatBoxProps {
   currentUserId: string | null
   onSendMessage: (content: string) => Promise<void>
   onDeleteMessage: (messageId: string) => Promise<void>
+  onEditMessage: (messageId: string, newContent: string) => Promise<void>
   isSending: boolean
   typingUsers: TypingUser[]
   onTypingStart: () => void
@@ -32,6 +33,7 @@ export function ChatBox({
   currentUserId,
   onSendMessage,
   onDeleteMessage,
+  onEditMessage,
   isSending,
   typingUsers,
   onTypingStart,
@@ -44,9 +46,12 @@ export function ChatBox({
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editInput, setEditInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const editInputRef = useRef<HTMLInputElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -126,6 +131,34 @@ export function ChatBox({
 
   const cancelDelete = () => {
     setMessageToDelete(null)
+  }
+
+  const handleEditClick = (messageId: string, currentContent: string) => {
+    setEditingMessageId(messageId)
+    setEditInput(currentContent)
+    setTimeout(() => editInputRef.current?.focus(), 0)
+  }
+
+  const handleEditSave = async (messageId: string) => {
+    if (!editInput.trim() || editInput.length > MAX_MESSAGE_LENGTH) return
+
+    await onEditMessage(messageId, editInput)
+    setEditingMessageId(null)
+    setEditInput("")
+  }
+
+  const handleEditCancel = () => {
+    setEditingMessageId(null)
+    setEditInput("")
+  }
+
+  const handleEditKeyPress = (e: React.KeyboardEvent, messageId: string) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleEditSave(messageId)
+    } else if (e.key === "Escape") {
+      handleEditCancel()
+    }
   }
 
   const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😀"]
@@ -221,13 +254,22 @@ export function ChatBox({
                     }`}
                   >
                     {isOwnMessage && (
-                      <button
-                        onClick={() => handleDeleteClick(msg.id)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
-                        title="Delete message"
-                      >
-                        ×
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleEditClick(msg.id, msg.content)}
+                          className="absolute -top-2 -left-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-blue-700"
+                          title="Edit message"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(msg.id)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
+                          title="Delete message"
+                        >
+                          ×
+                        </button>
+                      </>
                     )}
                     {!isOwnMessage && (
                       <div className="flex justify-between items-start mb-1">
@@ -238,7 +280,62 @@ export function ChatBox({
                         </span>
                       </div>
                     )}
-                    <p className="text-sm break-words">{msg.content}</p>
+                    {editingMessageId === msg.id ? (
+                      <div className="flex flex-col gap-2">
+                        <input
+                          ref={editInputRef}
+                          type="text"
+                          className="border rounded p-2 text-sm text-gray-800"
+                          value={editInput}
+                          onChange={e => {
+                            if (e.target.value.length <= MAX_MESSAGE_LENGTH) {
+                              setEditInput(e.target.value)
+                            }
+                          }}
+                          onKeyDown={e => handleEditKeyPress(e, msg.id)}
+                          maxLength={MAX_MESSAGE_LENGTH}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditSave(msg.id)}
+                            className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600"
+                            disabled={!editInput.trim()}
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={handleEditCancel}
+                            className="bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        {editInput.length > 0 && (
+                          <span
+                            className={`text-xs ${
+                              editInput.length > MAX_MESSAGE_LENGTH * 0.9
+                                ? "text-red-500"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {editInput.length}/{MAX_MESSAGE_LENGTH}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm break-words">{msg.content}</p>
+                        {msg.edited_at && (
+                          <span
+                            className={`text-xs italic ${
+                              isOwnMessage ? "text-blue-200" : "text-gray-400"
+                            }`}
+                          >
+                            (edited)
+                          </span>
+                        )}
+                      </>
+                    )}
                     <div className="flex items-center gap-2 mt-1">
                       <span
                         className={`text-xs ${

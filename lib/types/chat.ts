@@ -17,6 +17,7 @@ export interface Message {
   id: string
   content: string
   created_at: string
+  edited_at?: string | null
   sender_id: string
   sender: {
     first_name: string
