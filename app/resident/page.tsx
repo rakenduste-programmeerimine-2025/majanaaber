@@ -23,6 +23,9 @@ export default function ResidentDashboard() {
     typingUsers,
     handleTypingStart,
     handleTypingStop,
+    addReaction,
+    removeReaction,
+    markMessageAsRead,
   } = useBuildingMessages(building?.id ?? null)
 
   useEffect(() => {
@@ -135,6 +138,9 @@ export default function ResidentDashboard() {
           typingUsers={typingUsers}
           onTypingStart={handleTypingStart}
           onTypingStop={handleTypingStop}
+          onAddReaction={addReaction}
+          onRemoveReaction={removeReaction}
+          onMarkAsRead={markMessageAsRead}
         />
       </main>
 
