@@ -2,6 +2,8 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Message } from "@/lib/types/chat"
 
+const MAX_MESSAGE_LENGTH = 1000
+
 export function useBuildingMessages(buildingId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isSending, setIsSending] = useState(false)
@@ -73,7 +75,8 @@ export function useBuildingMessages(buildingId: string | null) {
   }
 
   const sendMessage = async (content: string) => {
-    if (!content.trim() || !buildingId) return
+    if (!content.trim() || !buildingId || content.length > MAX_MESSAGE_LENGTH)
+      return
 
     setIsSending(true)
     try {
