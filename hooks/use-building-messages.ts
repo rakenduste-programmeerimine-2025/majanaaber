@@ -71,6 +71,10 @@ export function useBuildingMessages(buildingId: string | null) {
             }
           },
         )
+        .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
+          const { messageId } = payload
+          setMessages(prev => prev.filter(msg => msg.id !== messageId))
+        })
         .on("broadcast", { event: "typing" }, ({ payload }) => {
           const { userId, userName, isTyping } = payload
 
@@ -158,6 +162,14 @@ export function useBuildingMessages(buildingId: string | null) {
       if (error) throw error
 
       setMessages(prev => prev.filter(msg => msg.id !== messageId))
+
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "message_deleted",
+          payload: { messageId },
+        })
+      }
     } catch (err: any) {
       console.error("Error deleting message:", err)
       alert("Failed to delete message: " + err.message)
