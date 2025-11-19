@@ -246,13 +246,14 @@ export function ChatBox({
                   className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                   data-message-id={msg.id}
                 >
-                  <div
-                    className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
-                      isOwnMessage
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-800"
-                    }`}
-                  >
+                  <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
+                    <div
+                      className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
+                        isOwnMessage
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-gray-800"
+                      }`}
+                    >
                     {isOwnMessage && (
                       <>
                         <button
@@ -368,7 +369,7 @@ export function ChatBox({
                     </button>
 
                     {showEmojiPicker === msg.id && (
-                      <div className={`absolute -bottom-10 ${isOwnMessage ? 'right-0' : 'left-0'} bg-white border border-gray-300 rounded-lg shadow-lg p-2 flex gap-1 z-20`}>
+                      <div className={`absolute -bottom-8 ${isOwnMessage ? 'right-0' : 'left-0'} bg-white border border-gray-300 rounded shadow-lg p-1 flex gap-0.5 z-20`}>
                         {EMOJIS.map(emoji => (
                           <button
                             key={emoji}
@@ -376,46 +377,47 @@ export function ChatBox({
                               handleEmojiClick(msg.id, emoji)
                               setShowEmojiPicker(null)
                             }}
-                            className="hover:bg-gray-100 rounded p-1 text-lg"
+                            className="hover:bg-gray-100 rounded p-0.5 text-sm"
                           >
                             {emoji}
                           </button>
                         ))}
                       </div>
                     )}
-                  </div>
-
-                  {groupReactions(msg.reactions).length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {groupReactions(msg.reactions).map(group => {
-                        const userReaction = msg.reactions?.find(
-                          r =>
-                            r.emoji === group.emoji &&
-                            r.user_id === currentUserId,
-                        )
-                        return (
-                          <button
-                            key={group.emoji}
-                            onClick={() => {
-                              if (userReaction) {
-                                onRemoveReaction(msg.id, userReaction.id)
-                              } else {
-                                onAddReaction(msg.id, group.emoji)
-                              }
-                            }}
-                            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-                              group.hasCurrentUser
-                                ? "bg-blue-100 border border-blue-300"
-                                : "bg-gray-100 border border-gray-300"
-                            } hover:bg-blue-50 transition`}
-                          >
-                            <span>{group.emoji}</span>
-                            <span className="text-xs">{group.count}</span>
-                          </button>
-                        )
-                      })}
                     </div>
-                  )}
+
+                    {groupReactions(msg.reactions).length > 0 && (
+                      <div className={`flex flex-wrap gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                        {groupReactions(msg.reactions).map(group => {
+                          const userReaction = msg.reactions?.find(
+                            r =>
+                              r.emoji === group.emoji &&
+                              r.user_id === currentUserId,
+                          )
+                          return (
+                            <button
+                              key={group.emoji}
+                              onClick={() => {
+                                if (userReaction) {
+                                  onRemoveReaction(msg.id, userReaction.id)
+                                } else {
+                                  onAddReaction(msg.id, group.emoji)
+                                }
+                              }}
+                              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs ${
+                                group.hasCurrentUser
+                                  ? "bg-blue-100 border border-blue-300"
+                                  : "bg-gray-100 border border-gray-300"
+                              } hover:bg-blue-50 transition`}
+                            >
+                              <span className="text-xs">{group.emoji}</span>
+                              <span className="text-xs">{group.count}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             })
