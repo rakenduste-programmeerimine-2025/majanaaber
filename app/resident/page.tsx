@@ -15,9 +15,15 @@ export default function ResidentDashboard() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const supabase = createClient()
 
-  const { messages, sendMessage, deleteMessage, isSending } = useBuildingMessages(
-    building?.id ?? null,
-  )
+  const {
+    messages,
+    sendMessage,
+    deleteMessage,
+    isSending,
+    typingUsers,
+    handleTypingStart,
+    handleTypingStop,
+  } = useBuildingMessages(building?.id ?? null)
 
   useEffect(() => {
     const loadBuilding = async () => {
@@ -126,6 +132,9 @@ export default function ResidentDashboard() {
           onSendMessage={sendMessage}
           onDeleteMessage={deleteMessage}
           isSending={isSending}
+          typingUsers={typingUsers}
+          onTypingStart={handleTypingStart}
+          onTypingStop={handleTypingStop}
         />
       </main>
 

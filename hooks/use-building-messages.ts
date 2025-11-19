@@ -1,12 +1,22 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Message } from "@/lib/types/chat"
 
 const MAX_MESSAGE_LENGTH = 1000
 
+interface TypingUser {
+  userId: string
+  userName: string
+}
+
 export function useBuildingMessages(buildingId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isSending, setIsSending] = useState(false)
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const channelRef = useRef<any>(null)
+  const userNameRef = useRef<string>("")
+  const userIdRef = useRef<string>("")
   const supabase = createClient()
 
   useEffect(() => {
@@ -14,40 +24,77 @@ export function useBuildingMessages(buildingId: string | null) {
 
     loadMessages(buildingId)
 
-    const channel = supabase
-      .channel(`building_messages:${buildingId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "building_messages",
-          filter: `building_id=eq.${buildingId}`,
-        },
-        async payload => {
-          const { data } = await supabase
-            .from("building_messages")
-            .select(
-              `
+    const initChannel = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        userIdRef.current = user.id
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .single()
+
+        if (profile) {
+          userNameRef.current = `${profile.first_name} ${profile.last_name}`
+        }
+      }
+
+      const channel = supabase
+        .channel(`building_messages:${buildingId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "building_messages",
+            filter: `building_id=eq.${buildingId}`,
+          },
+          async payload => {
+            const { data } = await supabase
+              .from("building_messages")
+              .select(
+                `
               id,
               content,
               created_at,
               sender_id,
               sender:profiles(first_name, last_name)
             `,
-            )
-            .eq("id", payload.new.id)
-            .single()
+              )
+              .eq("id", payload.new.id)
+              .single()
 
-          if (data) {
-            setMessages(prev => [...prev, data])
+            if (data) {
+              setMessages(prev => [...prev, data])
+            }
+          },
+        )
+        .on("broadcast", { event: "typing" }, ({ payload }) => {
+          const { userId, userName, isTyping } = payload
+
+          if (isTyping) {
+            setTypingUsers(prev => {
+              if (prev.find(u => u.userId === userId)) return prev
+              return [...prev, { userId, userName }]
+            })
+          } else {
+            setTypingUsers(prev => prev.filter(u => u.userId !== userId))
           }
-        },
-      )
-      .subscribe()
+        })
+        .subscribe()
+
+      channelRef.current = channel
+    }
+
+    initChannel()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
     }
   }, [buildingId])
 
@@ -78,6 +125,7 @@ export function useBuildingMessages(buildingId: string | null) {
     if (!content.trim() || !buildingId || content.length > MAX_MESSAGE_LENGTH)
       return
 
+    handleTypingStop()
     setIsSending(true)
     try {
       const {
@@ -116,5 +164,50 @@ export function useBuildingMessages(buildingId: string | null) {
     }
   }
 
-  return { messages, sendMessage, deleteMessage, isSending }
+  const broadcastTyping = async (isTyping: boolean) => {
+    if (!channelRef.current || !userIdRef.current) return
+
+    try {
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "typing",
+        payload: {
+          userId: userIdRef.current,
+          userName: userNameRef.current,
+          isTyping,
+        },
+      })
+    } catch (err) {
+      console.error("Error broadcasting typing:", err)
+    }
+  }
+
+  const handleTypingStart = () => {
+    broadcastTyping(true)
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      broadcastTyping(false)
+    }, 3000)
+  }
+
+  const handleTypingStop = () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+    broadcastTyping(false)
+  }
+
+  return {
+    messages,
+    sendMessage,
+    deleteMessage,
+    isSending,
+    typingUsers,
+    handleTypingStart,
+    handleTypingStop,
+  }
 }

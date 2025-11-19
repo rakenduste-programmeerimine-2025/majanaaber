@@ -6,6 +6,11 @@ import { formatTimestamp } from "@/lib/utils/date-formatting"
 
 const MAX_MESSAGE_LENGTH = 1000
 
+interface TypingUser {
+  userId: string
+  userName: string
+}
+
 interface ChatBoxProps {
   buildingName: string
   messages: Message[]
@@ -13,6 +18,9 @@ interface ChatBoxProps {
   onSendMessage: (content: string) => Promise<void>
   onDeleteMessage: (messageId: string) => Promise<void>
   isSending: boolean
+  typingUsers: TypingUser[]
+  onTypingStart: () => void
+  onTypingStop: () => void
 }
 
 export function ChatBox({
@@ -22,6 +30,9 @@ export function ChatBox({
   onSendMessage,
   onDeleteMessage,
   isSending,
+  typingUsers,
+  onTypingStart,
+  onTypingStop,
 }: ChatBoxProps) {
   const [input, setInput] = useState("")
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -167,6 +178,15 @@ export function ChatBox({
               )
             })
           )}
+          {typingUsers.filter(u => u.userId !== currentUserId).length > 0 && (
+            <div className="flex justify-start">
+              <div className="bg-gray-300 text-gray-700 p-3 rounded-lg text-sm italic">
+                {typingUsers.filter(u => u.userId !== currentUserId).length === 1
+                  ? `${typingUsers.filter(u => u.userId !== currentUserId)[0].userName} is typing...`
+                  : `${typingUsers.filter(u => u.userId !== currentUserId).length} people are typing...`}
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
         {showScrollButton && (
@@ -189,9 +209,15 @@ export function ChatBox({
             onChange={e => {
               if (e.target.value.length <= MAX_MESSAGE_LENGTH) {
                 setInput(e.target.value)
+                if (e.target.value.trim()) {
+                  onTypingStart()
+                } else {
+                  onTypingStop()
+                }
               }
             }}
             onKeyPress={handleKeyPress}
+            onBlur={onTypingStop}
             placeholder="Type a message..."
             disabled={isSending}
             maxLength={MAX_MESSAGE_LENGTH}
