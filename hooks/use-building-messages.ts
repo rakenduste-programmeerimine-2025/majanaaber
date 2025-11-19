@@ -176,7 +176,7 @@ export function useBuildingMessages(buildingId: string | null) {
   }, [buildingId])
 
   const loadMessages = async (buildingId: string) => {
-    const { data, error } = await supabase
+    const { data, error} = await supabase
       .from("building_messages")
       .select(
         `
@@ -193,7 +193,8 @@ export function useBuildingMessages(buildingId: string | null) {
       `,
       )
       .eq("building_id", buildingId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(100)
 
     if (error) {
       console.error("Error loading messages:", error)
@@ -220,7 +221,8 @@ export function useBuildingMessages(buildingId: string | null) {
       })
     )
 
-    setMessages(messagesWithReplies as unknown as Message[])
+    // Reverse to show oldest first (since we ordered by descending to get latest 100)
+    setMessages(messagesWithReplies.reverse() as unknown as Message[])
   }
 
   const uploadFiles = async (
@@ -409,6 +411,17 @@ export function useBuildingMessages(buildingId: string | null) {
   const addReaction = async (messageId: string, emoji: string) => {
     if (!userIdRef.current) return
 
+    // Check if reaction already exists locally to prevent unnecessary DB calls
+    const message = messages.find(m => m.id === messageId)
+    const alreadyReacted = message?.reactions?.some(
+      r => r.user_id === userIdRef.current && r.emoji === emoji
+    )
+
+    if (alreadyReacted) {
+      // User already has this reaction, silently return
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from("message_reactions")
@@ -441,10 +454,17 @@ export function useBuildingMessages(buildingId: string | null) {
         )
       }
     } catch (err: any) {
-      console.error("Error adding reaction:", err)
-      if (!err.message.includes("duplicate")) {
-        alert("Failed to add reaction: " + err.message)
+      // Handle duplicate key constraint violation (PostgreSQL error code 23505)
+      if (err.code === '23505') {
+        // Race condition: reaction was added between our check and insert
+        // This is expected behavior in real-time systems, not an error
+        console.debug("Reaction already exists (race condition):", { messageId, emoji })
+        return
       }
+
+      // Real error - show to user
+      console.error("Error adding reaction:", err)
+      alert("Failed to add reaction: " + err.message)
     }
   }
 
@@ -531,8 +551,8 @@ export function useBuildingMessages(buildingId: string | null) {
         )
       }
     } catch (err: any) {
-      // Only log non-duplicate errors
-      if (!err.message?.includes('duplicate') && err.code !== '23505') {
+      // Silently ignore duplicate key errors (PostgreSQL error code 23505)
+      if (err.code !== '23505') {
         console.error("Error marking message as read:", err)
       }
     }
