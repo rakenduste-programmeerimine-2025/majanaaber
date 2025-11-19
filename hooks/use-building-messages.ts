@@ -97,5 +97,21 @@ export function useBuildingMessages(buildingId: string | null) {
     }
   }
 
-  return { messages, sendMessage, isSending }
+  const deleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from("building_messages")
+        .delete()
+        .eq("id", messageId)
+
+      if (error) throw error
+
+      setMessages(prev => prev.filter(msg => msg.id !== messageId))
+    } catch (err: any) {
+      console.error("Error deleting message:", err)
+      alert("Failed to delete message: " + err.message)
+    }
+  }
+
+  return { messages, sendMessage, deleteMessage, isSending }
 }

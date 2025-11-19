@@ -9,6 +9,7 @@ interface ChatBoxProps {
   messages: Message[]
   currentUserId: string | null
   onSendMessage: (content: string) => Promise<void>
+  onDeleteMessage: (messageId: string) => Promise<void>
   isSending: boolean
 }
 
@@ -17,6 +18,7 @@ export function ChatBox({
   messages,
   currentUserId,
   onSendMessage,
+  onDeleteMessage,
   isSending,
 }: ChatBoxProps) {
   const [input, setInput] = useState("")
@@ -77,12 +79,21 @@ export function ChatBox({
                   className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[75%] p-3 rounded-lg shadow-sm ${
+                    className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
                       isOwnMessage
                         ? "bg-blue-500 text-white"
                         : "bg-white text-gray-800"
                     }`}
                   >
+                    {isOwnMessage && (
+                      <button
+                        onClick={() => onDeleteMessage(msg.id)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
+                        title="Delete message"
+                      >
+                        ×
+                      </button>
+                    )}
                     {!isOwnMessage && (
                       <div className="flex justify-between items-start mb-1">
                         <span className="font-semibold text-sm text-blue-600">
