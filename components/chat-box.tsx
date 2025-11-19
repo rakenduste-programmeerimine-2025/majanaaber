@@ -9,6 +9,7 @@ interface ChatBoxProps {
   messages: Message[]
   currentUserId: string | null
   onSendMessage: (content: string) => Promise<void>
+  isSending: boolean
 }
 
 export function ChatBox({
@@ -16,9 +17,11 @@ export function ChatBox({
   messages,
   currentUserId,
   onSendMessage,
+  isSending,
 }: ChatBoxProps) {
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -27,6 +30,12 @@ export function ChatBox({
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    if (!isSending && input === "") {
+      inputRef.current?.focus()
+    }
+  }, [isSending, input])
 
   const handleSendMessage = async () => {
     if (!input.trim()) return
@@ -100,19 +109,21 @@ export function ChatBox({
         </div>
         <div className="flex gap-2">
           <input
+            ref={inputRef}
             type="text"
             className="border rounded p-2 flex-1"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
+            disabled={isSending}
           />
           <button
             onClick={handleSendMessage}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isSending}
             className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            Send
+            {isSending ? "Sending..." : "Send"}
           </button>
         </div>
       </div>

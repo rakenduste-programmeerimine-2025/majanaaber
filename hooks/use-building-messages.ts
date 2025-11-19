@@ -4,6 +4,7 @@ import type { Message } from "@/lib/types/chat"
 
 export function useBuildingMessages(buildingId: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
+  const [isSending, setIsSending] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -74,6 +75,7 @@ export function useBuildingMessages(buildingId: string | null) {
   const sendMessage = async (content: string) => {
     if (!content.trim() || !buildingId) return
 
+    setIsSending(true)
     try {
       const {
         data: { user },
@@ -90,8 +92,10 @@ export function useBuildingMessages(buildingId: string | null) {
     } catch (err: any) {
       console.error("Error sending message:", err)
       alert("Failed to send message: " + err.message)
+    } finally {
+      setIsSending(false)
     }
   }
 
-  return { messages, sendMessage }
+  return { messages, sendMessage, isSending }
 }
