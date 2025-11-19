@@ -4,11 +4,11 @@ CREATE TABLE IF NOT EXISTS public.building_messages (
   building_id UUID REFERENCES public.buildings(id) ON DELETE CASCADE NOT NULL,
   sender_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   content TEXT NOT NULL,
-  image_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
 
-  -- Prevent empty messages
-  CONSTRAINT non_empty_content CHECK (length(trim(content)) > 0)
+  -- Prevent empty messages and enforce max length
+  CONSTRAINT non_empty_content CHECK (length(trim(content)) > 0),
+  CONSTRAINT content_max_length CHECK (length(content) <= 1000)
 );
 
 -- Enable RLS
