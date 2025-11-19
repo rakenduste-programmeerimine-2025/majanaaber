@@ -7,6 +7,7 @@ interface Message {
   id: string
   content: string
   created_at: string
+  sender_id: string
   sender: {
     first_name: string
     last_name: string
@@ -24,6 +25,7 @@ export default function ResidentDashboard() {
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
@@ -49,6 +51,7 @@ export default function ResidentDashboard() {
           return
         }
 
+        setCurrentUserId(user.id)
         let userBuilding = null
 
         // First, check if user is a manager of any building
@@ -124,6 +127,7 @@ export default function ResidentDashboard() {
               id,
               content,
               created_at,
+              sender_id,
               sender:profiles(first_name, last_name)
             `,
             )
@@ -150,6 +154,7 @@ export default function ResidentDashboard() {
         id,
         content,
         created_at,
+        sender_id,
         sender:profiles(first_name, last_name)
       `,
       )
@@ -287,27 +292,44 @@ export default function ResidentDashboard() {
                   No messages yet. Start the conversation!
                 </p>
               ) : (
-                messages.map(msg => (
-                  <div
-                    key={msg.id}
-                    className="bg-white p-3 rounded shadow-sm"
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-semibold text-sm text-blue-600">
-                        {msg.sender
-                          ? `${msg.sender.first_name} ${msg.sender.last_name}`
-                          : "Unknown User"}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(msg.created_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
+                messages.map(msg => {
+                  const isOwnMessage = msg.sender_id === currentUserId
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[75%] p-3 rounded-lg shadow-sm ${
+                          isOwnMessage
+                            ? "bg-blue-500 text-white"
+                            : "bg-white text-gray-800"
+                        }`}
+                      >
+                        {!isOwnMessage && (
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-semibold text-sm text-blue-600">
+                              {msg.sender
+                                ? `${msg.sender.first_name} ${msg.sender.last_name}`
+                                : "Unknown User"}
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-sm break-words">{msg.content}</p>
+                        <span
+                          className={`text-xs mt-1 block ${
+                            isOwnMessage ? "text-blue-100" : "text-gray-500"
+                          }`}
+                        >
+                          {new Date(msg.created_at).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-800">{msg.content}</p>
-                  </div>
-                ))
+                  )
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
