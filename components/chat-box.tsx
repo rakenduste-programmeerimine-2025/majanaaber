@@ -25,6 +25,7 @@ export function ChatBox({
 }: ChatBoxProps) {
   const [input, setInput] = useState("")
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -71,13 +72,35 @@ export function ChatBox({
     }
   }
 
-  const handleDeleteMessage = (messageId: string) => {
-    if (window.confirm("Are you sure you want to delete this message?")) {
-      onDeleteMessage(messageId)
+  const handleDeleteClick = (messageId: string) => {
+    setMessageToDelete(messageId)
+  }
+
+  const confirmDelete = () => {
+    if (messageToDelete) {
+      onDeleteMessage(messageToDelete)
+      setMessageToDelete(null)
     }
   }
 
+  const cancelDelete = () => {
+    setMessageToDelete(null)
+  }
+
   return (
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        .chat-scrollbar::-webkit-scrollbar {
+          width: 12px;
+        }
+        .chat-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 6px;
+        }
+        .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
+        }
+      `}} />
     <section className="flex flex-col bg-white p-6 shadow-lg border border-gray-300 w-[30%] h-[70vh]">
       <div className="flex flex-col mb-4">
         <div className="flex items-center justify-between mb-3">
@@ -92,7 +115,7 @@ export function ChatBox({
         <div className="relative flex-1 min-h-0">
           <div
             ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto border rounded p-3 space-y-2 bg-gray-50 absolute inset-0"
+            className="chat-scrollbar flex-1 overflow-y-auto border rounded p-3 space-y-2 bg-gray-50 absolute inset-0 cursor-default"
           >
           {messages.length === 0 ? (
             <p className="text-gray-500 text-sm text-center">
@@ -115,7 +138,7 @@ export function ChatBox({
                   >
                     {isOwnMessage && (
                       <button
-                        onClick={() => handleDeleteMessage(msg.id)}
+                        onClick={() => handleDeleteClick(msg.id)}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
                         title="Delete message"
                       >
@@ -194,6 +217,32 @@ export function ChatBox({
         )}
       </div>
       </div>
+
+      {messageToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">Delete Message</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this message? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
+    </>
   )
 }
