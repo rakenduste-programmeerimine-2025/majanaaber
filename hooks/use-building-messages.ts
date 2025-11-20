@@ -64,7 +64,8 @@ export function useBuildingMessages(buildingId: string | null) {
               reply_to_message_id,
               sender:profiles!building_messages_sender_id_fkey(first_name, last_name),
               reactions:message_reactions(id, user_id, emoji, created_at),
-              read_receipts:message_read_receipts(id, user_id, read_at)
+              read_receipts:message_read_receipts(id, user_id, read_at),
+              attachments:message_attachments(id, message_id, file_name, file_path, file_type, file_size, created_at)
             `,
               )
               .eq("id", payload.new.id)
@@ -187,7 +188,8 @@ export function useBuildingMessages(buildingId: string | null) {
         reply_to_message_id,
         sender:profiles!building_messages_sender_id_fkey(first_name, last_name),
         reactions:message_reactions(id, user_id, emoji, created_at),
-        read_receipts:message_read_receipts(id, user_id, read_at)
+        read_receipts:message_read_receipts(id, user_id, read_at),
+        attachments:message_attachments(id, message_id, file_name, file_path, file_type, file_size, created_at)
       `,
       )
       .eq("building_id", buildingId)
@@ -223,9 +225,59 @@ export function useBuildingMessages(buildingId: string | null) {
     setMessages(messagesWithReplies.reverse() as unknown as Message[])
   }
 
-  const sendMessage = async (content: string, replyToMessageId?: string | null) => {
-    if (!content.trim() || !buildingId || content.length > MAX_MESSAGE_LENGTH)
+  const uploadFiles = async (
+    messageId: string,
+    files: File[],
+    userId: string,
+  ) => {
+    const attachments = []
+
+    for (const file of files) {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${userId}/${messageId}/${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from("message-attachments")
+        .upload(fileName, file)
+
+      if (uploadError) {
+        console.error("Error uploading file:", uploadError)
+        continue
+      }
+
+      const { data: attachment, error: dbError } = await supabase
+        .from("message_attachments")
+        .insert({
+          message_id: messageId,
+          file_name: file.name,
+          file_path: fileName,
+          file_type: file.type,
+          file_size: file.size,
+        })
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error("Error creating attachment record:", dbError)
+        continue
+      }
+
+      if (attachment) {
+        attachments.push(attachment)
+      }
+    }
+
+    return attachments
+  }
+
+  const sendMessage = async (
+    content: string,
+    replyToMessageId?: string | null,
+    files?: File[],
+  ) => {
+    if ((!content.trim() && (!files || files.length === 0)) || !buildingId)
       return
+    if (content.length > MAX_MESSAGE_LENGTH) return
 
     handleTypingStop()
     setIsSending(true)
@@ -235,14 +287,22 @@ export function useBuildingMessages(buildingId: string | null) {
       } = await supabase.auth.getUser()
       if (!user) return
 
-      const { error } = await supabase.from("building_messages").insert({
-        building_id: buildingId,
-        sender_id: user.id,
-        content: content.trim(),
-        reply_to_message_id: replyToMessageId || null,
-      })
+      const { data: newMessage, error } = await supabase
+        .from("building_messages")
+        .insert({
+          building_id: buildingId,
+          sender_id: user.id,
+          content: content.trim() || "(attached file)",
+          reply_to_message_id: replyToMessageId || null,
+        })
+        .select()
+        .single()
 
       if (error) throw error
+
+      if (files && files.length > 0 && newMessage) {
+        await uploadFiles(newMessage.id, files, user.id)
+      }
     } catch (err: any) {
       console.error("Error sending message:", err)
       alert("Failed to send message: " + err.message)
@@ -464,7 +524,13 @@ export function useBuildingMessages(buildingId: string | null) {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        // Silently ignore duplicate key errors (409)
+        if (error.code === '23505' || error.message.includes('duplicate')) {
+          return
+        }
+        throw error
+      }
 
       if (data && channelRef.current) {
         await channelRef.current.send({
