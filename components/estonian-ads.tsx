@@ -130,21 +130,26 @@ export function EstonianAds({
               target.id.startsWith("in_teh_")
             ) {
               console.log("🎯 Address clicked:", target.title)
+              console.log("🎯 Target ID:", target.id)
+              console.log("🎯 Target text content:", target.textContent)
 
               // Parse the address from the title
               const fullAddress = target.title
 
               // Extract address components from the full address string
-              // Format: "Street number, District, City, County"
+              // Format can vary: "Street number, District, City, County" or "Street number, alevik, vald, County"
               const parts = fullAddress.split(", ")
+              console.log("🎯 Address parts:", parts)
+
               let streetPart = ""
               let city = ""
               let county = ""
 
               if (parts.length >= 3) {
                 streetPart = parts[0] || ""
-                city = parts[parts.length - 2] || ""
+                // Last part is always county
                 county = parts[parts.length - 1] || ""
+                city = parts.slice(1, parts.length - 1).join(", ")
               }
 
               // Extract street name and house number from street part
@@ -162,6 +167,9 @@ export function EstonianAds({
               }
 
               console.log("🎯 Parsed address data:", addressData)
+              console.log("🎯 Street name:", streetName)
+              console.log("🎯 House number:", houseNumber)
+              console.log("🎯 City:", city)
               console.log(
                 "🎯 callbackRef.current exists?",
                 !!callbackRef.current,
