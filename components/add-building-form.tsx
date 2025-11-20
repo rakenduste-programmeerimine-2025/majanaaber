@@ -44,10 +44,8 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
   }
 
   const handleAddressSelect = (address: EstonianAddressData) => {
-    console.log("📍 handleAddressSelect called with:", address)
     setSelectedAddress(address)
     setError(null)
-    console.log("📍 selectedAddress state updated")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +91,6 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
             "Please select an address using the Estonian address search",
           )
         }
-
         buildingData = {
           name:
             selectedAddress.full_address ||
