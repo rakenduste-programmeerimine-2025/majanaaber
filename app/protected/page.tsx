@@ -12,7 +12,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import { Search } from "lucide-react"
 
 interface Building {
   id: string
@@ -28,6 +30,7 @@ export default function ProtectedPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   const loadBuildings = async () => {
     try {
@@ -86,6 +89,15 @@ export default function ProtectedPage() {
     }
   }
 
+  // Filter buildings based on search query
+  const filteredBuildings = buildings.filter(building => {
+    const query = searchQuery.toLowerCase()
+    return (
+      building.full_address.toLowerCase().includes(query) ||
+      building.city.toLowerCase().includes(query)
+    )
+  })
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -140,6 +152,20 @@ export default function ProtectedPage() {
       {/* Buildings List */}
       <div>
         <h2 className="text-2xl font-semibold mb-4">Your Buildings</h2>
+
+        {buildings.length > 0 && (
+          <div className="relative w-full max-w-md mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search buildings by address or city..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        )}
+
         {buildings.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
@@ -148,9 +174,17 @@ export default function ProtectedPage() {
               </p>
             </CardContent>
           </Card>
+        ) : filteredBuildings.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-gray-500">
+                No buildings match your search. Try a different search term.
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {buildings.map(building => (
+            {filteredBuildings.map(building => (
               <Card key={building.id}>
                 <CardHeader>
                   <CardTitle className="text-lg">{building.name}</CardTitle>
