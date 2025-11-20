@@ -37,12 +37,20 @@ export function EstonianAds({
 }: EstonianAdsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const instanceRef = useRef<any>(null)
+  const callbackRef = useRef<
+    ((address: EstonianAddressData) => void) | undefined
+  >(onAddressSelect)
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uniqueId] = useState(
     () =>
       containerId || `InAadressDiv-${Math.random().toString(36).substr(2, 9)}`,
   )
+
+  // Keep callback ref updated
+  useEffect(() => {
+    callbackRef.current = onAddressSelect
+  }, [onAddressSelect])
 
   useEffect(() => {
     // Check if the script is already loaded
@@ -81,7 +89,7 @@ export function EstonianAds({
 
       // Initialize InAadress with callback reference
       const handleAddressSelect = (data: any) => {
-        if (onAddressSelect && data) {
+        if (callbackRef.current && data) {
           // Map the InAadress response to our interface
           const addressData: EstonianAddressData = {
             street_name: data.tanav || data.liikluspind,
@@ -92,7 +100,7 @@ export function EstonianAds({
             full_address: data.address || data.tanav_nr,
             ads_code: data.aadress_id?.toString(),
           }
-          onAddressSelect(addressData)
+          callbackRef.current(addressData)
         }
       }
 
@@ -121,6 +129,8 @@ export function EstonianAds({
               target.title &&
               target.id.startsWith("in_teh_")
             ) {
+              console.log("🎯 Address clicked:", target.title)
+
               // Parse the address from the title
               const fullAddress = target.title
 
@@ -151,11 +161,22 @@ export function EstonianAds({
                 ads_code: target.id.replace("in_teh_", ""),
               }
 
-              if (onAddressSelect) {
-                onAddressSelect(addressData)
+              console.log("🎯 Parsed address data:", addressData)
+              console.log(
+                "🎯 callbackRef.current exists?",
+                !!callbackRef.current,
+              )
+
+              if (callbackRef.current) {
+                console.log("🎯 Calling callbackRef.current")
+                callbackRef.current(addressData)
+              } else {
+                console.warn("🎯 callbackRef.current is undefined!")
               }
             }
           })
+        } else {
+          console.warn("Container not found:", uniqueId)
         }
       }, 1000)
 
@@ -191,9 +212,9 @@ export function EstonianAds({
 
   // Update callback when onAddressSelect changes
   useEffect(() => {
-    if (instanceRef.current && onAddressSelect) {
+    if (instanceRef.current) {
       instanceRef.current.cb = (data: any) => {
-        if (onAddressSelect && data) {
+        if (callbackRef.current && data) {
           const addressData: EstonianAddressData = {
             street_name: data.tanav || data.liikluspind,
             house_number: data.nr,
@@ -203,7 +224,7 @@ export function EstonianAds({
             full_address: data.address || data.tanav_nr,
             ads_code: data.aadress_id?.toString(),
           }
-          onAddressSelect(addressData)
+          callbackRef.current(addressData)
         }
       }
     }
