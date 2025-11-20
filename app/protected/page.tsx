@@ -18,7 +18,6 @@ import { Search } from "lucide-react"
 
 interface Building {
   id: string
-  name: string
   full_address: string
   city: string
   apartment_count: number | null
@@ -42,7 +41,7 @@ export default function ProtectedPage() {
 
       const { data, error: buildingsError } = await supabase
         .from("buildings")
-        .select("id, name, full_address, city, apartment_count, created_at")
+        .select("id, full_address, city, apartment_count, created_at")
         .eq("manager_id", user?.id)
         .order("created_at", { ascending: false })
 
@@ -187,8 +186,9 @@ export default function ProtectedPage() {
             {filteredBuildings.map(building => (
               <Card key={building.id}>
                 <CardHeader>
-                  <CardTitle className="text-lg">{building.name}</CardTitle>
-                  <CardDescription>{building.full_address}</CardDescription>
+                  <CardTitle className="text-lg">
+                    {building.full_address}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">

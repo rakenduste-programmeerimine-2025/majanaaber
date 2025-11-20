@@ -124,10 +124,9 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Create a test building
-INSERT INTO buildings (id, name, street_name, house_number, city, county, postal_code, full_address, manager_id)
+INSERT INTO buildings (id, street_name, house_number, city, county, postal_code, full_address, manager_id)
 VALUES (
   '10000000-0000-0000-0000-000000000001',
-  'Test Building',
   'Test Street',
   '123',
   'Tallinn',

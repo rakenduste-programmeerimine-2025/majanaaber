@@ -115,11 +115,9 @@ export function EstonianAds({
 
       instanceRef.current = new window.InAadress(config)
 
-      // Set up event listener to catch address selections from dropdown
       setTimeout(() => {
         const container = document.querySelector(`#${uniqueId}`)
         if (container) {
-          // Listen for click events on dropdown items
           container.addEventListener("click", e => {
             const target = e.target as HTMLElement
 
@@ -129,17 +127,8 @@ export function EstonianAds({
               target.title &&
               target.id.startsWith("in_teh_")
             ) {
-              console.log("🎯 Address clicked:", target.title)
-              console.log("🎯 Target ID:", target.id)
-              console.log("🎯 Target text content:", target.textContent)
-
-              // Parse the address from the title
               const fullAddress = target.title
-
-              // Extract address components from the full address string
-              // Format can vary: "Street number, District, City, County" or "Street number, alevik, vald, County"
               const parts = fullAddress.split(", ")
-              console.log("🎯 Address parts:", parts)
 
               let streetPart = ""
               let city = ""
@@ -147,12 +136,25 @@ export function EstonianAds({
 
               if (parts.length >= 3) {
                 streetPart = parts[0] || ""
-                // Last part is always county
                 county = parts[parts.length - 1] || ""
-                city = parts.slice(1, parts.length - 1).join(", ")
+                // For Estonian addresses, prioritize recognizable city names
+                // Common patterns: "street, district, city, county" or "street, settlement, municipality, county"
+                if (parts.length === 4) {
+                  // Check if third element looks like a major city (ends with common city identifiers)
+                  const thirdPart = parts[2]
+                  if (thirdPart.includes(" linn") || ["Tallinn", "Tartu", "Pärnu", "Narva"].some(city => thirdPart.includes(city))) {
+                    // Use the recognized city, include district for context
+                    city = parts.slice(1, parts.length - 1).join(", ")
+                  } else {
+                    // Otherwise join all middle parts
+                    city = parts.slice(1, parts.length - 1).join(", ")
+                  }
+                } else {
+                  // For other lengths, join all middle parts
+                  city = parts.slice(1, parts.length - 1).join(", ")
+                }
               }
 
-              // Extract street name and house number from street part
               const streetMatch = streetPart.match(/^(.+?)\s+(\d+.*)$/)
               const streetName = streetMatch ? streetMatch[1] : streetPart
               const houseNumber = streetMatch ? streetMatch[2] : ""
@@ -166,29 +168,14 @@ export function EstonianAds({
                 ads_code: target.id.replace("in_teh_", ""),
               }
 
-              console.log("🎯 Parsed address data:", addressData)
-              console.log("🎯 Street name:", streetName)
-              console.log("🎯 House number:", houseNumber)
-              console.log("🎯 City:", city)
-              console.log(
-                "🎯 callbackRef.current exists?",
-                !!callbackRef.current,
-              )
-
               if (callbackRef.current) {
-                console.log("🎯 Calling callbackRef.current")
                 callbackRef.current(addressData)
-              } else {
-                console.warn("🎯 callbackRef.current is undefined!")
               }
             }
           })
-        } else {
-          console.warn("Container not found:", uniqueId)
         }
       }, 1000)
 
-      // Add custom CSS to ensure dropdown is properly positioned
       const style = document.createElement("style")
       style.textContent = `
         .inads-dropdown {

@@ -46,7 +46,7 @@ export default function ResidentDashboard() {
 
         const { data: managerBuilding } = await supabase
           .from("buildings")
-          .select("id, name")
+          .select("id, full_address")
           .eq("manager_id", user.id)
           .limit(1)
           .single()
@@ -56,7 +56,7 @@ export default function ResidentDashboard() {
         } else {
           const { data: residentData, error: residentError } = await supabase
             .from("building_residents")
-            .select("building_id, buildings(id, name)")
+            .select("building_id, buildings(id, full_address)")
             .eq("profile_id", user.id)
             .eq("is_approved", true)
             .limit(1)
@@ -68,7 +68,7 @@ export default function ResidentDashboard() {
             return
           }
 
-          userBuilding = (residentData.buildings as any)
+          userBuilding = residentData.buildings as any
         }
 
         if (!userBuilding) {
@@ -77,7 +77,7 @@ export default function ResidentDashboard() {
           return
         }
 
-        setBuilding({ id: userBuilding.id, name: userBuilding.name })
+        setBuilding({ id: userBuilding.id, name: userBuilding.full_address })
       } catch (err: any) {
         console.error("Error loading building:", err)
         setError(err.message)
@@ -103,7 +103,8 @@ export default function ResidentDashboard() {
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-bold mb-4">No Building Found</h2>
           <p className="text-gray-600 mb-6">
-            {error || "You need to create a building or be assigned to one to access the chat."}
+            {error ||
+              "You need to create a building or be assigned to one to access the chat."}
           </p>
           <div className="space-y-3">
             <a
@@ -113,7 +114,8 @@ export default function ResidentDashboard() {
               Go to Building Management
             </a>
             <p className="text-sm text-gray-500">
-              Create a building or ask your building manager to add you as a resident.
+              Create a building or ask your building manager to add you as a
+              resident.
             </p>
           </div>
         </div>
