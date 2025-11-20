@@ -7,7 +7,6 @@ import { NoticeBoard } from "@/components/notice-board"
 
 interface Building {
   id: string
-  name: string
   full_address: string
   manager_id: string
 }
@@ -42,7 +41,7 @@ export default function ManagerDashboard() {
         // Fetch building and verify ownership
         const { data, error } = await supabase
           .from("buildings")
-          .select("id, name, full_address, manager_id")
+          .select("id, full_address, manager_id")
           .eq("id", buildingId)
           .single()
 
@@ -100,7 +99,7 @@ export default function ManagerDashboard() {
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
           {/* Notices */}
           <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
-            <h2 className="text-xl font-bold mb-3">{building.name}</h2>
+            <h2 className="text-xl font-bold mb-3">{building.full_address}</h2>
             <NoticeBoard
               buildingId={buildingId}
               isManager={true}
