@@ -42,7 +42,7 @@ export function BuildingAddress({
             type="text"
             value={formData.house_number}
             onChange={e => onInputChange("house_number", e.target.value)}
-            placeholder="12"
+            placeholder="14"
           />
         </div>
       </div>

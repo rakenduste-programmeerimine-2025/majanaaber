@@ -194,7 +194,7 @@ export default function ProtectedPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">
-                        City:
+                        Location:
                       </span>
                       <Badge variant="secondary">{building.city}</Badge>
                     </div>

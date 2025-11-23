@@ -48,6 +48,11 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
     setError(null)
   }
 
+  const handleAddressError = (errorMessage: string) => {
+    setError(errorMessage)
+    setSelectedAddress(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -175,6 +180,7 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
               <div className="mt-2 mb-8">
                 <EstonianAds
                   onAddressSelect={handleAddressSelect}
+                  onError={handleAddressError}
                   height="60px"
                   mode={3}
                   language="et"

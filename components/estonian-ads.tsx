@@ -14,6 +14,7 @@ export interface EstonianAddressData {
 
 interface EstonianAdsProps {
   onAddressSelect?: (address: EstonianAddressData) => void
+  onError?: (errorMessage: string) => void
   containerId?: string
   width?: string
   height?: string
@@ -29,6 +30,7 @@ declare global {
 
 export function EstonianAds({
   onAddressSelect,
+  onError,
   containerId,
   width = "100%",
   height = "450px",
@@ -129,17 +131,38 @@ export function EstonianAds({
               target.title &&
               target.id.startsWith("in_teh_")
             ) {
-              console.log("🎯 Address clicked:", target.title)
-              console.log("🎯 Target ID:", target.id)
-              console.log("🎯 Target text content:", target.textContent)
-
-              // Parse the address from the title
               const fullAddress = target.title
-
-              // Extract address components from the full address string
-              // Format can vary: "Street number, District, City, County" or "Street number, alevik, vald, County"
               const parts = fullAddress.split(", ")
-              console.log("🎯 Address parts:", parts)
+
+              // Validate address specificity
+              // Reject if first part is just a village or municipality without specific address
+              const firstPart = parts[0] || ""
+              const isJustVillage =
+                firstPart.includes("küla") &&
+                !firstPart.match(/^[^,]+(?=,\s*\w+\s+küla)/)
+              const isJustMunicipality =
+                firstPart.includes("vald") || firstPart.includes("linn")
+
+              // Check if address has sufficient detail:
+              // - Urban: must have street name + number (e.g., "Sipelga tn 2")
+              // - Rural: must have farm/building name before küla (e.g., "Andrese, Orgita küla")
+              const hasStreetNumber = /\d+/.test(firstPart)
+              const isFarmAddress =
+                parts.length >= 2 &&
+                parts[1]?.includes("küla") &&
+                !isJustVillage
+
+              if (
+                isJustVillage ||
+                isJustMunicipality ||
+                (!hasStreetNumber && !isFarmAddress)
+              ) {
+                console.warn("🎯 Address too general, rejecting:", fullAddress)
+                if (onError) {
+                  onError("Address too general, please specify building")
+                }
+                return
+              }
 
               let streetPart = ""
               let city = ""
@@ -147,12 +170,10 @@ export function EstonianAds({
 
               if (parts.length >= 3) {
                 streetPart = parts[0] || ""
-                // Last part is always county
                 county = parts[parts.length - 1] || ""
                 city = parts.slice(1, parts.length - 1).join(", ")
               }
 
-              // Extract street name and house number from street part
               const streetMatch = streetPart.match(/^(.+?)\s+(\d+.*)$/)
               const streetName = streetMatch ? streetMatch[1] : streetPart
               const houseNumber = streetMatch ? streetMatch[2] : ""
@@ -166,25 +187,11 @@ export function EstonianAds({
                 ads_code: target.id.replace("in_teh_", ""),
               }
 
-              console.log("🎯 Parsed address data:", addressData)
-              console.log("🎯 Street name:", streetName)
-              console.log("🎯 House number:", houseNumber)
-              console.log("🎯 City:", city)
-              console.log(
-                "🎯 callbackRef.current exists?",
-                !!callbackRef.current,
-              )
-
               if (callbackRef.current) {
-                console.log("🎯 Calling callbackRef.current")
                 callbackRef.current(addressData)
-              } else {
-                console.warn("🎯 callbackRef.current is undefined!")
               }
             }
           })
-        } else {
-          console.warn("Container not found:", uniqueId)
         }
       }, 1000)
 
