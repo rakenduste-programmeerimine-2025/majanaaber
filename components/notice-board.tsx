@@ -67,6 +67,34 @@ export function NoticeBoard({
   useEffect(() => {
     if (buildingId) {
       loadNotices()
+
+      const supabase = createClient()
+
+      // Subscribe to notices changes for this building
+      const channel = supabase.channel(`notices_${buildingId}`)
+
+      channel
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "notices",
+            filter: `building_id=eq.${buildingId}`,
+          },
+          (payload: any) => {
+            console.log("Notice change detected:", payload)
+            loadNotices()
+          },
+        )
+        .subscribe((status: string) => {
+          console.log("Subscription status:", status)
+        })
+
+      // Cleanup subscription on unmount
+      return () => {
+        channel.unsubscribe()
+      }
     }
   }, [buildingId])
 
