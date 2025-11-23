@@ -105,6 +105,46 @@ export default function ProtectedPage() {
 
   useEffect(() => {
     loadData()
+
+    const supabase = createClient()
+
+    // Subscribe to building_residents changes
+    const apartmentsSubscription = supabase
+      .channel("building_residents_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "building_residents",
+        },
+        () => {
+          loadData()
+        },
+      )
+      .subscribe()
+
+    // Subscribe to buildings changes
+    const buildingsSubscription = supabase
+      .channel("buildings_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "buildings",
+        },
+        () => {
+          loadData()
+        },
+      )
+      .subscribe()
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      apartmentsSubscription.unsubscribe()
+      buildingsSubscription.unsubscribe()
+    }
   }, [])
 
   const handleAddSuccess = () => {
