@@ -8,8 +8,12 @@ import { ChatBox } from "@/components/chat-box"
 import { NoticeBoard } from "@/components/notice-board"
 import { BuildingCalendar } from "@/components/building-calendar"
 
+interface ResidentBuilding extends Building {
+  full_address: string
+}
+
 export default function ResidentDashboard() {
-  const [building, setBuilding] = useState<Building | null>(null)
+  const [building, setBuilding] = useState<ResidentBuilding | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -77,7 +81,11 @@ export default function ResidentDashboard() {
           return
         }
 
-        setBuilding({ id: userBuilding.id, name: userBuilding.full_address })
+        setBuilding({
+          id: userBuilding.id,
+          name: userBuilding.full_address,
+          full_address: userBuilding.full_address,
+        })
       } catch (err: any) {
         console.error("Error loading building:", err)
         setError(err.message)
@@ -125,14 +133,29 @@ export default function ResidentDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <main className="flex justify-center items-start gap-10 px-6 mt-[15vh]">
+      {/* Building Header */}
+      <div className="bg-white border-b border-gray-300 px-6 py-4 mt-[10vh]">
+        <div className="container mx-auto">
+          <h1 className="text-2xl font-bold">{building.full_address}</h1>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex justify-center items-start gap-10 px-6 mt-8">
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
-          <NoticeBoard buildingId={building.id} />
-          <BuildingCalendar />
+          {/* Notices */}
+          <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
+            <NoticeBoard buildingId={building.id} />
+          </div>
+
+          {/* Calendar */}
+          <div className="w-1/2 pl-6 flex flex-col items-center">
+            <BuildingCalendar />
+          </div>
         </section>
 
         <ChatBox
-          buildingName={building.name}
+          buildingName={building.full_address}
           messages={messages}
           currentUserId={currentUserId}
           onSendMessage={sendMessage}
