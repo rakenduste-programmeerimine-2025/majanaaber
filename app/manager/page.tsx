@@ -5,11 +5,27 @@ import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { NoticeBoard } from "@/components/notice-board"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface Building {
   id: string
   full_address: string
   manager_id: string
+}
+
+interface Profile {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+}
+
+interface Resident {
+  id: string
+  profile_id: string
+  apartment_number: string | null
+  is_approved: boolean
+  profile: Profile
 }
 
 export default function ManagerDashboard() {
@@ -18,6 +34,10 @@ export default function ManagerDashboard() {
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
   const [showResidentsOverlay, setShowResidentsOverlay] = useState(false)
+  const [residents, setResidents] = useState<Resident[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<Profile[]>([])
+  const [isSearching, setIsSearching] = useState(false)
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
 
@@ -65,6 +85,125 @@ export default function ManagerDashboard() {
 
     loadBuilding()
   }, [buildingId])
+
+  const loadResidents = async () => {
+    if (!buildingId) return
+
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("building_residents")
+        .select(
+          `
+          id,
+          profile_id,
+          apartment_number,
+          is_approved,
+          profile:profiles(id, first_name, last_name, email)
+        `,
+        )
+        .eq("building_id", buildingId)
+
+      if (error) throw error
+      // Map the data to match our Resident interface
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        profile: Array.isArray(item.profile) ? item.profile[0] : item.profile,
+      }))
+      setResidents(mappedData as Resident[])
+    } catch (err: any) {
+      console.error("Error loading residents:", err)
+    }
+  }
+
+  const searchUsers = async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .or(
+          `first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`,
+        )
+        .limit(10)
+
+      if (error) throw error
+      setSearchResults(data || [])
+    } catch (err: any) {
+      console.error("Error searching users:", err)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const addResident = async (profileId: string) => {
+    if (!buildingId) return
+
+    // Check if already added
+    if (residents.some(r => r.profile_id === profileId)) {
+      alert("This user is already a resident of this building")
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from("building_residents").insert({
+        building_id: buildingId,
+        profile_id: profileId,
+        is_approved: true,
+      })
+
+      if (error) throw error
+
+      // Reload residents list
+      await loadResidents()
+      setSearchQuery("")
+      setSearchResults([])
+    } catch (err: any) {
+      console.error("Error adding resident:", err)
+      alert("Failed to add resident: " + err.message)
+    }
+  }
+
+  const removeResident = async (residentId: string) => {
+    if (!confirm("Are you sure you want to remove this resident?")) return
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("building_residents")
+        .delete()
+        .eq("id", residentId)
+
+      if (error) throw error
+
+      // Reload residents list
+      await loadResidents()
+    } catch (err: any) {
+      console.error("Error removing resident:", err)
+      alert("Failed to remove resident: " + err.message)
+    }
+  }
+
+  useEffect(() => {
+    if (showResidentsOverlay) {
+      loadResidents()
+    }
+  }, [showResidentsOverlay, buildingId])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchUsers(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const sendMessage = () => {
     if (!input.trim()) return
@@ -125,22 +264,97 @@ export default function ManagerDashboard() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="mb-4">
-                <Button
-                  onClick={() => {
-                    /* TODO: Add resident */
-                  }}
-                >
-                  Add
-                </Button>
+              {/* Search Section */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">
+                  Search and Add Resident
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="mb-2"
+                />
+
+                {/* Search Results */}
+                {searchQuery && searchResults.length > 0 && (
+                  <div className="border rounded-md max-h-48 overflow-y-auto">
+                    {searchResults.map(profile => (
+                      <div
+                        key={profile.id}
+                        className="flex items-center justify-between p-3 hover:bg-gray-50 border-b last:border-b-0"
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {profile.first_name} {profile.last_name}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {profile.email}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => addResident(profile.id)}
+                          disabled={residents.some(
+                            r => r.profile_id === profile.id,
+                          )}
+                        >
+                          {residents.some(r => r.profile_id === profile.id)
+                            ? "Added"
+                            : "Add"}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchQuery && !isSearching && searchResults.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-2">No users found</p>
+                )}
               </div>
 
-              {/* Residents List Placeholder */}
-              <div className="space-y-2">
-                <p className="text-gray-500 text-sm">
-                  No residents added yet. Click "Add" to add residents to this
-                  building.
-                </p>
+              {/* Current Residents List */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">
+                  Current Residents
+                </h3>
+                {residents.length === 0 ? (
+                  <p className="text-gray-500 text-sm">
+                    No residents added yet. Search and add residents above.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {residents.map(resident => (
+                      <div
+                        key={resident.id}
+                        className="flex items-center justify-between p-3 border rounded-md"
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {resident.profile.first_name}{" "}
+                            {resident.profile.last_name}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {resident.profile.email}
+                          </p>
+                          {resident.apartment_number && (
+                            <p className="text-xs text-gray-500">
+                              Apartment: {resident.apartment_number}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeResident(resident.id)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
