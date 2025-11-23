@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { Building } from "@/lib/types/chat"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { ChatBox } from "@/components/chat-box"
-import { NoticeBoardDisplay } from "@/components/notice-board-display"
+import { NoticeBoard } from "@/components/notice-board"
 import { BuildingCalendar } from "@/components/building-calendar"
 
 export default function ResidentDashboard() {
@@ -127,7 +127,7 @@ export default function ResidentDashboard() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <main className="flex justify-center items-start gap-10 px-6 mt-[15vh]">
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
-          <NoticeBoardDisplay buildingName={building.name} />
+          <NoticeBoard buildingId={building.id} />
           <BuildingCalendar />
         </section>
 
