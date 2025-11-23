@@ -24,8 +24,15 @@ interface Resident {
   id: string
   profile_id: string
   apartment_number: string | null
+  resident_role: string
   is_approved: boolean
   profile: Profile
+}
+
+interface ResidentForm {
+  profileId: string | null
+  apartmentNumber: string
+  residentRole: "resident" | "apartment_owner"
 }
 
 export default function ManagerDashboard() {
@@ -38,6 +45,11 @@ export default function ManagerDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Profile[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [residentForm, setResidentForm] = useState<ResidentForm>({
+    profileId: null,
+    apartmentNumber: "",
+    residentRole: "resident",
+  })
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
 
@@ -98,6 +110,7 @@ export default function ManagerDashboard() {
           id,
           profile_id,
           apartment_number,
+          resident_role,
           is_approved,
           profile:profiles(id, first_name, last_name, email)
         `,
@@ -151,11 +164,19 @@ export default function ManagerDashboard() {
       return
     }
 
+    // Validate apartment number
+    if (!residentForm.apartmentNumber.trim()) {
+      alert("Please enter an apartment number")
+      return
+    }
+
     try {
       const supabase = createClient()
       const { error } = await supabase.from("building_residents").insert({
         building_id: buildingId,
         profile_id: profileId,
+        apartment_number: residentForm.apartmentNumber,
+        resident_role: residentForm.residentRole,
         is_approved: true,
       })
 
@@ -165,6 +186,11 @@ export default function ManagerDashboard() {
       await loadResidents()
       setSearchQuery("")
       setSearchResults([])
+      setResidentForm({
+        profileId: null,
+        apartmentNumber: "",
+        residentRole: "resident",
+      })
     } catch (err: any) {
       console.error("Error adding resident:", err)
       alert("Failed to add resident: " + err.message)
@@ -279,11 +305,17 @@ export default function ManagerDashboard() {
 
                 {/* Search Results */}
                 {searchQuery && searchResults.length > 0 && (
-                  <div className="border rounded-md max-h-48 overflow-y-auto">
+                  <div className="border rounded-md max-h-48 overflow-y-auto mb-4">
                     {searchResults.map(profile => (
                       <div
                         key={profile.id}
-                        className="flex items-center justify-between p-3 hover:bg-gray-50 border-b last:border-b-0"
+                        className="flex items-center justify-between p-3 hover:bg-gray-50 border-b last:border-b-0 cursor-pointer"
+                        onClick={() =>
+                          setResidentForm(prev => ({
+                            ...prev,
+                            profileId: profile.id,
+                          }))
+                        }
                       >
                         <div>
                           <p className="font-medium">
@@ -293,17 +325,11 @@ export default function ManagerDashboard() {
                             {profile.email}
                           </p>
                         </div>
-                        <Button
-                          size="sm"
-                          onClick={() => addResident(profile.id)}
-                          disabled={residents.some(
-                            r => r.profile_id === profile.id,
-                          )}
-                        >
-                          {residents.some(r => r.profile_id === profile.id)
-                            ? "Added"
-                            : "Add"}
-                        </Button>
+                        <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          {residentForm.profileId === profile.id
+                            ? "Selected"
+                            : "Select"}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -311,6 +337,74 @@ export default function ManagerDashboard() {
 
                 {searchQuery && !isSearching && searchResults.length === 0 && (
                   <p className="text-sm text-gray-500 mt-2">No users found</p>
+                )}
+
+                {/* Resident Form */}
+                {residentForm.profileId && (
+                  <div className="border rounded-md p-4 bg-blue-50 mb-4">
+                    <h4 className="font-semibold mb-3">Add Resident Details</h4>
+
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium mb-1">
+                        Apartment Number *
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="e.g., 101, 2A, etc."
+                        value={residentForm.apartmentNumber}
+                        onChange={e =>
+                          setResidentForm(prev => ({
+                            ...prev,
+                            apartmentNumber: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-1">
+                        Role
+                      </label>
+                      <select
+                        value={residentForm.residentRole}
+                        onChange={e =>
+                          setResidentForm(prev => ({
+                            ...prev,
+                            residentRole: e.target.value as
+                              | "resident"
+                              | "apartment_owner",
+                          }))
+                        }
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      >
+                        <option value="resident">Resident</option>
+                        <option value="apartment_owner">Apartment Owner</option>
+                      </select>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => addResident(residentForm.profileId!)}
+                        disabled={!residentForm.apartmentNumber.trim()}
+                      >
+                        Add Resident
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setResidentForm({
+                            profileId: null,
+                            apartmentNumber: "",
+                            residentRole: "resident",
+                          })
+                        }
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -330,7 +424,7 @@ export default function ManagerDashboard() {
                         key={resident.id}
                         className="flex items-center justify-between p-3 border rounded-md"
                       >
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium">
                             {resident.profile.first_name}{" "}
                             {resident.profile.last_name}
@@ -338,11 +432,18 @@ export default function ManagerDashboard() {
                           <p className="text-sm text-gray-600">
                             {resident.profile.email}
                           </p>
-                          {resident.apartment_number && (
-                            <p className="text-xs text-gray-500">
-                              Apartment: {resident.apartment_number}
-                            </p>
-                          )}
+                          <div className="flex gap-2 mt-1">
+                            {resident.apartment_number && (
+                              <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                Apt: {resident.apartment_number}
+                              </span>
+                            )}
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              {resident.resident_role === "apartment_owner"
+                                ? "Apt. owner"
+                                : "Resident"}
+                            </span>
+                          </div>
                         </div>
                         <Button
                           variant="destructive"
