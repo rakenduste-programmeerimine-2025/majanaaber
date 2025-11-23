@@ -35,6 +35,12 @@ interface ResidentForm {
   residentRole: "resident" | "apartment_owner"
 }
 
+interface EditingResident {
+  id: string
+  apartmentNumber: string
+  residentRole: "resident" | "apartment_owner"
+}
+
 export default function ManagerDashboard() {
   const [messages, setMessages] = useState<string[]>([])
   const [input, setInput] = useState("")
@@ -50,6 +56,8 @@ export default function ManagerDashboard() {
     apartmentNumber: "",
     residentRole: "resident",
   })
+  const [editingResident, setEditingResident] =
+    useState<EditingResident | null>(null)
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
 
@@ -214,6 +222,36 @@ export default function ManagerDashboard() {
     } catch (err: any) {
       console.error("Error removing resident:", err)
       alert("Failed to remove resident: " + err.message)
+    }
+  }
+
+  const updateResident = async () => {
+    if (!editingResident) return
+
+    // Validate apartment number
+    if (!editingResident.apartmentNumber.trim()) {
+      alert("Please enter an apartment number")
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("building_residents")
+        .update({
+          apartment_number: editingResident.apartmentNumber,
+          resident_role: editingResident.residentRole,
+        })
+        .eq("id", editingResident.id)
+
+      if (error) throw error
+
+      // Reload residents list
+      await loadResidents()
+      setEditingResident(null)
+    } catch (err: any) {
+      console.error("Error updating resident:", err)
+      alert("Failed to update resident: " + err.message)
     }
   }
 
@@ -420,38 +458,132 @@ export default function ManagerDashboard() {
                 ) : (
                   <div className="space-y-2">
                     {residents.map(resident => (
-                      <div
-                        key={resident.id}
-                        className="flex items-center justify-between p-3 border rounded-md"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {resident.profile.first_name}{" "}
-                            {resident.profile.last_name}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {resident.profile.email}
-                          </p>
-                          <div className="flex gap-2 mt-1">
-                            {resident.apartment_number && (
-                              <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                Apt: {resident.apartment_number}
-                              </span>
-                            )}
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              {resident.resident_role === "apartment_owner"
-                                ? "Apt. owner"
-                                : "Resident"}
-                            </span>
+                      <div key={resident.id}>
+                        {editingResident?.id === resident.id ? (
+                          /* Edit Form */
+                          <div className="border rounded-md p-4 bg-yellow-50">
+                            <h4 className="font-semibold mb-3">
+                              Edit Resident: {resident.profile.first_name}{" "}
+                              {resident.profile.last_name}
+                            </h4>
+
+                            <div className="mb-3">
+                              <label className="block text-sm font-medium mb-1">
+                                Apartment Number *
+                              </label>
+                              <Input
+                                type="text"
+                                value={editingResident.apartmentNumber}
+                                onChange={e =>
+                                  setEditingResident(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          apartmentNumber: e.target.value,
+                                        }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
+
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium mb-1">
+                                Role
+                              </label>
+                              <select
+                                value={editingResident.residentRole}
+                                onChange={e =>
+                                  setEditingResident(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          residentRole: e.target.value as
+                                            | "resident"
+                                            | "apartment_owner",
+                                        }
+                                      : null,
+                                  )
+                                }
+                                className="w-full border rounded px-3 py-2 text-sm"
+                              >
+                                <option value="resident">Resident</option>
+                                <option value="apartment_owner">
+                                  Apartment Owner
+                                </option>
+                              </select>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={updateResident}
+                                disabled={
+                                  !editingResident.apartmentNumber.trim()
+                                }
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingResident(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removeResident(resident.id)}
-                        >
-                          Remove
-                        </Button>
+                        ) : (
+                          /* Display View */
+                          <div className="flex items-center justify-between p-3 border rounded-md">
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                {resident.profile.first_name}{" "}
+                                {resident.profile.last_name}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {resident.profile.email}
+                              </p>
+                              <div className="flex gap-2 mt-1">
+                                {resident.apartment_number && (
+                                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                    Apt: {resident.apartment_number}
+                                  </span>
+                                )}
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  {resident.resident_role === "apartment_owner"
+                                    ? "Apt. owner"
+                                    : "Resident"}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setEditingResident({
+                                    id: resident.id,
+                                    apartmentNumber:
+                                      resident.apartment_number || "",
+                                    residentRole: resident.resident_role as
+                                      | "resident"
+                                      | "apartment_owner",
+                                  })
+                                }
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeResident(resident.id)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
