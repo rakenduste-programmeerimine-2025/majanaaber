@@ -17,6 +17,7 @@ export default function ManagerDashboard() {
   const [input, setInput] = useState("")
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showResidentsOverlay, setShowResidentsOverlay] = useState(false)
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
 
@@ -100,14 +101,51 @@ export default function ManagerDashboard() {
           <h1 className="text-2xl font-bold">{building.full_address}</h1>
           <Button
             variant="outline"
-            onClick={() => {
-              /* TODO: Implement add/view residents */
-            }}
+            onClick={() => setShowResidentsOverlay(true)}
           >
             Add/View Residents
           </Button>
         </div>
       </div>
+
+      {/* Residents Overlay */}
+      {showResidentsOverlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-[600px] max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-2xl font-bold">Residents</h2>
+              <button
+                onClick={() => setShowResidentsOverlay(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="mb-4">
+                <Button
+                  onClick={() => {
+                    /* TODO: Add resident */
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+
+              {/* Residents List Placeholder */}
+              <div className="space-y-2">
+                <p className="text-gray-500 text-sm">
+                  No residents added yet. Click "Add" to add residents to this
+                  building.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex justify-center items-start gap-10 px-6 mt-8">
