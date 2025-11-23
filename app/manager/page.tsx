@@ -178,6 +178,20 @@ export default function ManagerDashboard() {
       return
     }
 
+    // Validate apartment number length
+    if (residentForm.apartmentNumber.length > 20) {
+      alert("Apartment number is too long (maximum 20 characters)")
+      return
+    }
+
+    // Validate apartment number format - only alphanumeric, hyphens, periods, slashes, and spaces
+    if (!/^[a-zA-Z0-9\-\.\/\s]+$/.test(residentForm.apartmentNumber)) {
+      alert(
+        "Apartment number contains invalid characters. Use only letters, numbers, hyphens, periods, slashes, and spaces.",
+      )
+      return
+    }
+
     try {
       const supabase = createClient()
       const { error } = await supabase.from("building_residents").insert({
@@ -231,6 +245,20 @@ export default function ManagerDashboard() {
     // Validate apartment number
     if (!editingResident.apartmentNumber.trim()) {
       alert("Please enter an apartment number")
+      return
+    }
+
+    // Validate apartment number length
+    if (editingResident.apartmentNumber.length > 20) {
+      alert("Apartment number is too long (maximum 20 characters)")
+      return
+    }
+
+    // Validate apartment number format - only alphanumeric, hyphens, periods, slashes, and spaces
+    if (!/^[a-zA-Z0-9\-\.\/\s]+$/.test(editingResident.apartmentNumber)) {
+      alert(
+        "Apartment number contains invalid characters. Use only letters, numbers, hyphens, periods, slashes, and spaces.",
+      )
       return
     }
 
