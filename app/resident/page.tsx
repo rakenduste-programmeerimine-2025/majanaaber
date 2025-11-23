@@ -83,7 +83,6 @@ export default function ResidentDashboard() {
 
         setBuilding({
           id: userBuilding.id,
-          name: userBuilding.full_address,
           full_address: userBuilding.full_address,
         })
       } catch (err: any) {
