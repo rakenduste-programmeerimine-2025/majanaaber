@@ -17,11 +17,15 @@ CREATE POLICY "Users can read their own profile"
   USING (auth.uid() = id);
 
 -- Policy 2: Building managers can read all profiles to find residents
--- Allow all authenticated users - authorization is handled at the application level
-CREATE POLICY "Authenticated users can view all profiles"
+-- Only allow users who manage at least one building
+CREATE POLICY "Building managers can view all profiles"
   ON public.profiles
   FOR SELECT
-  USING (auth.role() = 'authenticated');
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.buildings WHERE manager_id = auth.uid()
+    )
+  );
 
 -- Enable RLS on building_residents if not already enabled
 ALTER TABLE public.building_residents ENABLE ROW LEVEL SECURITY;
