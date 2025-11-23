@@ -115,12 +115,11 @@ INSERT INTO auth.users (
   ''
 );
 
--- Create profiles for test users
-INSERT INTO profiles (id, first_name, last_name, phone_number, role)
+INSERT INTO profiles (id, first_name, last_name, phone_number, role, email)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'John', 'Manager', '+3725551001', 'building_owner'),
-  ('00000000-0000-0000-0000-000000000002', 'Alice', 'Smith', '+3725551002', 'resident'),
-  ('00000000-0000-0000-0000-000000000003', 'Bob', 'Johnson', '+3725551003', 'resident')
+  ('00000000-0000-0000-0000-000000000001', 'John', 'Manager', '+3725551001', 'building_owner', 'manager@test.com'),
+  ('00000000-0000-0000-0000-000000000002', 'Alice', 'Smith', '+3725551002', 'resident', 'resident1@test.com'),
+  ('00000000-0000-0000-0000-000000000003', 'Bob', 'Johnson', '+3725551003', 'resident', 'resident2@test.com')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create a test building
