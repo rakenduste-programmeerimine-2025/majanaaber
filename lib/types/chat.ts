@@ -49,6 +49,5 @@ export interface Message {
 
 export interface Building {
   id: string
-  name: string
 }
 
