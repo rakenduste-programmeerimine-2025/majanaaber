@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { NoticeBoard } from "@/components/notice-board"
+import { Button } from "@/components/ui/button"
 
 interface Building {
   id: string
@@ -93,13 +94,27 @@ export default function ManagerDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Building Header */}
+      <div className="bg-white border-b border-gray-300 px-6 py-4 mt-[10vh]">
+        <div className="container mx-auto flex items-center justify-between">
+          <h1 className="text-2xl font-bold">{building.full_address}</h1>
+          <Button
+            variant="outline"
+            onClick={() => {
+              /* TODO: Implement add/view residents */
+            }}
+          >
+            Add/View Residents
+          </Button>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <main className="flex justify-center items-start gap-10 px-6 mt-[15vh]">
+      <main className="flex justify-center items-start gap-10 px-6 mt-8">
         {/* Left: Notices + Calendar */}
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
           {/* Notices */}
           <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
-            <h2 className="text-xl font-bold mb-3">{building.full_address}</h2>
             <NoticeBoard
               buildingId={buildingId}
               isManager={true}
