@@ -11,7 +11,7 @@ export default function ProtectedLayout({
       <nav className="w-full border-b border-b-foreground/10">
         <div className="w-full max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
           <div className="flex gap-5 items-center font-semibold">
-            <span>Building management dashboard</span>
+            <span>Resident dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
