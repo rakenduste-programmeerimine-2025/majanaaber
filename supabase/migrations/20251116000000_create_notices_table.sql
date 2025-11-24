@@ -93,3 +93,7 @@ CREATE TRIGGER set_notices_updated_at
   BEFORE UPDATE ON public.notices
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_updated_at();
+
+-- Add DATE to notices table
+ALTER TABLE public.notices
+ADD COLUMN event_date DATE;
