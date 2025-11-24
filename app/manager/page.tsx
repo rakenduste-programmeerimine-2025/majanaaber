@@ -634,7 +634,7 @@ export default function ManagerDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex items-start gap-10 px-6 mt-8 w-full">
+      <main className="flex justify-center items-start gap-10 px-6 mt-8">
         {/* Left: Notices + Calendar */}
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
           {/* Notices */}
