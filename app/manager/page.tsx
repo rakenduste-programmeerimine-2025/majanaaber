@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { NoticeBoard } from "@/components/notice-board"
+import { ChatBox } from "@/components/chat-box"
+import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -42,8 +44,6 @@ interface EditingResident {
 }
 
 export default function ManagerDashboard() {
-  const [messages, setMessages] = useState<string[]>([])
-  const [input, setInput] = useState("")
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
   const [showResidentsOverlay, setShowResidentsOverlay] = useState(false)
@@ -51,6 +51,7 @@ export default function ManagerDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Profile[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [residentForm, setResidentForm] = useState<ResidentForm>({
     profileId: null,
     apartmentNumber: "",
@@ -60,6 +61,20 @@ export default function ManagerDashboard() {
     useState<EditingResident | null>(null)
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
+
+  const {
+    messages,
+    sendMessage,
+    deleteMessage,
+    editMessage,
+    isSending,
+    typingUsers,
+    handleTypingStart,
+    handleTypingStop,
+    addReaction,
+    removeReaction,
+    markMessageAsRead,
+  } = useBuildingMessages(buildingId ?? null)
 
   useEffect(() => {
     const loadBuilding = async () => {
@@ -79,6 +94,8 @@ export default function ManagerDashboard() {
         if (userError || !user) {
           throw new Error("You must be logged in to access this page")
         }
+
+        setCurrentUserId(user.id)
 
         // Fetch building and verify ownership
         const { data, error } = await supabase
@@ -296,12 +313,6 @@ export default function ManagerDashboard() {
 
     return () => clearTimeout(timer)
   }, [searchQuery])
-
-  const sendMessage = () => {
-    if (!input.trim()) return
-    setMessages([...messages, input])
-    setInput("")
-  }
 
   if (loading) {
     return (
@@ -654,60 +665,22 @@ export default function ManagerDashboard() {
           </div>
         </section>
 
-        {/* Right: Chat + User Info */}
-        <div className="flex flex-col w-[30%]">
-          {/* Username + Icons + Nav buttons above the chat box */}
-          <div className="flex flex-col mb-2">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-lg">John Doe</span>
-                <div className="flex gap-2 text-xl">
-                  <button>🏠</button>
-                  <button>🔔</button>
-                  <button>✉️</button>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-between mb-2">
-              <button className="text-blue-600">Residents</button>
-              <button className="text-blue-600">Invoices</button>
-              <button className="text-blue-600">Documents</button>
-              <button className="text-red-500">Log Out</button>
-            </div>
-          </div>
-
-          {/* Chat box */}
-          <section className="flex flex-col bg-white p-6 shadow-lg border border-gray-300 h-[70vh]">
-            <h3 className="text-xl font-semibold mb-2">
-              Talk to your neighbour
-            </h3>
-            <div className="flex-1 overflow-y-auto border p-2 mb-2 space-y-1">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className="bg-gray-100 p-2"
-                >
-                  {msg}
-                </div>
-              ))}
-            </div>
-            <div className="flex">
-              <input
-                type="text"
-                className="border p-2 flex-1"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="Type a message..."
-              />
-              <button
-                onClick={sendMessage}
-                className="bg-blue-500 text-white px-4"
-              >
-                Send
-              </button>
-            </div>
-          </section>
-        </div>
+        {/* Right: Chat */}
+        <ChatBox
+          buildingName={building.full_address}
+          messages={messages}
+          currentUserId={currentUserId}
+          onSendMessage={sendMessage}
+          onDeleteMessage={deleteMessage}
+          onEditMessage={editMessage}
+          isSending={isSending}
+          typingUsers={typingUsers}
+          onTypingStart={handleTypingStart}
+          onTypingStop={handleTypingStop}
+          onAddReaction={addReaction}
+          onRemoveReaction={removeReaction}
+          onMarkAsRead={markMessageAsRead}
+        />
       </main>
 
       {/* Empty space at bottom */}
