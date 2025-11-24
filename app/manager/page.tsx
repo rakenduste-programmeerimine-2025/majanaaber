@@ -43,6 +43,12 @@ interface EditingResident {
   residentRole: "resident" | "apartment_owner"
 }
 
+interface Notice {
+  id: string;
+  title: string;
+  event_date: string | null;
+}
+
 export default function ManagerDashboard() {
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
@@ -59,6 +65,8 @@ export default function ManagerDashboard() {
   })
   const [editingResident, setEditingResident] =
     useState<EditingResident | null>(null)
+
+  const [notices, setNotices] = useState<Notice[]>([]);
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
 
@@ -123,6 +131,26 @@ export default function ManagerDashboard() {
     loadBuilding()
   }, [buildingId])
 
+  useEffect(() => {
+  const loadNotices = async () => {
+    if (!buildingId) return;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("notices")
+      .select("id, title, event_date")
+      .eq("building_id", buildingId)
+      .order("event_date", { ascending: true });
+
+    if (error) {
+      console.error("Error loading notices:", error);
+      return;
+    }
+
+    setNotices(data || []);
+  };
+
+  loadNotices();
+}, [buildingId]);
   const loadResidents = async () => {
     if (!buildingId) return
 
@@ -334,7 +362,6 @@ export default function ManagerDashboard() {
       </div>
     )
   }
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Building Header */}
