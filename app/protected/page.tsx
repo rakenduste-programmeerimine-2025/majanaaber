@@ -296,13 +296,25 @@ export default function ProtectedPage() {
                           </div>
                         </div>
 
-                        <div>
-                          <p className="text-xs text-gray-600 uppercase tracking-wider">
-                            Location
-                          </p>
-                          <p className="text-gray-700">
-                            {apartment.building.city}
-                          </p>
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                              Location
+                            </p>
+                            <p className="text-gray-700">
+                              {apartment.building.city}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            asChild
+                          >
+                            <Link
+                              href={`/resident?building=${apartment.building_id}`}
+                            >
+                              Select
+                            </Link>
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
