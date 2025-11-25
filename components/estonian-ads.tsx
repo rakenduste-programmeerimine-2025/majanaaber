@@ -14,6 +14,7 @@ export interface EstonianAddressData {
 
 interface EstonianAdsProps {
   onAddressSelect?: (address: EstonianAddressData) => void
+  onError?: (errorMessage: string) => void
   containerId?: string
   width?: string
   height?: string
@@ -29,6 +30,7 @@ declare global {
 
 export function EstonianAds({
   onAddressSelect,
+  onError,
   containerId,
   width = "100%",
   height = "450px",
@@ -37,12 +39,20 @@ export function EstonianAds({
 }: EstonianAdsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const instanceRef = useRef<any>(null)
+  const callbackRef = useRef<
+    ((address: EstonianAddressData) => void) | undefined
+  >(onAddressSelect)
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uniqueId] = useState(
     () =>
       containerId || `InAadressDiv-${Math.random().toString(36).substr(2, 9)}`,
   )
+
+  // Keep callback ref updated
+  useEffect(() => {
+    callbackRef.current = onAddressSelect
+  }, [onAddressSelect])
 
   useEffect(() => {
     // Check if the script is already loaded
@@ -81,7 +91,7 @@ export function EstonianAds({
 
       // Initialize InAadress with callback reference
       const handleAddressSelect = (data: any) => {
-        if (onAddressSelect && data) {
+        if (callbackRef.current && data) {
           // Map the InAadress response to our interface
           const addressData: EstonianAddressData = {
             street_name: data.tanav || data.liikluspind,
@@ -92,7 +102,7 @@ export function EstonianAds({
             full_address: data.address || data.tanav_nr,
             ads_code: data.aadress_id?.toString(),
           }
-          onAddressSelect(addressData)
+          callbackRef.current(addressData)
         }
       }
 
@@ -121,23 +131,49 @@ export function EstonianAds({
               target.title &&
               target.id.startsWith("in_teh_")
             ) {
-              // Parse the address from the title
               const fullAddress = target.title
-
-              // Extract address components from the full address string
-              // Format: "Street number, District, City, County"
               const parts = fullAddress.split(", ")
+
+              // Validate address specificity
+              // Reject if first part is just a village or municipality without specific address
+              const firstPart = parts[0] || ""
+              const isJustVillage =
+                firstPart.includes("küla") &&
+                !firstPart.match(/^[^,]+(?=,\s*\w+\s+küla)/)
+              const isJustMunicipality =
+                firstPart.includes("vald") || firstPart.includes("linn")
+
+              // Check if address has sufficient detail:
+              // - Urban: must have street name + number (e.g., "Sipelga tn 2")
+              // - Rural: must have farm/building name before küla (e.g., "Andrese, Orgita küla")
+              const hasStreetNumber = /\d+/.test(firstPart)
+              const isFarmAddress =
+                parts.length >= 2 &&
+                parts[1]?.includes("küla") &&
+                !isJustVillage
+
+              if (
+                isJustVillage ||
+                isJustMunicipality ||
+                (!hasStreetNumber && !isFarmAddress)
+              ) {
+                console.warn("🎯 Address too general, rejecting:", fullAddress)
+                if (onError) {
+                  onError("Address too general, please specify building")
+                }
+                return
+              }
+
               let streetPart = ""
               let city = ""
               let county = ""
 
               if (parts.length >= 3) {
                 streetPart = parts[0] || ""
-                city = parts[parts.length - 2] || ""
                 county = parts[parts.length - 1] || ""
+                city = parts.slice(1, parts.length - 1).join(", ")
               }
 
-              // Extract street name and house number from street part
               const streetMatch = streetPart.match(/^(.+?)\s+(\d+.*)$/)
               const streetName = streetMatch ? streetMatch[1] : streetPart
               const houseNumber = streetMatch ? streetMatch[2] : ""
@@ -151,8 +187,8 @@ export function EstonianAds({
                 ads_code: target.id.replace("in_teh_", ""),
               }
 
-              if (onAddressSelect) {
-                onAddressSelect(addressData)
+              if (callbackRef.current) {
+                callbackRef.current(addressData)
               }
             }
           })
@@ -191,9 +227,9 @@ export function EstonianAds({
 
   // Update callback when onAddressSelect changes
   useEffect(() => {
-    if (instanceRef.current && onAddressSelect) {
+    if (instanceRef.current) {
       instanceRef.current.cb = (data: any) => {
-        if (onAddressSelect && data) {
+        if (callbackRef.current && data) {
           const addressData: EstonianAddressData = {
             street_name: data.tanav || data.liikluspind,
             house_number: data.nr,
@@ -203,7 +239,7 @@ export function EstonianAds({
             full_address: data.address || data.tanav_nr,
             ads_code: data.aadress_id?.toString(),
           }
-          onAddressSelect(addressData)
+          callbackRef.current(addressData)
         }
       }
     }

@@ -1,118 +1,175 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
+import type { Building } from "@/lib/types/chat"
+import { useBuildingMessages } from "@/hooks/use-building-messages"
+import { ChatBox } from "@/components/chat-box"
+import { NoticeBoard } from "@/components/notice-board"
+import { BuildingCalendar } from "@/components/building-calendar"
 
-export default function ManagerDashboard() {
-  const [messages, setMessages] = useState<string[]>([])
-  const [input, setInput] = useState("")
+interface ResidentBuilding extends Building {
+  full_address: string
+}
 
-  const sendMessage = () => {
-    if (!input.trim()) return
-    setMessages([...messages, input])
-    setInput("")
+export default function ResidentDashboard() {
+  const [building, setBuilding] = useState<ResidentBuilding | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const supabase = createClient()
+
+  const {
+    messages,
+    sendMessage,
+    deleteMessage,
+    editMessage,
+    isSending,
+    typingUsers,
+    handleTypingStart,
+    handleTypingStop,
+    addReaction,
+    removeReaction,
+    markMessageAsRead,
+  } = useBuildingMessages(building?.id ?? null)
+
+  useEffect(() => {
+    const loadBuilding = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setError("You must be logged in")
+          setLoading(false)
+          return
+        }
+
+        setCurrentUserId(user.id)
+        let userBuilding = null
+
+        const { data: managerBuilding } = await supabase
+          .from("buildings")
+          .select("id, full_address")
+          .eq("manager_id", user.id)
+          .limit(1)
+          .single()
+
+        if (managerBuilding) {
+          userBuilding = managerBuilding
+        } else {
+          const { data: residentData, error: residentError } = await supabase
+            .from("building_residents")
+            .select("building_id, buildings(id, full_address)")
+            .eq("profile_id", user.id)
+            .eq("is_approved", true)
+            .limit(1)
+            .single()
+
+          if (residentError || !residentData) {
+            setError("You are not assigned to any building yet")
+            setLoading(false)
+            return
+          }
+
+          userBuilding = residentData.buildings as any
+        }
+
+        if (!userBuilding) {
+          setError("You are not assigned to any building yet")
+          setLoading(false)
+          return
+        }
+
+        setBuilding({
+          id: userBuilding.id,
+          full_address: userBuilding.full_address,
+        })
+      } catch (err: any) {
+        console.error("Error loading building:", err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadBuilding()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg">Loading...</p>
+      </div>
+    )
+  }
+
+  if (error || !building) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-4">No Building Found</h2>
+          <p className="text-gray-600 mb-6">
+            {error ||
+              "You need to create a building or be assigned to one to access the chat."}
+          </p>
+          <div className="space-y-3">
+            <a
+              href="/protected"
+              className="inline-block bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 transition"
+            >
+              Go to Building Management
+            </a>
+            <p className="text-sm text-gray-500">
+              Create a building or ask your building manager to add you as a
+              resident.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Building Header */}
+      <div className="bg-white border-b border-gray-300 px-6 py-4 mt-[10vh]">
+        <div className="container mx-auto">
+          <h1 className="text-2xl font-bold">{building.full_address}</h1>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <main className="flex justify-center items-start gap-10 px-6 mt-[15vh]">
-        {/* Left: Notices + Calendar */}
+      <main className="flex justify-center items-start gap-10 px-6 mt-8">
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
           {/* Notices */}
           <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
-            <h2 className="text-xl font-bold mb-3">Apartment #12-2</h2>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold">Notices</h3>
-              <button className="bg-blue-500 text-white px-3 py-1 rounded">
-                + Add Notice
-              </button>
-            </div>
-            <ul className="space-y-2 overflow-y-auto max-h-[60vh]">
-              <li className="p-2 bg-gray-100 rounded">
-                Water shutoff on Nov 7
-              </li>
-              <li className="p-2 bg-gray-100 rounded">
-                Elevator maintenance Nov 10
-              </li>
-            </ul>
+            <NoticeBoard buildingId={building.id} />
           </div>
 
           {/* Calendar */}
           <div className="w-1/2 pl-6 flex flex-col items-center">
-            <div className="flex items-center justify-between w-full mb-3">
-              <button>{"<"}</button>
-              <h3 className="font-semibold">November 2025</h3>
-              <button>{">"}</button>
-            </div>
-            <div className="grid grid-cols-7 gap-2 w-full">
-              {[...Array(30)].map((_, i) => (
-                <button
-                  key={i}
-                  className="p-2 bg-gray-100 rounded hover:bg-blue-100"
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
+            <BuildingCalendar />
           </div>
         </section>
 
-        {/* Right: Chat + User Info */}
-        <div className="flex flex-col w-[30%]">
-          {/* Username + Icons + Nav buttons above the chat box */}
-          <div className="flex flex-col mb-2">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-lg">John Doe</span>
-                <div className="flex gap-2 text-xl">
-                  <button>🏠</button>
-                  <button>🔔</button>
-                  <button>✉️</button>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-between mb-2">
-              <button className="text-blue-600">Invoices</button>
-              <button className="text-blue-600">Documents</button>
-              <button className="text-red-500">Log Out</button>
-            </div>
-          </div>
-
-          {/* Chat box */}
-          <section className="flex flex-col bg-white p-6 shadow-lg border border-gray-300 h-[70vh]">
-            <h3 className="text-xl font-semibold mb-2">
-              Talk to your neighbour
-            </h3>
-            <div className="flex-1 overflow-y-auto border p-2 mb-2 space-y-1">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className="bg-gray-100 p-2"
-                >
-                  {msg}
-                </div>
-              ))}
-            </div>
-            <div className="flex">
-              <input
-                type="text"
-                className="border p-2 flex-1"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="Type a message..."
-              />
-              <button
-                onClick={sendMessage}
-                className="bg-blue-500 text-white px-4"
-              >
-                Send
-              </button>
-            </div>
-          </section>
-        </div>
+        <ChatBox
+          buildingName={building.full_address}
+          messages={messages}
+          currentUserId={currentUserId}
+          onSendMessage={sendMessage}
+          onDeleteMessage={deleteMessage}
+          onEditMessage={editMessage}
+          isSending={isSending}
+          typingUsers={typingUsers}
+          onTypingStart={handleTypingStart}
+          onTypingStop={handleTypingStop}
+          onAddReaction={addReaction}
+          onRemoveReaction={removeReaction}
+          onMarkAsRead={markMessageAsRead}
+        />
       </main>
 
-      {/* Empty space at bottom */}
       <div className="h-[10vh]" />
     </div>
   )
