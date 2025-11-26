@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, memo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,7 +28,7 @@ import {
   Clock,
   DollarSign,
   FileText,
-  Image,
+  ImageIcon,
   Megaphone,
   Paperclip,
   Pencil,
@@ -41,12 +41,33 @@ import {
   X,
 } from "lucide-react"
 
+const MAX_FILES_PER_NOTICE = 5
+
+// Format file size helper
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B"
+  const k = 1024
+  const sizes = ["B", "KB", "MB", "GB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i]
+}
+
 type Priority = "urgent" | "normal" | "low"
-type Category = "general" | "maintenance" | "meeting" | "payment" | "safety" | "event"
+type Category =
+  | "general"
+  | "maintenance"
+  | "meeting"
+  | "payment"
+  | "safety"
+  | "event"
 
 const priorityConfig: Record<
   Priority,
-  { label: string; color: string; badgeVariant: "destructive" | "default" | "secondary" }
+  {
+    label: string
+    color: string
+    badgeVariant: "destructive" | "default" | "secondary"
+  }
 > = {
   urgent: {
     label: "Urgent",
@@ -101,6 +122,17 @@ const categoryConfig: Record<
   },
 }
 
+// Attachment interface
+interface NoticeAttachment {
+  id: string
+  notice_id: string
+  file_name: string
+  file_path: string
+  file_type: string
+  file_size: number
+  created_at: string
+}
+
 interface Notice {
   id: string
   title: string
@@ -112,14 +144,71 @@ interface Notice {
   priority: Priority
   category: Category
   expires_at: string | null
+  // Legacy single attachment fields (for backwards compatibility)
   attachment_url: string | null
   attachment_name: string | null
   attachment_type: string | null
+  // New multiple attachments
+  attachments?: NoticeAttachment[]
   author?: {
     first_name: string
     last_name: string
   } | null
 }
+
+// Attachment display component with inline image preview
+const AttachmentDisplay = memo(
+  ({ attachment }: { attachment: NoticeAttachment }) => {
+    const [imageError, setImageError] = useState(false)
+    const supabase = createClient()
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage
+      .from("notice-attachments")
+      .getPublicUrl(attachment.file_path)
+
+    const isImage = attachment.file_type.startsWith("image/")
+
+    if (isImage && !imageError) {
+      return (
+        <div className="relative">
+          <img
+            src={publicUrl}
+            alt={attachment.file_name}
+            className="max-w-full max-h-64 w-auto h-auto rounded cursor-pointer hover:opacity-90"
+            onClick={() => window.open(publicUrl, "_blank")}
+            onError={() => setImageError(true)}
+          />
+          <div className="text-xs text-gray-500 mt-1">
+            {attachment.file_name}
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <a
+        href={publicUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+      >
+        <FileText className="h-4 w-4 text-red-600 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-gray-700 dark:text-gray-300 truncate">
+            {attachment.file_name}
+          </div>
+          <div className="text-xs text-gray-500">
+            {formatFileSize(attachment.file_size)}
+          </div>
+        </div>
+        <span className="text-xs text-gray-500">View</span>
+      </a>
+    )
+  },
+)
+AttachmentDisplay.displayName = "AttachmentDisplay"
 
 interface NoticeBoardProps {
   buildingId: string
@@ -135,6 +224,7 @@ export function NoticeBoard({
   const [error, setError] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Form state
   const [title, setTitle] = useState("")
@@ -142,11 +232,10 @@ export function NoticeBoard({
   const [priority, setPriority] = useState<Priority>("normal")
   const [category, setCategory] = useState<Category>("general")
   const [expiresAt, setExpiresAt] = useState("")
-  const [attachment, setAttachment] = useState<File | null>(null)
-  const [existingAttachment, setExistingAttachment] = useState<{
-    url: string
-    name: string
-  } | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [existingAttachments, setExistingAttachments] = useState<
+    NoticeAttachment[]
+  >([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Filter state
@@ -188,7 +277,8 @@ export function NoticeBoard({
         .select(
           `
           *,
-          author:profiles!created_by(first_name, last_name)
+          author:profiles!created_by(first_name, last_name),
+          attachments:notice_attachments(id, notice_id, file_name, file_path, file_type, file_size, created_at)
         `,
         )
         .eq("building_id", buildingId)
@@ -247,10 +337,83 @@ export function NoticeBoard({
     setPriority("normal")
     setCategory("general")
     setExpiresAt("")
-    setAttachment(null)
-    setExistingAttachment(null)
+    setSelectedFiles([])
+    setExistingAttachments([])
     setShowAddForm(false)
     setEditingNotice(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const currentCount = selectedFiles.length + existingAttachments.length
+    const availableSlots = MAX_FILES_PER_NOTICE - currentCount
+
+    if (availableSlots <= 0) {
+      alert(`Maximum ${MAX_FILES_PER_NOTICE} files per notice`)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+      return
+    }
+
+    const filesToAdd = files.slice(0, availableSlots)
+    if (files.length > availableSlots) {
+      alert(
+        `Only adding ${availableSlots} file(s). Maximum ${MAX_FILES_PER_NOTICE} files per notice.`,
+      )
+    }
+
+    setSelectedFiles(prev => [...prev, ...filesToAdd])
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const removeExistingAttachment = (attachmentId: string) => {
+    setExistingAttachments(prev => prev.filter(a => a.id !== attachmentId))
+  }
+
+  const uploadFiles = async (
+    noticeId: string,
+    files: File[],
+    userId: string,
+  ) => {
+    const supabase = createClient()
+
+    for (const file of files) {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${buildingId}/${noticeId}/${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from("notice-attachments")
+        .upload(fileName, file)
+
+      if (uploadError) {
+        console.error("Error uploading file:", uploadError)
+        continue
+      }
+
+      const { error: dbError } = await supabase
+        .from("notice_attachments")
+        .insert({
+          notice_id: noticeId,
+          file_name: file.name,
+          file_path: fileName,
+          file_type: file.type,
+          file_size: file.size,
+        })
+
+      if (dbError) {
+        console.error("Error creating attachment record:", dbError)
+      }
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -285,30 +448,6 @@ export function NoticeBoard({
         )
       }
 
-      // Handle attachment upload
-      let attachmentUrl: string | null = existingAttachment?.url || null
-      let attachmentName: string | null = existingAttachment?.name || null
-      let attachmentType: string | null = null
-
-      if (attachment) {
-        const fileExt = attachment.name.split(".").pop()
-        const fileName = `${buildingId}/${Date.now()}.${fileExt}`
-
-        const { error: uploadError } = await supabase.storage
-          .from("notice-attachments")
-          .upload(fileName, attachment)
-
-        if (uploadError) throw uploadError
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("notice-attachments").getPublicUrl(fileName)
-
-        attachmentUrl = publicUrl
-        attachmentName = attachment.name
-        attachmentType = attachment.type
-      }
-
       if (editingNotice) {
         // Update existing notice
         const { error: updateError } = await supabase
@@ -319,29 +458,59 @@ export function NoticeBoard({
             priority,
             category,
             expires_at: expiresAt || null,
-            attachment_url: attachmentUrl,
-            attachment_name: attachmentName,
-            attachment_type: attachmentType || editingNotice.attachment_type,
           })
           .eq("id", editingNotice.id)
 
         if (updateError) throw updateError
+
+        // Delete removed attachments
+        const existingIds = existingAttachments.map(a => a.id)
+        const originalIds = editingNotice.attachments?.map(a => a.id) || []
+        const removedIds = originalIds.filter(id => !existingIds.includes(id))
+
+        if (removedIds.length > 0) {
+          // Delete from storage
+          for (const id of removedIds) {
+            const attachment = editingNotice.attachments?.find(a => a.id === id)
+            if (attachment) {
+              await supabase.storage
+                .from("notice-attachments")
+                .remove([attachment.file_path])
+            }
+          }
+          // Delete from database
+          await supabase
+            .from("notice_attachments")
+            .delete()
+            .in("id", removedIds)
+        }
+
+        // Upload new files
+        if (selectedFiles.length > 0) {
+          await uploadFiles(editingNotice.id, selectedFiles, user.id)
+        }
       } else {
         // Create new notice
-        const { error: insertError } = await supabase.from("notices").insert({
-          building_id: buildingId,
-          title: title.trim(),
-          content: content.trim(),
-          priority,
-          category,
-          expires_at: expiresAt || null,
-          attachment_url: attachmentUrl,
-          attachment_name: attachmentName,
-          attachment_type: attachmentType,
-          created_by: user.id,
-        })
+        const { data: newNotice, error: insertError } = await supabase
+          .from("notices")
+          .insert({
+            building_id: buildingId,
+            title: title.trim(),
+            content: content.trim(),
+            priority,
+            category,
+            expires_at: expiresAt || null,
+            created_by: user.id,
+          })
+          .select()
+          .single()
 
         if (insertError) throw insertError
+
+        // Upload files for new notice
+        if (selectedFiles.length > 0 && newNotice) {
+          await uploadFiles(newNotice.id, selectedFiles, user.id)
+        }
       }
 
       resetForm()
@@ -364,12 +533,8 @@ export function NoticeBoard({
         ? new Date(notice.expires_at).toISOString().split("T")[0]
         : "",
     )
-    setAttachment(null)
-    setExistingAttachment(
-      notice.attachment_url && notice.attachment_name
-        ? { url: notice.attachment_url, name: notice.attachment_name }
-        : null,
-    )
+    setSelectedFiles([])
+    setExistingAttachments(notice.attachments || [])
     setShowAddForm(true)
   }
 
@@ -393,7 +558,10 @@ export function NoticeBoard({
     }
   }
 
-  const handleTogglePin = async (noticeId: string, currentlyPinned: boolean) => {
+  const handleTogglePin = async (
+    noticeId: string,
+    currentlyPinned: boolean,
+  ) => {
     try {
       const supabase = createClient()
       const { error } = await supabase
@@ -454,10 +622,7 @@ export function NoticeBoard({
             </Button>
           )}
           {isManager && !showAddForm && !showArchived && (
-            <Button
-              size="sm"
-              onClick={() => setShowAddForm(true)}
-            >
+            <Button size="sm" onClick={() => setShowAddForm(true)}>
               + Add Notice
             </Button>
           )}
@@ -487,10 +652,7 @@ export function NoticeBoard({
             {Object.entries(categoryConfig).map(([key, config]) => {
               const Icon = config.icon
               return (
-                <SelectItem
-                  key={key}
-                  value={key}
-                >
+                <SelectItem key={key} value={key}>
                   <span className={`flex items-center gap-1.5 ${config.color}`}>
                     <Icon className="h-3 w-3" />
                     {config.label}
@@ -516,20 +678,13 @@ export function NoticeBoard({
               <CardTitle className="text-base">
                 {editingNotice ? "Edit Notice" : "Add New Notice"}
               </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetForm}
-              >
+              <Button variant="ghost" size="sm" onClick={resetForm}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-3"
-            >
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <div className="flex justify-between items-center">
                   <Label htmlFor="title">Title</Label>
@@ -603,11 +758,10 @@ export function NoticeBoard({
                       {Object.entries(categoryConfig).map(([key, config]) => {
                         const Icon = config.icon
                         return (
-                          <SelectItem
-                            key={key}
-                            value={key}
-                          >
-                            <span className={`flex items-center gap-1.5 ${config.color}`}>
+                          <SelectItem key={key} value={key}>
+                            <span
+                              className={`flex items-center gap-1.5 ${config.color}`}
+                            >
                               <Icon className="h-3 w-3" />
                               {config.label}
                             </span>
@@ -631,55 +785,125 @@ export function NoticeBoard({
                   Leave empty for no expiration
                 </p>
               </div>
+
+              {/* Multiple Files Upload */}
               <div>
-                <Label htmlFor="attachment">Attachment (optional)</Label>
-                <Input
-                  id="attachment"
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="attachments">Attachments (optional)</Label>
+                  <span className="text-xs text-gray-400">
+                    {selectedFiles.length + existingAttachments.length}/
+                    {MAX_FILES_PER_NOTICE}
+                  </span>
+                </div>
+                <input
+                  ref={fileInputRef}
                   type="file"
+                  multiple
                   accept=".pdf,.png,.jpg,.jpeg,.gif,.webp"
-                  onChange={e => setAttachment(e.target.files?.[0] || null)}
-                  className="cursor-pointer"
+                  onChange={handleFileSelect}
+                  className="hidden"
                 />
-                {existingAttachment && !attachment && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                    <Paperclip className="h-4 w-4" />
-                    <span>{existingAttachment.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-red-600"
-                      onClick={() => setExistingAttachment(null)}
-                    >
-                      Remove
-                    </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-1"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={
+                    selectedFiles.length + existingAttachments.length >=
+                    MAX_FILES_PER_NOTICE
+                  }
+                >
+                  <Paperclip className="h-4 w-4 mr-2" />
+                  Add Files
+                </Button>
+
+                {/* Existing attachments (when editing) */}
+                {existingAttachments.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-xs text-gray-500 font-medium">
+                      Current attachments:
+                    </p>
+                    {existingAttachments.map(attachment => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border"
+                      >
+                        {attachment.file_type.startsWith("image/") ? (
+                          <ImageIcon className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                        ) : (
+                          <FileText className="h-4 w-4 text-red-600 flex-shrink-0" />
+                        )}
+                        <span className="text-sm truncate flex-1">
+                          {attachment.file_name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatFileSize(attachment.file_size)}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                          onClick={() =>
+                            removeExistingAttachment(attachment.id)
+                          }
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
-                {attachment && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                    <Paperclip className="h-4 w-4" />
-                    <span>{attachment.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-red-600"
-                      onClick={() => setAttachment(null)}
-                    >
-                      Remove
-                    </Button>
+
+                {/* Selected files preview */}
+                {selectedFiles.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-xs text-gray-500 font-medium">
+                      New files to upload:
+                    </p>
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800"
+                      >
+                        {file.type.startsWith("image/") ? (
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        ) : (
+                          <FileText className="h-4 w-4 text-red-600 flex-shrink-0" />
+                        )}
+                        <span className="text-sm truncate flex-1">
+                          {file.name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatFileSize(file.size)}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                          onClick={() => removeSelectedFile(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
+
                 <p className="text-xs text-gray-500 mt-1">
-                  Supported: PDF, PNG, JPG, GIF, WebP
+                  Supported: PDF, PNG, JPG, GIF, WebP (max {MAX_FILES_PER_NOTICE}{" "}
+                  files)
                 </p>
               </div>
+
               <div className="flex gap-2">
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isSubmitting}
-                >
+                <Button type="submit" size="sm" disabled={isSubmitting}>
                   {isSubmitting
                     ? "Saving..."
                     : editingNotice
@@ -747,11 +971,14 @@ export function NoticeBoard({
                       </span>
                       <span>·</span>
                       <span>
-                        {new Date(notice.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {new Date(notice.created_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
                       </span>
                       <span>·</span>
                       <span
@@ -769,10 +996,13 @@ export function NoticeBoard({
                           <span className="flex items-center gap-0.5 text-orange-600 dark:text-orange-400">
                             <Clock className="h-3 w-3" />
                             Expires{" "}
-                            {new Date(notice.expires_at).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
+                            {new Date(notice.expires_at).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
                           </span>
                         </>
                       )}
@@ -783,7 +1013,9 @@ export function NoticeBoard({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleTogglePin(notice.id, notice.is_pinned)}
+                        onClick={() =>
+                          handleTogglePin(notice.id, notice.is_pinned)
+                        }
                         className={`h-8 w-8 p-0 ${notice.is_pinned ? "text-amber-600 hover:text-amber-700" : ""}`}
                         title={notice.is_pinned ? "Unpin notice" : "Pin notice"}
                       >
@@ -809,7 +1041,11 @@ export function NoticeBoard({
                           handleToggleArchive(notice.id, notice.is_archived)
                         }
                         className="h-8 w-8 p-0"
-                        title={notice.is_archived ? "Restore notice" : "Archive notice"}
+                        title={
+                          notice.is_archived
+                            ? "Restore notice"
+                            : "Archive notice"
+                        }
                       >
                         {notice.is_archived ? (
                           <ArchiveRestore className="h-3 w-3" />
@@ -834,24 +1070,40 @@ export function NoticeBoard({
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                   {notice.content}
                 </p>
-                {notice.attachment_url && notice.attachment_name && (
-                  <a
-                    href={notice.attachment_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 mt-3 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
-                  >
-                    {notice.attachment_type?.startsWith("image/") ? (
-                      <Image className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <FileText className="h-4 w-4 text-red-600" />
-                    )}
-                    <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
-                      {notice.attachment_name}
-                    </span>
-                    <span className="text-xs text-gray-500">View</span>
-                  </a>
+
+                {/* Display attachments with inline image preview */}
+                {notice.attachments && notice.attachments.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {notice.attachments.map(attachment => (
+                      <AttachmentDisplay
+                        key={attachment.id}
+                        attachment={attachment}
+                      />
+                    ))}
+                  </div>
                 )}
+
+                {/* Legacy single attachment support */}
+                {!notice.attachments?.length &&
+                  notice.attachment_url &&
+                  notice.attachment_name && (
+                    <a
+                      href={notice.attachment_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 mt-3 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+                    >
+                      {notice.attachment_type?.startsWith("image/") ? (
+                        <ImageIcon className="h-4 w-4 text-blue-600" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-red-600" />
+                      )}
+                      <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                        {notice.attachment_name}
+                      </span>
+                      <span className="text-xs text-gray-500">View</span>
+                    </a>
+                  )}
               </CardContent>
             </Card>
           ))
