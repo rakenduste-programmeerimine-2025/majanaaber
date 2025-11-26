@@ -21,6 +21,10 @@ interface Notice {
   content: string
   created_at: string
   created_by: string | null
+  author?: {
+    first_name: string
+    last_name: string
+  } | null
 }
 
 interface NoticeBoardProps {
@@ -48,7 +52,12 @@ export function NoticeBoard({
       const supabase = createClient()
       const { data, error: noticesError } = await supabase
         .from("notices")
-        .select("*")
+        .select(
+          `
+          *,
+          author:profiles!created_by(first_name, last_name)
+        `,
+        )
         .eq("building_id", buildingId)
         .order("created_at", { ascending: false })
 
@@ -317,6 +326,10 @@ export function NoticeBoard({
                       {notice.title}
                     </CardTitle>
                     <CardDescription className="text-xs mt-1">
+                      {notice.author
+                        ? `${notice.author.first_name} ${notice.author.last_name}`
+                        : "Unknown"}{" "}
+                      ·{" "}
                       {new Date(notice.created_at).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
