@@ -1,5 +1,6 @@
 import { AuthButton } from "@/components/auth-button"
 import { ThemeSwitcher } from "@/components/theme-switcher"
+import Link from "next/link"
 
 export default function ProtectedLayout({
   children,
@@ -14,6 +15,12 @@ export default function ProtectedLayout({
             <span>User Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
+            <Link
+              href="/profile"
+              className="text-sm hover:underline"
+            >
+              Profile
+            </Link>
             <ThemeSwitcher />
             <AuthButton />
           </div>

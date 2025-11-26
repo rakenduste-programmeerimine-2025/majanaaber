@@ -1,8 +1,8 @@
 import { AuthButton } from "@/components/auth-button"
 import { ThemeSwitcher } from "@/components/theme-switcher"
-import Link from "next/link"
+import { DashboardBackLink } from "@/components/dashboard-back-link"
 
-export default function ManagerLayout({
+export default function ProfileLayout({
   children,
 }: {
   children: React.ReactNode
@@ -12,15 +12,9 @@ export default function ManagerLayout({
       <nav className="w-full border-b border-b-foreground/10">
         <div className="w-full max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
           <div className="flex gap-5 items-center font-semibold">
-            <span>Building Management</span>
+            <DashboardBackLink />
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/profile"
-              className="text-sm hover:underline"
-            >
-              Profile
-            </Link>
             <ThemeSwitcher />
             <AuthButton />
           </div>

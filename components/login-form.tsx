@@ -93,7 +93,7 @@ export function LoginForm({
           .single()
 
         if (profile?.role === "building_owner") {
-          router.push("/protected")
+          router.push("/manager")
         } else {
           router.push("/protected")
         }
