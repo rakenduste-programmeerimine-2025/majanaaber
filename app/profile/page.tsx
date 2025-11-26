@@ -25,8 +25,17 @@ interface Profile {
   created_at: string
 }
 
+interface BuildingConnection {
+  id: string
+  full_address: string
+  city: string
+  type: "manager" | "resident"
+  apartment_number?: string
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [buildings, setBuildings] = useState<BuildingConnection[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -72,6 +81,57 @@ export default function ProfilePage() {
       setFirstName(data.first_name || "")
       setLastName(data.last_name || "")
       setPhoneNumber(data.phone_number || "")
+
+      // Fetch buildings user manages
+      const { data: managedBuildings } = await supabase
+        .from("buildings")
+        .select("id, full_address, city")
+        .eq("manager_id", user.id)
+
+      // Fetch buildings user is a resident of
+      const { data: residentBuildings } = await supabase
+        .from("building_residents")
+        .select(
+          `
+          apartment_number,
+          building:buildings(id, full_address, city)
+        `,
+        )
+        .eq("profile_id", user.id)
+
+      const allBuildings: BuildingConnection[] = []
+
+      // Add managed buildings
+      if (managedBuildings) {
+        managedBuildings.forEach(b => {
+          allBuildings.push({
+            id: b.id,
+            full_address: b.full_address,
+            city: b.city,
+            type: "manager",
+          })
+        })
+      }
+
+      // Add resident buildings
+      if (residentBuildings) {
+        residentBuildings.forEach(r => {
+          const building = Array.isArray(r.building)
+            ? r.building[0]
+            : r.building
+          if (building) {
+            allBuildings.push({
+              id: building.id,
+              full_address: building.full_address,
+              city: building.city,
+              type: "resident",
+              apartment_number: r.apartment_number,
+            })
+          }
+        })
+      }
+
+      setBuildings(allBuildings)
     } catch (err: any) {
       setError(err.message || "Failed to load profile")
     } finally {
@@ -394,13 +454,59 @@ export default function ProfilePage() {
             <CardTitle>Account Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p>
-                Member since:{" "}
-                {profile?.created_at
-                  ? new Date(profile.created_at).toLocaleDateString()
-                  : "N/A"}
-              </p>
+            <div className="space-y-4 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 dark:text-gray-400">Role</span>
+                <Badge variant="secondary">
+                  {getRoleLabel(profile?.role || "")}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Member since
+                </span>
+                <span>
+                  {profile?.created_at
+                    ? new Date(profile.created_at).toLocaleDateString()
+                    : "N/A"}
+                </span>
+              </div>
+
+              {/* Buildings Section */}
+              <div className="pt-2 border-t">
+                <span className="text-gray-600 dark:text-gray-400 block mb-2">
+                  Connected Buildings
+                </span>
+                {buildings.length === 0 ? (
+                  <p className="text-gray-500 italic">No buildings connected</p>
+                ) : (
+                  <div className="space-y-2">
+                    {buildings.map(building => (
+                      <div
+                        key={`${building.type}-${building.id}`}
+                        className="flex justify-between items-start gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">
+                            {building.full_address}
+                          </p>
+                          <p className="text-xs text-gray-500">{building.city}</p>
+                        </div>
+                        <Badge
+                          variant={
+                            building.type === "manager" ? "default" : "outline"
+                          }
+                          className="shrink-0"
+                        >
+                          {building.type === "manager"
+                            ? "Manager"
+                            : `Apt ${building.apartment_number || "N/A"}`}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
