@@ -10,6 +10,7 @@ import { MAX_FILES_PER_NOTICE } from "./config"
 import { NoticeFilters } from "./notice-filters"
 import { NoticeForm } from "./notice-form"
 import { NoticeCard } from "./notice-card"
+import { useNoticeReadReceipts } from "@/hooks/use-notice-read-receipts"
 
 interface NoticeBoardProps {
   buildingId: string
@@ -25,7 +26,9 @@ export function NoticeBoard({
   const [error, setError] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null)
+  const [totalResidents, setTotalResidents] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { markAsRead } = useNoticeReadReceipts(null)
 
   // Form state
   const [title, setTitle] = useState("")
@@ -81,12 +84,35 @@ export function NoticeBoard({
 
       if (noticesError) throw noticesError
       setNotices(data || [])
+
+      // Load total residents count (for read receipt percentage)
+      const { count } = await supabase
+        .from("building_residents")
+        .select("*", { count: "exact", head: true })
+        .eq("building_id", buildingId)
+        .eq("is_approved", true)
+
+      // Add 1 for the manager
+      setTotalResidents((count || 0) + 1)
     } catch (err: any) {
       setError(err.message || "Failed to load notices")
     } finally {
       setLoading(false)
     }
   }
+
+  // Mark notices as read for non-managers
+  useEffect(() => {
+    if (!isManager && notices.length > 0) {
+      // Mark all visible non-archived notices as read
+      const visibleNotices = notices.filter(
+        n => !n.is_archived && (!n.expires_at || new Date(n.expires_at) > new Date())
+      )
+      visibleNotices.forEach(notice => {
+        markAsRead(notice.id)
+      })
+    }
+  }, [notices, isManager, markAsRead])
 
   useEffect(() => {
     if (buildingId) {
@@ -257,6 +283,23 @@ export function NoticeBoard({
 
         if (selectedFiles.length > 0 && newNotice) {
           await uploadFiles(newNotice.id, selectedFiles)
+        }
+
+        // Send email notifications for new notices (not edits)
+        if (newNotice) {
+          try {
+            await fetch("/api/send-notice-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                notice_id: newNotice.id,
+                building_id: buildingId,
+              }),
+            })
+          } catch (emailError) {
+            console.error("Failed to send email notifications:", emailError)
+            // Don't throw - email failure shouldn't break notice creation
+          }
         }
       }
 
@@ -434,6 +477,7 @@ export function NoticeBoard({
               key={notice.id}
               notice={notice}
               isManager={isManager}
+              totalResidents={totalResidents}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onTogglePin={handleTogglePin}

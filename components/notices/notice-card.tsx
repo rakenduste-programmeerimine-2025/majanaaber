@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -11,6 +14,7 @@ import {
   Archive,
   ArchiveRestore,
   Clock,
+  Eye,
   FileText,
   ImageIcon,
   Pencil,
@@ -21,10 +25,12 @@ import {
 import { Notice } from "./types"
 import { priorityConfig, categoryConfig } from "./config"
 import { AttachmentDisplay } from "./notice-attachment"
+import { useNoticeReadReceipts } from "@/hooks/use-notice-read-receipts"
 
 interface NoticeCardProps {
   notice: Notice
   isManager: boolean
+  totalResidents?: number
   onEdit: (notice: Notice) => void
   onDelete: (noticeId: string) => void
   onTogglePin: (noticeId: string, currentlyPinned: boolean) => void
@@ -34,11 +40,15 @@ interface NoticeCardProps {
 export function NoticeCard({
   notice,
   isManager,
+  totalResidents,
   onEdit,
   onDelete,
   onTogglePin,
   onToggleArchive,
 }: NoticeCardProps) {
+  const { readReceipts, readCount } = useNoticeReadReceipts(notice.id)
+  const [showReaders, setShowReaders] = useState(false)
+
   return (
     <Card
       className={
@@ -188,6 +198,50 @@ export function NoticeCard({
               <span className="text-xs text-gray-500">View</span>
             </a>
           )}
+
+        {/* Read Receipts */}
+        {isManager && readCount > 0 && (
+          <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setShowReaders(!showReaders)}
+              className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              <span>
+                {readCount} {readCount === 1 ? "person has" : "people have"}{" "}
+                read this
+                {totalResidents && totalResidents > 0
+                  ? ` (${Math.round((readCount / totalResidents) * 100)}%)`
+                  : ""}
+              </span>
+            </button>
+
+            {showReaders && (
+              <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                {readReceipts.map(receipt => (
+                  <div
+                    key={receipt.id}
+                    className="text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between"
+                  >
+                    <span>
+                      {receipt.reader
+                        ? `${receipt.reader.first_name} ${receipt.reader.last_name}`
+                        : "Unknown"}
+                    </span>
+                    <span className="text-gray-500">
+                      {new Date(receipt.read_at).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
