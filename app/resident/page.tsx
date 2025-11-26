@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { Building } from "@/lib/types/chat"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { ChatBox } from "@/components/chat-box"
-import { NoticeBoard } from "@/components/notice-board"
+import { NoticeBoard } from "@/components/notices"
 import { BuildingCalendar } from "@/components/building-calendar"
 
 interface ResidentBuilding extends Building {

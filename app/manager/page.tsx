@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { NoticeBoard } from "@/components/notice-board"
+import { NoticeBoard } from "@/components/notices"
 import { ChatBox } from "@/components/chat-box"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { Button } from "@/components/ui/button"
