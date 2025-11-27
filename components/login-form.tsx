@@ -1,7 +1,6 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -15,11 +14,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import {
-  incrementFailedAttempts,
-  resetFailedAttempts,
-  formatLockoutTime,
-} from "@/lib/login-attempts"
+import { loginWithRateLimit } from "@/app/actions/auth"
 
 export function LoginForm({
   className,
@@ -34,71 +29,27 @@ export function LoginForm({
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
     setIsLockoutError(false)
 
     try {
-      const { data: userId } = await supabase.rpc("get_user_id_by_email", {
-        user_email: email,
-      })
+      const result = await loginWithRateLimit(email, password)
 
-      if (userId) {
-        const { data: profileData } = await supabase.rpc(
-          "get_profile_login_info",
-          { user_id: userId },
-        )
-
-        const profile =
-          profileData && profileData.length > 0 ? profileData[0] : null
-
-        if (profile) {
-          const lockedUntil = profile.locked_until
-            ? new Date(profile.locked_until)
-            : null
-          const now = new Date()
-
-          if (lockedUntil && lockedUntil > now) {
-            const minutesRemaining = Math.ceil(
-              (lockedUntil.getTime() - now.getTime()) / (1000 * 60),
-            )
-            setIsLockoutError(true)
-            throw new Error(
-              `Account is temporarily locked. Please try again in ${formatLockoutTime(minutesRemaining)}.`,
-            )
-          }
+      if (!result.success) {
+        setError(result.error || "An error occurred")
+        if (result.isLockoutError || result.rateLimited) {
+          setIsLockoutError(true)
         }
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      if (error) throw error
-
-      if (data.user && !data.user.email_confirmed_at) {
-        await supabase.auth.signOut()
-        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`)
+        if (result.redirectTo) {
+          router.push(result.redirectTo)
+        }
         return
       }
 
-      if (data.user) {
-        await resetFailedAttempts(supabase, data.user.id)
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", data.user.id)
-          .single()
-
-        if (profile?.role === "building_owner") {
-          router.push("/protected")
-        } else {
-          router.push("/protected")
-        }
-      } else {
-        router.push("/protected")
+      // Success - redirect to appropriate page
+      if (result.redirectTo) {
+        router.push(result.redirectTo)
       }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
