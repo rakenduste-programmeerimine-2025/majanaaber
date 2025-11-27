@@ -10,7 +10,6 @@ export default function ResidentLayout({
   const residentLinks = [
     { label: "Home", href: "/protected" },
     { label: "Profile", href: "#", disabled: true },
-    { label: "Bookmarks", href: "#", disabled: true },
   ]
   return (
     <main className="min-h-screen flex flex-col">
