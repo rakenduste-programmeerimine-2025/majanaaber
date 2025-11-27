@@ -19,7 +19,7 @@ export default function ManagerLayout({ children, }: ManagerLayoutProps) {
       <nav className="w-full border-b border-b-foreground/10">
         <div className="max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
           <div className="flex gap-5 items-center font-semibold">
-            <span>Manager Dashboard</span>
+            <span>Building management dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
