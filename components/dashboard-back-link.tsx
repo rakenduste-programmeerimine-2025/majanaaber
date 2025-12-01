@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 
 export function DashboardBackLink() {
-  const [dashboardLink, setDashboardLink] = useState("/protected")
+  const [dashboardLink, setDashboardLink] = useState("/resident-hub")
 
   useEffect(() => {
     const checkRole = async () => {
@@ -22,7 +22,7 @@ export function DashboardBackLink() {
           .single()
 
         if (profile?.role === "building_manager") {
-          setDashboardLink("/manager")
+          setDashboardLink("/manager-hub")
         }
       }
     }

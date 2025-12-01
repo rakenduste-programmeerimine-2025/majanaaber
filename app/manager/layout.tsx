@@ -9,7 +9,7 @@ interface ManagerLayoutProps {
 
 export default function ManagerLayout({ children }: ManagerLayoutProps) {
   const managerLinks = [
-    { label: "Home", href: `/protected` },
+    { label: "Home", href: `/manager-hub` },
     { label: "Bookmarks", href: "#", disabled: true },
   ]
 
@@ -22,7 +22,10 @@ export default function ManagerLayout({ children }: ManagerLayoutProps) {
             <span>Building Management</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/profile" className="text-sm hover:underline">
+            <Link
+              href="/profile"
+              className="text-sm hover:underline"
+            >
               Profile
             </Link>
             <ThemeSwitcher />

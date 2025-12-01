@@ -1,30 +1,25 @@
-import { AuthButton } from "@/components/auth-button"
 import { NavBar } from "@/components/navbar"
 import { ThemeSwitcher } from "@/components/theme-switcher"
+import { AuthButton } from "@/components/auth-button"
 import Link from "next/link"
 
-export default function ResidentLayout({
-  children,
-}: {
+interface ManagerLayoutProps {
   children: React.ReactNode
-}) {
-  const residentLinks = [
-    { label: "Home", href: "/resident-hub" },
-    { label: "Profile", href: "#", disabled: true },
+}
+
+export default function ManagerLayout({ children }: ManagerLayoutProps) {
+  const managerLinks = [
+    { label: "Home", href: `/manager-hub` },
+    { label: "Bookmarks", href: "#", disabled: true },
   ]
+
   return (
     <main className="min-h-screen flex flex-col">
+      {/* Top header */}
       <nav className="w-full border-b border-b-foreground/10">
-        <div className="w-full max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
+        <div className="max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
           <div className="flex gap-5 items-center font-semibold">
-            <Link
-              href="/resident-hub"
-              className="hover:underline"
-            >
-              ← Dashboard
-            </Link>
-            <span className="text-gray-400">|</span>
-            <span>Resident</span>
+            <span>Manager hub</span>
           </div>
           <div className="flex items-center gap-4">
             <Link
@@ -39,7 +34,8 @@ export default function ResidentLayout({
         </div>
       </nav>
 
-      <NavBar links={residentLinks} />
+      <NavBar links={managerLinks} />
+
       <div className="flex-1">{children}</div>
     </main>
   )

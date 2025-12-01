@@ -24,7 +24,7 @@ export default function ResidentLayout({
               ← Dashboard
             </Link>
             <span className="text-gray-400">|</span>
-            <span>Resident</span>
+            <span>Resident hub</span>
           </div>
           <div className="flex items-center gap-4">
             <Link
