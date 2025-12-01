@@ -183,9 +183,15 @@ export default function ManagerDashboard() {
   const addResident = async (profileId: string) => {
     if (!buildingId) return
 
-    // Check if already added
-    if (residents.some(r => r.profile_id === profileId)) {
-      alert("This user is already a resident of this building")
+    // Check if already added to the same apartment
+    if (
+      residents.some(
+        r =>
+          r.profile_id === profileId &&
+          r.apartment_number === residentForm.apartmentNumber,
+      )
+    ) {
+      alert("This user is already a resident of this apartment")
       return
     }
 
