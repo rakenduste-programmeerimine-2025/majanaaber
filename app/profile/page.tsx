@@ -251,7 +251,7 @@ export default function ProfilePage() {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case "building_manager":
-        return "Building Owner"
+        return "Building Manager"
       case "apartment_owner":
         return "Apartment Owner"
       case "resident":
