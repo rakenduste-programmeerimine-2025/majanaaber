@@ -22,7 +22,7 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [role, setRole] = useState<"building_owner" | "apartment_owner" | "resident">("resident");
+  const [role, setRole] = useState<"building_manager" | "apartment_owner" | "resident">("resident");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -53,7 +53,7 @@ export function SignUpForm({
       return;
     }
 
-    if (role !== "building_owner" && !apartmentNumber.trim()) {
+    if (role !== "building_manager" && !apartmentNumber.trim()) {
       setError("Apartment number is required for apartment owners and residents");
       setIsLoading(false);
       return;
@@ -119,7 +119,7 @@ export function SignUpForm({
                 >
                   <option value="resident">Resident (Renter/Tenant)</option>
                   <option value="apartment_owner">Apartment Owner</option>
-                  <option value="building_owner">Building Owner</option>
+                  <option value="building_manager">Building Owner</option>
                 </select>
               </div>
               <div className="grid gap-2">
@@ -155,7 +155,7 @@ export function SignUpForm({
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              {role !== "building_owner" && (
+              {role !== "building_manager" && (
                 <div className="grid gap-2">
                   <Label htmlFor="apartment">Apartment Number</Label>
                   <Input
