@@ -47,9 +47,22 @@ export function LoginForm({
         return
       }
 
-      // Success - redirect to appropriate page
-      if (result.redirectTo) {
-        router.push(result.redirectTo)
+      if (data.user) {
+        await resetFailedAttempts(supabase, data.user.id)
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single()
+
+        if (profile?.role === "building_owner") {
+          router.push("/manager")
+        } else {
+          router.push("/protected")
+        }
+      } else {
+        router.push("/protected")
       }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
