@@ -17,13 +17,6 @@ export default function ResidentLayout({
       <nav className="w-full border-b border-b-foreground/10">
         <div className="w-full max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
           <div className="flex gap-5 items-center font-semibold">
-            <Link
-              href="/resident-hub"
-              className="hover:underline"
-            >
-              ← Dashboard
-            </Link>
-            <span className="text-gray-400">|</span>
             <span>Resident hub</span>
           </div>
           <div className="flex items-center gap-4">
