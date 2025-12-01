@@ -1,4 +1,4 @@
--- Allow building managers (building_owner role) to search and view all profiles
+-- Allow building managers (building_manager role) to search and view all profiles
 -- and manage residents in their buildings
 -- This enables managers to find, add, and remove residents
 

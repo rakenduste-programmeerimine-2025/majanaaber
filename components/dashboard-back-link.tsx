@@ -21,7 +21,7 @@ export function DashboardBackLink() {
           .eq("id", user.id)
           .single()
 
-        if (profile?.role === "building_owner") {
+        if (profile?.role === "building_manager") {
           setDashboardLink("/manager")
         }
       }

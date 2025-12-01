@@ -1,62 +1,66 @@
-"use client";
+"use client"
 
-import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { PasswordStrengthInput } from "@/components/password-strength-input";
-import { checkPasswordStrength } from "@/lib/password-strength";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { PasswordStrengthInput } from "@/components/password-strength-input"
+import { checkPasswordStrength } from "@/lib/password-strength"
 
 export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [role, setRole] = useState<"building_owner" | "apartment_owner" | "resident">("resident");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [apartmentNumber, setApartmentNumber] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [password, setPassword] = useState("");
-  const [repeatPassword, setRepeatPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [role, setRole] = useState<
+    "building_manager" | "apartment_owner" | "resident"
+  >("resident")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [apartmentNumber, setApartmentNumber] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [password, setPassword] = useState("")
+  const [repeatPassword, setRepeatPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
+    e.preventDefault()
+    const supabase = createClient()
+    setIsLoading(true)
+    setError(null)
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
+      setError("Passwords do not match")
+      setIsLoading(false)
+      return
     }
 
-    const { score } = checkPasswordStrength(password);
+    const { score } = checkPasswordStrength(password)
     if (score < 4) {
-      setError("Password must meet all requirements.");
-      setIsLoading(false);
-      return;
+      setError("Password must meet all requirements.")
+      setIsLoading(false)
+      return
     }
 
-    if (role !== "building_owner" && !apartmentNumber.trim()) {
-      setError("Apartment number is required for apartment owners and residents");
-      setIsLoading(false);
-      return;
+    if (role !== "building_manager" && !apartmentNumber.trim()) {
+      setError(
+        "Apartment number is required for apartment owners and residents",
+      )
+      setIsLoading(false)
+      return
     }
 
     try {
@@ -66,8 +70,8 @@ export function SignUpForm({
         last_name: lastName,
         apartment_number: apartmentNumber || null,
         phone_number: phoneNumber,
-      };
-      console.log("Sign-up metadata:", signUpData);
+      }
+      console.log("Sign-up metadata:", signUpData)
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -82,24 +86,27 @@ export function SignUpForm({
             phone_number: phoneNumber,
           },
         },
-      });
+      })
       if (error) {
-        console.error("Auth signup error:", error);
-        throw error;
+        console.error("Auth signup error:", error)
+        throw error
       }
-      console.log("Sign-up successful, user:", data.user?.id);
+      console.log("Sign-up successful, user:", data.user?.id)
 
-      router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`);
+      router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`)
     } catch (error: unknown) {
-      console.error("Sign-up error:", error);
-      setError(error instanceof Error ? error.message : "An error occurred");
+      console.error("Sign-up error:", error)
+      setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div
+      className={cn("flex flex-col gap-6", className)}
+      {...props}
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Sign up</CardTitle>
@@ -114,12 +121,12 @@ export function SignUpForm({
                   id="role"
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   value={role}
-                  onChange={(e) => setRole(e.target.value as typeof role)}
+                  onChange={e => setRole(e.target.value as typeof role)}
                   required
                 >
                   <option value="resident">Resident (Renter/Tenant)</option>
                   <option value="apartment_owner">Apartment Owner</option>
-                  <option value="building_owner">Building Owner</option>
+                  <option value="building_manager">Building Manager</option>
                 </select>
               </div>
               <div className="grid gap-2">
@@ -130,7 +137,7 @@ export function SignUpForm({
                   placeholder="John"
                   required
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={e => setFirstName(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -141,7 +148,7 @@ export function SignUpForm({
                   placeholder="Doe"
                   required
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={e => setLastName(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -152,10 +159,10 @@ export function SignUpForm({
                   placeholder="m@example.com"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </div>
-              {role !== "building_owner" && (
+              {role !== "building_manager" && (
                 <div className="grid gap-2">
                   <Label htmlFor="apartment">Apartment Number</Label>
                   <Input
@@ -164,7 +171,7 @@ export function SignUpForm({
                     placeholder="101"
                     required
                     value={apartmentNumber}
-                    onChange={(e) => setApartmentNumber(e.target.value)}
+                    onChange={e => setApartmentNumber(e.target.value)}
                   />
                 </div>
               )}
@@ -176,7 +183,7 @@ export function SignUpForm({
                   placeholder="+372 5123 4567"
                   required
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  onChange={e => setPhoneNumber(e.target.value)}
                 />
               </div>
               <PasswordStrengthInput
@@ -194,17 +201,24 @@ export function SignUpForm({
                   type="password"
                   required
                   value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
+                  onChange={e => setRepeatPassword(e.target.value)}
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
                 {isLoading ? "Creating an account..." : "Sign up"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
               Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
+              <Link
+                href="/auth/login"
+                className="underline underline-offset-4"
+              >
                 Login
               </Link>
             </div>
@@ -212,5 +226,5 @@ export function SignUpForm({
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

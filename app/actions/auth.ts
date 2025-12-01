@@ -140,8 +140,16 @@ export async function loginWithRateLimit(
         .eq("id", data.user.id)
         .single();
 
-      const redirectTo =
-        profile?.role === "building_owner" ? "/manager" : "/protected";
+      let redirectTo = "/resident-hub"; // Default
+
+      if (profile?.role === "building_manager") {
+        redirectTo = "/manager-hub";
+      } else if (
+        profile?.role === "resident" ||
+        profile?.role === "apartment_owner"
+      ) {
+        redirectTo = "/resident-hub";
+      }
 
       return {
         success: true,
