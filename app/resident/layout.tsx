@@ -1,4 +1,5 @@
 import { AuthButton } from "@/components/auth-button"
+import { NavBar } from "@/components/navbar"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import Link from "next/link"
 
@@ -7,6 +8,10 @@ export default function ResidentLayout({
 }: {
   children: React.ReactNode
 }) {
+  const residentLinks = [
+    { label: "Home", href: "/protected" },
+    { label: "Profile", href: "#", disabled: true },
+  ]
   return (
     <main className="min-h-screen flex flex-col">
       <nav className="w-full border-b border-b-foreground/10">
@@ -33,6 +38,8 @@ export default function ResidentLayout({
           </div>
         </div>
       </nav>
+
+      <NavBar links={residentLinks} />
       <div className="flex-1">{children}</div>
     </main>
   )
