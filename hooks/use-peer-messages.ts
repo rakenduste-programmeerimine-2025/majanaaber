@@ -314,7 +314,19 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
       if (error) throw error
 
       if (files && files.length > 0 && newMessage) {
-        await uploadFiles(newMessage.id, files, user.id)
+        const uploadedAttachments = await uploadFiles(newMessage.id, files, user.id)
+
+        // Update local state with the uploaded attachments (filter duplicates)
+        if (uploadedAttachments.length > 0) {
+          setMessages(prev =>
+            prev.map(msg => {
+              if (msg.id !== newMessage.id) return msg
+              const existingIds = new Set((msg.attachments || []).map(a => a.id))
+              const newAttachments = uploadedAttachments.filter(a => !existingIds.has(a.id))
+              return { ...msg, attachments: [...(msg.attachments || []), ...newAttachments] }
+            }),
+          )
+        }
       }
     } catch (err: any) {
       console.error("Error sending message:", err)

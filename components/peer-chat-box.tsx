@@ -87,7 +87,10 @@ const AttachmentDisplay = memo(({ attachment, isOwnMessage }: { attachment: Peer
               src={fileUrl}
               alt={attachment.file_name}
               className="max-w-full max-h-96 w-auto h-auto rounded cursor-pointer hover:opacity-90"
-              onClick={() => window.open(fileUrl, '_blank')}
+              onClick={(e) => {
+                e.stopPropagation()
+                window.open(fileUrl, '_blank')
+              }}
               onError={() => setImageError(true)}
             />
           )}
@@ -444,7 +447,7 @@ export function PeerChatBox({
                       {openMenuId === message.id && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className={`absolute top-0 ${isOwnMessage ? '-left-32' : '-right-32'} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                          className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? '-left-32' : '-right-32'} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
                         >
                           <button
                             onClick={() => {
@@ -483,7 +486,7 @@ export function PeerChatBox({
                       {showEmojiPicker === message.id && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className={`absolute top-0 ${isOwnMessage ? '-left-48' : '-right-48'} bg-white border border-gray-300 rounded-lg shadow-lg p-2 flex gap-1 z-30`}
+                          className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? '-left-48' : '-right-48'} bg-white border border-gray-300 rounded-lg shadow-lg p-2 flex gap-1 z-30`}
                         >
                           {commonEmojis.map((emoji) => (
                             <button

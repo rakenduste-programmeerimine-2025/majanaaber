@@ -90,7 +90,10 @@ const AttachmentDisplay = memo(({ attachment, isOwnMessage }: { attachment: Atta
               src={fileUrl}
               alt={attachment.file_name}
               className="max-w-full max-h-96 w-auto h-auto rounded cursor-pointer hover:opacity-90"
-              onClick={() => window.open(fileUrl, '_blank')}
+              onClick={(e) => {
+                e.stopPropagation()
+                window.open(fileUrl, '_blank')
+              }}
               onLoad={() => console.log('[IMAGE] Loaded:', attachment.file_name)}
               onError={() => {
                 console.log('[IMAGE] Error loading:', attachment.file_name)
@@ -483,7 +486,7 @@ export function ChatBox({
                       {showMessageMenu === msg.id && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className={`absolute top-0 ${isOwnMessage ? '-left-32' : '-right-32'} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                          className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? '-left-32' : '-right-32'} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
                         >
                           <button
                             onClick={() => {
