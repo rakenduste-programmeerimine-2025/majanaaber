@@ -350,7 +350,7 @@ export function ChatBox({
     setReplyingTo(null)
   }
 
-  const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😀"]
+  const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😀", "🔥", "✅"]
 
   const handleEmojiClick = async (messageId: string, emoji: string) => {
     const message = messages.find(m => m.id === messageId)

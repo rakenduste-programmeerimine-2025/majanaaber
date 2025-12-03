@@ -291,16 +291,18 @@ export function PeerChatBox({
 
   const toggleMenu = (messageId: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    e.nativeEvent.stopImmediatePropagation()
     setOpenMenuId(openMenuId === messageId ? null : messageId)
   }
 
   const toggleEmojiPicker = (messageId: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    e.nativeEvent.stopImmediatePropagation()
     setShowEmojiPicker(showEmojiPicker === messageId ? null : messageId)
     setOpenMenuId(null)
   }
 
-  const commonEmojis = ["👍", "❤️", "😊", "😂", "🎉", "🔥", "👏", "✅"]
+  const commonEmojis = ["👍", "❤️", "😂", "😮", "😢", "😀", "🔥", "✅"]
 
   const handleEmojiClick = async (messageId: string, emoji: string) => {
     await onAddReaction(messageId, emoji)
@@ -346,7 +348,7 @@ export function PeerChatBox({
               key={message.id}
               className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
             >
-              <div className={`max-w-[70%] ${isOwnMessage ? "items-end" : "items-start"} flex flex-col`}>
+              <div className={`${isOwnMessage ? "items-end" : "items-start"} flex flex-col`}>
                 {!isOwnMessage && (
                   <span className="text-xs text-gray-500 mb-1">{senderName}</span>
                 )}
@@ -362,7 +364,13 @@ export function PeerChatBox({
                   </div>
                 )}
 
-                <div className="relative group">
+                <div
+                  className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
+                    isOwnMessage
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 text-gray-900"
+                  }`}
+                >
                   {editingMessageId === message.id ? (
                     <div className="bg-white border rounded-lg p-2">
                       <input
@@ -379,7 +387,7 @@ export function PeerChatBox({
                             handleEditCancel()
                           }
                         }}
-                        className="w-full px-2 py-1 border rounded"
+                        className="w-full px-2 py-1 border rounded text-gray-900"
                       />
                       <div className="flex gap-2 mt-2">
                         <button
@@ -390,7 +398,7 @@ export function PeerChatBox({
                         </button>
                         <button
                           onClick={handleEditCancel}
-                          className="px-3 py-1 bg-gray-300 rounded text-sm"
+                          className="px-3 py-1 bg-gray-300 text-gray-900 rounded text-sm"
                         >
                           Cancel
                         </button>
@@ -398,145 +406,144 @@ export function PeerChatBox({
                     </div>
                   ) : (
                     <>
-                      <div
-                        className={`rounded-lg px-4 py-2 ${
-                          isOwnMessage
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 text-gray-900"
-                        }`}
+                      <button
+                        onClick={(e) => toggleEmojiPicker(message.id, e)}
+                        className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? '-left-12' : '-right-12'} bg-gray-200 text-gray-600 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-300`}
+                        title="Add reaction"
                       >
-                        <p className="break-words whitespace-pre-wrap">{message.content}</p>
+                        😊
+                      </button>
 
-                        {message.attachments && message.attachments.length > 0 && (
-                          <div className="mt-2 space-y-2">
-                            {message.attachments.map((attachment) => (
-                              <AttachmentDisplay
-                                key={attachment.id}
-                                attachment={attachment}
-                                isOwnMessage={isOwnMessage}
-                              />
-                            ))}
-                          </div>
-                        )}
+                      <button
+                        onClick={(e) => toggleMenu(message.id, e)}
+                        className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? '-left-6' : '-right-6'} bg-gray-700 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-600`}
+                        title="More actions"
+                      >
+                        ⋮
+                      </button>
 
-                        <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className={`text-xs ${
-                              isOwnMessage ? "text-blue-100" : "text-gray-500"
-                            }`}
+                      {openMenuId === message.id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute top-0 ${isOwnMessage ? '-left-32' : '-right-32'} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                        >
+                          <button
+                            onClick={() => {
+                              handleReply(message)
+                              setOpenMenuId(null)
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
                           >
-                            {formatTimestamp(message.created_at)}
-                          </span>
-                          {message.edited_at && (
-                            <span
-                              className={`text-xs italic ${
-                                isOwnMessage ? "text-blue-100" : "text-gray-500"
-                              }`}
-                            >
-                              (edited)
-                            </span>
-                          )}
-                          {isOwnMessage && isRead && (
-                            <span className="text-xs text-blue-100">✓✓</span>
+                            Reply
+                          </button>
+                          {isOwnMessage && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleEditStart(message)
+                                  setOpenMenuId(null)
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleDeleteClick(message.id)
+                                  setOpenMenuId(null)
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 text-sm"
+                              >
+                                Delete
+                              </button>
+                            </>
                           )}
                         </div>
-                      </div>
+                      )}
 
-                      {Object.keys(reactionGroups).length > 0 && (
-                        <div className="flex gap-1 mt-1 flex-wrap">
-                          {Object.entries(reactionGroups).map(([emoji, reactions]) => (
+                      {showEmojiPicker === message.id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute top-0 ${isOwnMessage ? '-left-48' : '-right-48'} bg-white border border-gray-300 rounded-lg shadow-lg p-2 flex gap-1 z-30`}
+                        >
+                          {commonEmojis.map((emoji) => (
                             <button
                               key={emoji}
-                              onClick={() => {
-                                const userReaction = reactions.find(r => r.user_id === currentUserId)
-                                if (userReaction) {
-                                  handleReactionClick(message.id, userReaction.id, currentUserId!)
-                                }
-                              }}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${
-                                reactions.some(r => r.user_id === currentUserId)
-                                  ? 'bg-blue-100 border border-blue-300'
-                                  : 'bg-gray-100 border border-gray-300'
-                              }`}
+                              onClick={() => handleEmojiClick(message.id, emoji)}
+                              className="hover:bg-gray-100 p-1 rounded text-lg"
                             >
-                              <span>{emoji}</span>
-                              <span>{reactions.length}</span>
+                              {emoji}
                             </button>
                           ))}
                         </div>
                       )}
 
-                      <div className="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="flex gap-1 bg-white border rounded-lg shadow-lg p-1">
-                          <button
-                            onClick={(e) => toggleEmojiPicker(message.id, e)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                            title="Add reaction"
-                          >
-                            😊
-                          </button>
-                          <button
-                            onClick={(e) => toggleMenu(message.id, e)}
-                            className="p-1 hover:bg-gray-100 rounded"
-                            title="More options"
-                          >
-                            •••
-                          </button>
+                      <p className="break-words whitespace-pre-wrap">{message.content}</p>
+
+                      {message.attachments && message.attachments.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {message.attachments.map((attachment) => (
+                            <AttachmentDisplay
+                              key={attachment.id}
+                              attachment={attachment}
+                              isOwnMessage={isOwnMessage}
+                            />
+                          ))}
                         </div>
+                      )}
 
-                        {showEmojiPicker === message.id && (
-                          <div className="absolute right-0 mt-1 bg-white border rounded-lg shadow-lg p-2 flex gap-1 z-10">
-                            {commonEmojis.map((emoji) => (
-                              <button
-                                key={emoji}
-                                onClick={() => handleEmojiClick(message.id, emoji)}
-                                className="hover:bg-gray-100 p-1 rounded text-lg"
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={`text-xs ${
+                            isOwnMessage ? "text-blue-100" : "text-gray-500"
+                          }`}
+                        >
+                          {formatTimestamp(message.created_at)}
+                        </span>
+                        {message.edited_at && (
+                          <span
+                            className={`text-xs italic ${
+                              isOwnMessage ? "text-blue-100" : "text-gray-500"
+                            }`}
+                          >
+                            (edited)
+                          </span>
                         )}
-
-                        {openMenuId === message.id && (
-                          <div className="absolute right-0 mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[120px] z-10">
-                            <button
-                              onClick={() => {
-                                handleReply(message)
-                                setOpenMenuId(null)
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                            >
-                              Reply
-                            </button>
-                            {isOwnMessage && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    handleEditStart(message)
-                                    setOpenMenuId(null)
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    handleDeleteClick(message.id)
-                                    setOpenMenuId(null)
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600"
-                                >
-                                  Delete
-                                </button>
-                              </>
-                            )}
-                          </div>
+                        {isOwnMessage && isRead && (
+                          <span className="text-xs text-blue-100">✓✓</span>
                         )}
                       </div>
                     </>
                   )}
                 </div>
+
+                {Object.keys(reactionGroups).length > 0 && (
+                  <div className={`flex flex-wrap gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                    {Object.entries(reactionGroups).map(([emoji, reactions]) => {
+                      const userReaction = reactions.find(r => r.user_id === currentUserId)
+                      return (
+                        <button
+                          key={emoji}
+                          onClick={() => {
+                            if (userReaction) {
+                              handleReactionClick(message.id, userReaction.id, currentUserId!)
+                            } else {
+                              onAddReaction(message.id, emoji)
+                            }
+                          }}
+                          className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs ${
+                            userReaction
+                              ? 'bg-blue-100 border border-blue-300'
+                              : 'bg-gray-100 border border-gray-300'
+                          } hover:bg-blue-50 transition`}
+                        >
+                          <span className="text-xs">{emoji}</span>
+                          <span className="text-xs">{reactions.length}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )

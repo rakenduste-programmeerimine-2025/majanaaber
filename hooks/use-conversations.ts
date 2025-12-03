@@ -100,16 +100,26 @@ export function useConversations() {
             .limit(1)
             .single()
 
-          const { count: unreadCount } = await supabase
+          // Get all messages from other user in this conversation
+          const { data: otherUserMessages } = await supabase
             .from("peer_messages")
-            .select("id", { count: "exact", head: true })
+            .select("id")
             .eq("conversation_id", conv.id)
             .eq("sender_id", otherUserId)
-            .not("id", "in", `(
-              SELECT message_id
-              FROM peer_message_read_receipts
-              WHERE user_id = '${userId}'
-            )`)
+
+          const messageIds = (otherUserMessages || []).map((m: { id: string }) => m.id)
+
+          let unreadCount = 0
+          if (messageIds.length > 0) {
+            // Count how many of these messages have been read by current user
+            const { count: readCount } = await supabase
+              .from("peer_message_read_receipts")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", userId)
+              .in("message_id", messageIds)
+
+            unreadCount = messageIds.length - (readCount || 0)
+          }
 
           return {
             ...conv,
