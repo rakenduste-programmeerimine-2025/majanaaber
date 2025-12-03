@@ -122,7 +122,7 @@ export function EstonianAds({
         const container = document.querySelector(`#${uniqueId}`)
         if (container) {
           // Listen for click events on dropdown items
-          container.addEventListener("click", e => {
+          const handleDropdownClick = (e: Event) => {
             const target = e.target as HTMLElement
 
             // Check if it's a dropdown item (span with title containing address)
@@ -187,11 +187,19 @@ export function EstonianAds({
                 ads_code: target.id.replace("in_teh_", ""),
               }
 
+              console.log("📍 Address selected from dropdown:", addressData)
               if (callbackRef.current) {
                 callbackRef.current(addressData)
               }
             }
-          })
+          }
+
+          container.addEventListener("click", handleDropdownClick)
+
+          // Cleanup listener on unmount
+          return () => {
+            container.removeEventListener("click", handleDropdownClick)
+          }
         }
       }, 1000)
 

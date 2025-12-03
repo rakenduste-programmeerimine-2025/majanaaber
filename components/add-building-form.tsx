@@ -44,13 +44,20 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
   }
 
   const handleAddressSelect = (address: EstonianAddressData) => {
+    console.log("Address selected:", address)
     setSelectedAddress(address)
     setError(null)
   }
 
   const handleAddressError = (errorMessage: string) => {
+    console.log("Address error:", errorMessage)
     setError(errorMessage)
     setSelectedAddress(null)
+  }
+
+  const handleClearSelection = () => {
+    setSelectedAddress(null)
+    setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -188,17 +195,30 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
               </div>
               {selectedAddress && (
                 <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                    Selected Address:
-                  </p>
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    {selectedAddress.full_address}
-                  </p>
-                  {selectedAddress.postal_code && (
-                    <p className="text-xs text-green-600 dark:text-green-400">
-                      Postal Code: {selectedAddress.postal_code}
-                    </p>
-                  )}
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                        Selected Address:
+                      </p>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        {selectedAddress.full_address}
+                      </p>
+                      {selectedAddress.postal_code && (
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          Postal Code: {selectedAddress.postal_code}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleClearSelection}
+                      className="flex-shrink-0"
+                    >
+                      Change
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
