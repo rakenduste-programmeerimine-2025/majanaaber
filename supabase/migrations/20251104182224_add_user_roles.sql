@@ -1,4 +1,4 @@
-CREATE TYPE user_role AS ENUM ('building_owner', 'apartment_owner', 'resident');
+CREATE TYPE user_role AS ENUM ('building_manager', 'apartment_owner', 'resident');
 
 ALTER TABLE public.profiles ADD COLUMN role user_role NOT NULL DEFAULT 'resident';
 

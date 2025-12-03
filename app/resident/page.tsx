@@ -115,10 +115,10 @@ export default function ResidentDashboard() {
           </p>
           <div className="space-y-3">
             <a
-              href="/protected"
+              href="/resident-hub"
               className="inline-block bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 transition"
             >
-              Go to Building Management
+              Go to My Apartments
             </a>
             <p className="text-sm text-gray-500">
               Create a building or ask your building manager to add you as a

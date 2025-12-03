@@ -29,7 +29,7 @@ INSERT INTO auth.users (
   '$2a$06$ozTEg4IawObrJCjXBz.o/udeVQ3ujNETRD5gJOnyZA/sXzPT5Hb9K',
   now(),
   '{"provider":"email","providers":["email"]}',
-  '{"first_name":"John","last_name":"Manager","role":"building_owner"}',
+  '{"first_name":"John","last_name":"Manager","role":"building_manager"}',
   now(),
   now(),
   'authenticated',
@@ -117,7 +117,7 @@ INSERT INTO auth.users (
 
 INSERT INTO profiles (id, first_name, last_name, phone_number, role, email)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'John', 'Manager', '+3725551001', 'building_owner', 'manager@test.com'),
+  ('00000000-0000-0000-0000-000000000001', 'John', 'Manager', '+3725551001', 'building_manager', 'manager@test.com'),
   ('00000000-0000-0000-0000-000000000002', 'Alice', 'Smith', '+3725551002', 'resident', 'resident1@test.com'),
   ('00000000-0000-0000-0000-000000000003', 'Bob', 'Johnson', '+3725551003', 'resident', 'resident2@test.com')
 ON CONFLICT (id) DO NOTHING;

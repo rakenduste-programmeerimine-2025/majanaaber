@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 
-type UserRole = "building_owner" | "apartment_owner" | "resident" | null;
+type UserRole = "building_manager" | "apartment_owner" | "resident" | null;
 
 export function useUserRole() {
   const [role, setRole] = useState<UserRole>(null);
@@ -30,5 +30,5 @@ export function useUserRole() {
     fetchUserRole();
   }, []);
 
-  return { role, loading, isOwner: role === "building_owner" };
+  return { role, loading, isOwner: role === "building_manager" };
 }

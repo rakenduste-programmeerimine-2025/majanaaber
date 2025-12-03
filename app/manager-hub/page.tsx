@@ -4,13 +4,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { AddBuildingForm } from "@/components/add-building-form"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
@@ -35,7 +29,7 @@ interface Apartment {
   }
 }
 
-export default function ProtectedPage() {
+export default function ManagerHubPage() {
   const [buildings, setBuildings] = useState<Building[]>([])
   const [apartments, setApartments] = useState<Apartment[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,7 +50,6 @@ export default function ProtectedPage() {
         throw new Error("User not authenticated")
       }
 
-      // Load buildings managed by user
       const { data: buildingsData, error: buildingsError } = await supabase
         .from("buildings")
         .select("id, full_address, city, apartment_count, created_at")
@@ -69,7 +62,6 @@ export default function ProtectedPage() {
 
       setBuildings(buildingsData || [])
 
-      // Load apartments where user is a resident
       const { data: apartmentsData, error: apartmentsError } = await supabase
         .from("building_residents")
         .select(
@@ -88,7 +80,6 @@ export default function ProtectedPage() {
         throw apartmentsError
       }
 
-      // Map the data to match our Apartment interface
       const mappedApartments = (apartmentsData || []).map(item => ({
         ...item,
         building: Array.isArray(item.building)
@@ -108,7 +99,6 @@ export default function ProtectedPage() {
 
     const supabase = createClient()
 
-    // Subscribe to building_residents changes
     const apartmentsSubscription = supabase
       .channel("building_residents_changes")
       .on(
@@ -124,7 +114,6 @@ export default function ProtectedPage() {
       )
       .subscribe()
 
-    // Subscribe to buildings changes
     const buildingsSubscription = supabase
       .channel("buildings_changes")
       .on(
@@ -140,7 +129,6 @@ export default function ProtectedPage() {
       )
       .subscribe()
 
-    // Cleanup subscriptions on unmount
     return () => {
       apartmentsSubscription.unsubscribe()
       buildingsSubscription.unsubscribe()
@@ -174,7 +162,6 @@ export default function ProtectedPage() {
     }
   }
 
-  // Filter data based on search queries
   const filteredBuildings = buildings.filter(building => {
     const query = buildingSearchQuery.toLowerCase()
     return (
