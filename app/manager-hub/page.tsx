@@ -223,7 +223,11 @@ export default function ManagerHubPage() {
 
       setChangeManagerBuildingId(null)
       setSearchUserQuery("")
-      loadData()
+
+      // Reload page to refresh role and show updated buildings
+      setTimeout(() => {
+        window.location.reload()
+      }, 300)
     } catch (err: any) {
       console.error("Error changing manager:", err)
       alert("Failed to change manager: " + err.message)
