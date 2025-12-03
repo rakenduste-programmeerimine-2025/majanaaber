@@ -175,9 +175,20 @@ export default function ManagerHubPage() {
     try {
       setIsSearchingUsers(true)
       const supabase = createClient()
+
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error("User not authenticated")
+      }
+
       const { data, error } = await supabase
         .from("profiles")
         .select("id, first_name, last_name, email")
+        .neq("id", user.id)
         .limit(100)
 
       if (error) throw error
