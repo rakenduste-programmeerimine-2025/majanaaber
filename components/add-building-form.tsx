@@ -53,6 +53,11 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
     console.log("Address error:", errorMessage)
     setError(errorMessage)
     setSelectedAddress(null)
+
+    // If it's a load failure, switch to manual entry automatically
+    if (errorMessage.includes("Failed to reach")) {
+      setUseManualEntry(true)
+    }
   }
 
   const handleClearSelection = () => {
