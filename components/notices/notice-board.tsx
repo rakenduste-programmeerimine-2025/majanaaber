@@ -423,8 +423,8 @@ export function NoticeBoard({
         </div>
       )}
 
-      {showAddForm && isManager && (
-        <div className="flex-shrink-0 max-h-[60%] overflow-y-auto mb-2">
+      {showAddForm && isManager ? (
+        <div className="flex-1 overflow-y-auto min-h-0">
           <input
             ref={fileInputRef}
             type="file"
@@ -460,34 +460,34 @@ export function NoticeBoard({
             }
           />
         </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+          {filteredNotices.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-center text-sm text-gray-500">
+                  {notices.length === 0
+                    ? "No notices yet."
+                    : "No notices match your search."}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredNotices.map(notice => (
+              <NoticeCard
+                key={notice.id}
+                notice={notice}
+                isManager={isManager}
+                totalResidents={totalResidents}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onTogglePin={handleTogglePin}
+                onToggleArchive={handleToggleArchive}
+              />
+            ))
+          )}
+        </div>
       )}
-
-      <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-        {filteredNotices.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-sm text-gray-500">
-                {notices.length === 0
-                  ? "No notices yet."
-                  : "No notices match your search."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredNotices.map(notice => (
-            <NoticeCard
-              key={notice.id}
-              notice={notice}
-              isManager={isManager}
-              totalResidents={totalResidents}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onTogglePin={handleTogglePin}
-              onToggleArchive={handleToggleArchive}
-            />
-          ))
-        )}
-      </div>
     </div>
   )
 }
