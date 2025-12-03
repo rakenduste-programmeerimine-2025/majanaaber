@@ -115,7 +115,7 @@ export function SignUpForm({
                 >
                   <option value="resident">Resident (Renter/Tenant)</option>
                   <option value="apartment_owner">Apartment Owner</option>
-                  <option value="building_manager">Building Owner</option>
+                  <option value="building_manager">Building Manager</option>
                 </select>
               </div>
               <div className="grid gap-2">

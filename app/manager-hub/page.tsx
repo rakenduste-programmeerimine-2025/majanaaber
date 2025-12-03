@@ -415,6 +415,12 @@ export default function ManagerHubPage() {
                             </Link>
                           </Button>
                           <Button
+                            variant="outline"
+                            size="sm"
+                          >
+                            Change Manager
+                          </Button>
+                          <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => handleDeleteBuilding(building.id)}
