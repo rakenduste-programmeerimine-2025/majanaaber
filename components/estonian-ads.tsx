@@ -39,6 +39,7 @@ export function EstonianAds({
 }: EstonianAdsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const instanceRef = useRef<any>(null)
+  const observerRef = useRef<MutationObserver | null>(null)
   const callbackRef = useRef<
     ((address: EstonianAddressData) => void) | undefined
   >(onAddressSelect)
@@ -122,18 +123,20 @@ export function EstonianAds({
       instanceRef.current = new window.InAadress(config)
 
       // Use MutationObserver to detect when dropdown items appear
+      // Note: The InAadress library doesn't provide reliable official callbacks,
+      // so we monitor DOM changes to detect when results are available.
+      // This approach is more resilient than polling and reacts to real changes.
       const container = document.querySelector(`#${uniqueId}`)
       if (container) {
         let clickListenerAdded = false
 
-        const observer = new MutationObserver(() => {
+        observerRef.current = new MutationObserver(() => {
           // Add click listener once when dropdown items first appear
           if (
             !clickListenerAdded &&
             container.querySelector('[id^="in_teh_"]')
           ) {
             clickListenerAdded = true
-            console.log("📍 Dropdown items detected, setting up click listener")
 
             container.addEventListener("click", (e: Event) => {
               const target = e.target as HTMLElement
@@ -236,7 +239,7 @@ export function EstonianAds({
         })
 
         // Watch for DOM changes in the container
-        observer.observe(container, {
+        observerRef.current.observe(container, {
           childList: true,
           subtree: true,
           characterData: false,
@@ -278,6 +281,12 @@ export function EstonianAds({
   // Cleanup effect
   useEffect(() => {
     return () => {
+      // Clean up observer
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
+      }
+      // Clean up InAadress instance
       if (instanceRef.current) {
         try {
           instanceRef.current.destroy?.()
