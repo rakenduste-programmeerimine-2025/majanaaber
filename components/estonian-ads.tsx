@@ -69,16 +69,37 @@ export function EstonianAds({
       return
     }
 
-    // Wait for script to load
+    // Wait for script to load with a timeout
+    let timeoutId: NodeJS.Timeout | null = null
     const interval = setInterval(() => {
       if (checkScript()) {
         clearInterval(interval)
+        if (timeoutId) clearTimeout(timeoutId)
       }
     }, 100)
 
+    // If script doesn't load within 5 seconds, show error
+    timeoutId = setTimeout(() => {
+      clearInterval(interval)
+      console.warn(
+        "Estonian address search script failed to load after 5 seconds",
+      )
+      setError(
+        "Estonian address search unavailable. Please use manual address entry.",
+      )
+      if (onError) {
+        onError(
+          "Failed to reach address search service, please enter the address manually",
+        )
+      }
+    }, 5000)
+
     // Cleanup
-    return () => clearInterval(interval)
-  }, [])
+    return () => {
+      clearInterval(interval)
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }, [onError])
 
   useEffect(() => {
     if (!isLoaded || !containerRef.current || instanceRef.current) return
