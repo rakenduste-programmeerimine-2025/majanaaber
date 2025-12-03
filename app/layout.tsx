@@ -34,7 +34,7 @@ export default function RootLayout({
         {/* Estonian ADS (Address Data System) component */}
         <Script
           src="https://aks.maaruum.ee/inaks-ui/inaadress/js/inaadress.min.js"
-          strategy="beforeInteractive"
+          strategy="lazyOnload"
         />
       </head>
       <body className={`${geistSans.className} antialiased`}>
