@@ -250,8 +250,8 @@ export default function ProfilePage() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "building_owner":
-        return "Building Owner"
+      case "building_manager":
+        return "Building Manager"
       case "apartment_owner":
         return "Apartment Owner"
       case "resident":
@@ -283,9 +283,7 @@ export default function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>
-            <CardDescription>
-              Update your personal details
-            </CardDescription>
+            <CardDescription>Update your personal details</CardDescription>
           </CardHeader>
           <CardContent>
             <form
@@ -322,9 +320,7 @@ export default function ProfilePage() {
                   disabled
                   className="bg-gray-100 dark:bg-gray-800"
                 />
-                <p className="text-xs text-gray-500">
-                  Email cannot be changed
-                </p>
+                <p className="text-xs text-gray-500">Email cannot be changed</p>
               </div>
 
               <div className="space-y-2">
@@ -377,9 +373,7 @@ export default function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Change Password</CardTitle>
-            <CardDescription>
-              Update your account password
-            </CardDescription>
+            <CardDescription>Update your account password</CardDescription>
           </CardHeader>
           <CardContent>
             <form
@@ -490,7 +484,9 @@ export default function ProfilePage() {
                           <p className="font-medium truncate">
                             {building.full_address}
                           </p>
-                          <p className="text-xs text-gray-500">{building.city}</p>
+                          <p className="text-xs text-gray-500">
+                            {building.city}
+                          </p>
                         </div>
                         <Badge
                           variant={
