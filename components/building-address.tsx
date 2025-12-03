@@ -25,48 +25,49 @@ export function BuildingAddress({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="street_name">Street Name *</Label>
+          <Label htmlFor="street_name">Street/Location Name *</Label>
           <Input
             id="street_name"
             type="text"
             value={formData.street_name}
             onChange={e => onInputChange("street_name", e.target.value)}
-            placeholder="Sipelga tn"
+            placeholder="e.g., Sipelga tn or Kahuri (for rural)"
             required
           />
         </div>
         <div>
-          <Label htmlFor="house_number">House Number</Label>
+          <Label htmlFor="house_number">House/Building Number *</Label>
           <Input
             id="house_number"
             type="text"
             value={formData.house_number}
             onChange={e => onInputChange("house_number", e.target.value)}
-            placeholder="14"
+            placeholder="e.g., 14"
+            required
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="city">City *</Label>
+          <Label htmlFor="city">City/Village (Optional for rural)</Label>
           <Input
             id="city"
             type="text"
             value={formData.city}
             onChange={e => onInputChange("city", e.target.value)}
-            placeholder="Tallinn"
-            required
+            placeholder="e.g., Tallinn or Kriimani küla"
           />
         </div>
         <div>
-          <Label htmlFor="county">County</Label>
+          <Label htmlFor="county">County/Municipality *</Label>
           <Input
             id="county"
             type="text"
             value={formData.county}
             onChange={e => onInputChange("county", e.target.value)}
-            placeholder="Harju maakond"
+            placeholder="e.g., Harju maakond or Kastre vald"
+            required
           />
         </div>
       </div>
@@ -80,17 +81,6 @@ export function BuildingAddress({
             value={formData.postal_code}
             onChange={e => onInputChange("postal_code", e.target.value)}
             placeholder="e.g., 10119"
-          />
-        </div>
-        <div>
-          <Label htmlFor="apartment_count">Number of Apartments</Label>
-          <Input
-            id="apartment_count"
-            type="number"
-            value={formData.apartment_count}
-            onChange={e => onInputChange("apartment_count", e.target.value)}
-            placeholder="e.g., 24"
-            min="1"
           />
         </div>
       </div>

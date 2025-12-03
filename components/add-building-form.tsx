@@ -83,8 +83,17 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
 
       if (useManualEntry) {
         // Validate required fields for manual entry
-        if (!formData.city || !formData.street_name) {
-          throw new Error("Please fill in all required fields (Street, City)")
+        // For rural addresses: need street_name (farm/location name) and county
+        // For urban addresses: need city, street_name, and house_number
+        const hasUrbanAddress =
+          formData.city && formData.street_name && formData.house_number
+        const hasRuralAddress =
+          formData.street_name && formData.county && !formData.city
+
+        if (!hasUrbanAddress && !hasRuralAddress) {
+          throw new Error(
+            "Please fill in required fields: For urban addresses: Street, House Number, and City. For rural addresses: Location name and County",
+          )
         }
 
         buildingData = {
@@ -93,9 +102,6 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
           city: formData.city,
           county: formData.county,
           postal_code: formData.postal_code,
-          apartment_count: formData.apartment_count
-            ? parseInt(formData.apartment_count)
-            : null,
           full_address:
             `${formData.street_name} ${formData.house_number}, ${formData.city}`.trim(),
           manager_id: user?.id,
