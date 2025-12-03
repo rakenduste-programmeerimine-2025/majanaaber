@@ -8,6 +8,8 @@ import { ChatBox } from "@/components/chat-box"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Link from "next/link"
+import { MessageSquare } from "lucide-react"
 
 interface Building {
   id: string
@@ -672,21 +674,30 @@ export default function ManagerDashboard() {
         </section>
 
         {/* Right: Chat */}
-        <ChatBox
-          buildingName={building.full_address}
-          messages={messages}
-          currentUserId={currentUserId}
-          onSendMessage={sendMessage}
-          onDeleteMessage={deleteMessage}
-          onEditMessage={editMessage}
-          isSending={isSending}
-          typingUsers={typingUsers}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-          onAddReaction={addReaction}
-          onRemoveReaction={removeReaction}
-          onMarkAsRead={markMessageAsRead}
-        />
+        <div className="flex flex-col">
+          <Link
+            href={`/manager/messages?building=${buildingId}`}
+            className="mb-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors self-end"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Direct Messages
+          </Link>
+          <ChatBox
+            buildingName={building.full_address}
+            messages={messages}
+            currentUserId={currentUserId}
+            onSendMessage={sendMessage}
+            onDeleteMessage={deleteMessage}
+            onEditMessage={editMessage}
+            isSending={isSending}
+            typingUsers={typingUsers}
+            onTypingStart={handleTypingStart}
+            onTypingStop={handleTypingStop}
+            onAddReaction={addReaction}
+            onRemoveReaction={removeReaction}
+            onMarkAsRead={markMessageAsRead}
+          />
+        </div>
       </main>
 
       {/* Empty space at bottom */}

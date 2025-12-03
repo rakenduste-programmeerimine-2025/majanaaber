@@ -7,6 +7,8 @@ import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { ChatBox } from "@/components/chat-box"
 import { NoticeBoard } from "@/components/notice-board"
 import { BuildingCalendar } from "@/components/building-calendar"
+import Link from "next/link"
+import { MessageSquare } from "lucide-react"
 
 interface ResidentBuilding extends Building {
   full_address: string
@@ -153,21 +155,30 @@ export default function ResidentDashboard() {
           </div>
         </section>
 
-        <ChatBox
-          buildingName={building.full_address}
-          messages={messages}
-          currentUserId={currentUserId}
-          onSendMessage={sendMessage}
-          onDeleteMessage={deleteMessage}
-          onEditMessage={editMessage}
-          isSending={isSending}
-          typingUsers={typingUsers}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-          onAddReaction={addReaction}
-          onRemoveReaction={removeReaction}
-          onMarkAsRead={markMessageAsRead}
-        />
+        <div className="flex flex-col">
+          <Link
+            href={`/resident/messages?building=${building.id}`}
+            className="mb-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors self-end"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Direct Messages
+          </Link>
+          <ChatBox
+            buildingName={building.full_address}
+            messages={messages}
+            currentUserId={currentUserId}
+            onSendMessage={sendMessage}
+            onDeleteMessage={deleteMessage}
+            onEditMessage={editMessage}
+            isSending={isSending}
+            typingUsers={typingUsers}
+            onTypingStart={handleTypingStart}
+            onTypingStop={handleTypingStop}
+            onAddReaction={addReaction}
+            onRemoveReaction={removeReaction}
+            onMarkAsRead={markMessageAsRead}
+          />
+        </div>
       </main>
 
       <div className="h-[10vh]" />

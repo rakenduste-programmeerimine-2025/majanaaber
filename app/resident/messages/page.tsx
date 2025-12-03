@@ -13,7 +13,7 @@ export default function MessagesPage() {
   const [selectedOtherUserId, setSelectedOtherUserId] = useState<string | null>(null)
   const [otherUserName, setOtherUserName] = useState<string>("")
   const [showNewMessageModal, setShowNewMessageModal] = useState(false)
-  const [residents, setResidents] = useState<Array<{id: string, first_name: string, last_name: string}>>([])
+  const [residents, setResidents] = useState<Array<{id: string, first_name: string, last_name: string, isManager?: boolean}>>([])
 
   const supabase = createClient()
   const { conversations, isLoading, getOrCreateConversation, refreshConversations } = useConversations()
@@ -64,56 +64,91 @@ export default function MessagesPage() {
       return
     }
 
-    const { data: userBuilding, error: buildingError } = await supabase
+    // First, try to get building from building_residents (for regular residents)
+    const { data: userBuilding } = await supabase
       .from("building_residents")
       .select("building_id")
       .eq("profile_id", user.id)
       .eq("is_approved", true)
+      .limit(1)
       .single()
 
-    if (buildingError) {
-      console.error("Error fetching user building:", buildingError)
-      alert("Could not find your building. Please make sure you are an approved resident.")
-      return
+    // If not a resident, check if user is a manager
+    let buildingId = userBuilding?.building_id
+    if (!buildingId) {
+      const { data: managedBuilding } = await supabase
+        .from("buildings")
+        .select("id")
+        .eq("manager_id", user.id)
+        .limit(1)
+        .single()
+
+      buildingId = managedBuilding?.id
     }
 
-    if (!userBuilding) {
+    if (!buildingId) {
       alert("You are not associated with any building.")
       return
     }
 
-    console.log("Fetching residents for building:", userBuilding.building_id)
+    console.log("Fetching contacts for building:", buildingId)
 
+    // Get all residents in the building
     const { data: buildingResidents, error: residentsError } = await supabase
       .from("building_residents")
       .select(`
         profile_id,
         profiles!inner(id, first_name, last_name)
       `)
-      .eq("building_id", userBuilding.building_id)
+      .eq("building_id", buildingId)
       .eq("is_approved", true)
       .neq("profile_id", user.id)
 
     if (residentsError) {
       console.error("Error fetching residents:", residentsError)
-      alert("Could not load residents: " + residentsError.message)
-      return
     }
 
-    console.log("Building residents data:", buildingResidents)
+    // Also get the building manager
+    const { data: building } = await supabase
+      .from("buildings")
+      .select(`
+        manager_id,
+        profiles:manager_id(id, first_name, last_name)
+      `)
+      .eq("id", buildingId)
+      .single()
 
+    // Combine residents and manager (if not the current user)
+    const contactsList: Array<{id: string, first_name: string, last_name: string, isManager?: boolean}> = []
+
+    // Add manager first if exists and is not current user
+    if (building?.profiles && building.manager_id !== user.id) {
+      const managerProfile = building.profiles as any
+      contactsList.push({
+        id: managerProfile.id,
+        first_name: managerProfile.first_name,
+        last_name: managerProfile.last_name,
+        isManager: true,
+      })
+    }
+
+    // Add residents
     if (buildingResidents && buildingResidents.length > 0) {
-      const residentsData = buildingResidents.map((br: any) => ({
-        id: br.profiles.id,
-        first_name: br.profiles.first_name,
-        last_name: br.profiles.last_name,
-      }))
-      setResidents(residentsData)
-      setShowNewMessageModal(true)
-    } else {
-      setResidents([])
-      setShowNewMessageModal(true)
+      buildingResidents.forEach((br: any) => {
+        // Don't add if already added as manager
+        if (!contactsList.some(c => c.id === br.profiles.id)) {
+          contactsList.push({
+            id: br.profiles.id,
+            first_name: br.profiles.first_name,
+            last_name: br.profiles.last_name,
+          })
+        }
+      })
     }
+
+    console.log("Contacts list:", contactsList)
+    setResidents(contactsList)
+    setShowNewMessageModal(true)
   }
 
   const handleCreateConversation = async (otherUserId: string) => {
@@ -195,17 +230,22 @@ export default function MessagesPage() {
 
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {residents.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No residents found</p>
+                <p className="text-gray-500 text-center py-4">No contacts found</p>
               ) : (
                 residents.map((resident) => (
                   <button
                     key={resident.id}
                     onClick={() => handleCreateConversation(resident.id)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-lg border"
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-lg border flex items-center justify-between"
                   >
                     <span className="font-medium">
                       {resident.first_name} {resident.last_name}
                     </span>
+                    {resident.isManager && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                        Manager
+                      </span>
+                    )}
                   </button>
                 ))
               )}
