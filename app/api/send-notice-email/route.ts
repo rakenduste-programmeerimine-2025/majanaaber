@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
-const MOCK_EMAIL = false
+const MOCK_EMAIL = true
 
 export async function POST(request: Request) {
   try {
