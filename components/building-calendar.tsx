@@ -56,7 +56,7 @@
     }
 
     return (
-      <div className="w-1/2 pl-6 flex flex-col items-center">
+      <div className="w-full max-w-[500px] pl-6 flex flex-col items-center">
         {/* Header */}
         <div className="flex items-center justify-between w-full mb-3">
           <button onClick={goPrevMonth}>{"<"}</button>
