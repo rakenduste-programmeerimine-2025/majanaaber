@@ -5,8 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   checkLoginRateLimit,
   checkStrictRateLimit,
+  checkEmailResendRateLimit,
   getClientIP,
   resetRateLimit,
+  RATE_LIMITS,
 } from "@/lib/rate-limit";
 import {
   incrementFailedAttempts,
@@ -157,6 +159,66 @@ export async function loginWithRateLimit(
     return {
       success: false,
       error: error instanceof Error ? error.message : "An error occurred",
+    };
+  }
+}
+
+export interface ResendEmailResult {
+  success: boolean;
+  error?: string;
+  rateLimited?: boolean;
+  remainingAttempts?: number;
+  resetInMinutes?: number;
+}
+
+export async function resendVerificationEmail(
+  email: string
+): Promise<ResendEmailResult> {
+  const headersList = await headers();
+  const ip = getClientIP(headersList);
+
+  // Use both IP and email as identifier to prevent abuse
+  const identifier = `${ip}:${email}`;
+  const rateLimit = await checkEmailResendRateLimit(identifier);
+
+  if (!rateLimit.success) {
+    const resetDate = new Date(rateLimit.reset);
+    const minutesRemaining = Math.ceil(
+      (resetDate.getTime() - Date.now()) / (1000 * 60)
+    );
+    return {
+      success: false,
+      rateLimited: true,
+      error: `Too many email resend requests. Please try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? "s" : ""}.`,
+      resetInMinutes: minutesRemaining,
+    };
+  }
+
+  const supabase = await createClient();
+
+  try {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email,
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+        remainingAttempts: rateLimit.remaining,
+      };
+    }
+
+    return {
+      success: true,
+      remainingAttempts: rateLimit.remaining,
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "An error occurred",
+      remainingAttempts: rateLimit.remaining,
     };
   }
 }

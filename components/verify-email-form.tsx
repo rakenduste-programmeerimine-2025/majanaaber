@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { useState } from "react";
 import Link from "next/link";
+import { resendVerificationEmail } from "@/app/actions/auth";
 
 export function VerifyEmailForm({
   email,
@@ -21,30 +21,30 @@ export function VerifyEmailForm({
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRateLimited, setIsRateLimited] = useState(false);
 
   const handleResendEmail = async () => {
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
     setMessage(null);
+    setIsRateLimited(false);
 
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
-        },
-      });
+    const result = await resendVerificationEmail(email);
 
-      if (error) throw error;
-
-      setMessage("Verification email sent! Please check your inbox.");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+      setMessage(
+        result.remainingAttempts !== undefined && result.remainingAttempts > 0
+          ? `Verification email sent! You have ${result.remainingAttempts} resend${result.remainingAttempts !== 1 ? "s" : ""} remaining.`
+          : "Verification email sent! Please check your inbox."
+      );
+    } else {
+      setError(result.error || "Failed to send verification email");
+      if (result.rateLimited) {
+        setIsRateLimited(true);
+      }
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -59,33 +59,46 @@ export function VerifyEmailForm({
         <CardContent>
           <div className="flex flex-col gap-6">
             <div className="text-sm text-muted-foreground">
-              <p className="mb-4">
-                We sent a verification email to:
-              </p>
-              <p className="font-medium text-foreground mb-4">
-                {email}
-              </p>
+              <p className="mb-4">We sent a verification email to:</p>
+              <p className="font-medium text-foreground mb-4">{email}</p>
               <p>
-                Please check your inbox and click the verification link to activate your account.
+                Please check your inbox and click the verification link to
+                activate your account.
               </p>
             </div>
 
             {message && (
-              <div className="p-3 rounded-md bg-green-50 border border-green-200">
-                <p className="text-sm text-green-800">{message}</p>
+              <div className="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  {message}
+                </p>
               </div>
             )}
 
             {error && (
-              <div className="p-3 rounded-md bg-red-50 border border-red-200">
-                <p className="text-sm text-red-800">{error}</p>
+              <div
+                className={`p-3 rounded-md ${
+                  isRateLimited
+                    ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                    : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                }`}
+              >
+                <p
+                  className={`text-sm ${
+                    isRateLimited
+                      ? "text-amber-800 dark:text-amber-300"
+                      : "text-red-800 dark:text-red-300"
+                  }`}
+                >
+                  {error}
+                </p>
               </div>
             )}
 
             <Button
               type="button"
               onClick={handleResendEmail}
-              disabled={isLoading}
+              disabled={isLoading || isRateLimited}
               variant="outline"
               className="w-full"
             >
