@@ -60,6 +60,7 @@ export function useBuildingMessages(buildingId: string | null) {
               content,
               created_at,
               edited_at,
+              is_deleted,
               sender_id,
               reply_to_message_id,
               sender:profiles!building_messages_sender_id_fkey(first_name, last_name),
@@ -95,7 +96,13 @@ export function useBuildingMessages(buildingId: string | null) {
         )
         .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
           const { messageId } = payload
-          setMessages(prev => prev.filter(msg => msg.id !== messageId))
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === messageId
+                ? { ...msg, is_deleted: true }
+                : msg,
+            ),
+          )
         })
         .on("broadcast", { event: "message_edited" }, ({ payload }) => {
           const { messageId, content, edited_at } = payload
@@ -184,6 +191,7 @@ export function useBuildingMessages(buildingId: string | null) {
         content,
         created_at,
         edited_at,
+        is_deleted,
         sender_id,
         reply_to_message_id,
         sender:profiles!building_messages_sender_id_fkey(first_name, last_name),
@@ -315,12 +323,18 @@ export function useBuildingMessages(buildingId: string | null) {
     try {
       const { error } = await supabase
         .from("building_messages")
-        .delete()
+        .update({ is_deleted: true })
         .eq("id", messageId)
 
       if (error) throw error
 
-      setMessages(prev => prev.filter(msg => msg.id !== messageId))
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, is_deleted: true }
+            : msg,
+        ),
+      )
 
       if (channelRef.current) {
         await channelRef.current.send({

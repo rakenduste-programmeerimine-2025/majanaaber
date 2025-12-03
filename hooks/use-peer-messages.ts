@@ -60,6 +60,7 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
               content,
               created_at,
               edited_at,
+              is_deleted,
               sender_id,
               receiver_id,
               conversation_id,
@@ -97,7 +98,13 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
         )
         .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
           const { messageId } = payload
-          setMessages(prev => prev.filter(msg => msg.id !== messageId))
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === messageId
+                ? { ...msg, is_deleted: true }
+                : msg,
+            ),
+          )
         })
         .on("broadcast", { event: "message_edited" }, ({ payload }) => {
           const { messageId, content, edited_at } = payload
@@ -186,6 +193,7 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
         content,
         created_at,
         edited_at,
+        is_deleted,
         sender_id,
         receiver_id,
         conversation_id,
@@ -320,12 +328,18 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
     try {
       const { error } = await supabase
         .from("peer_messages")
-        .delete()
+        .update({ is_deleted: true })
         .eq("id", messageId)
 
       if (error) throw error
 
-      setMessages(prev => prev.filter(msg => msg.id !== messageId))
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, is_deleted: true }
+            : msg,
+        ),
+      )
 
       if (channelRef.current) {
         await channelRef.current.send({

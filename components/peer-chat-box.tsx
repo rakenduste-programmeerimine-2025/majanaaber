@@ -155,6 +155,7 @@ export function PeerChatBox({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null)
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -255,9 +256,18 @@ export function PeerChatBox({
   }
 
   const handleDeleteClick = (messageId: string) => {
-    if (window.confirm("Are you sure you want to delete this message?")) {
-      onDeleteMessage(messageId)
+    setMessageToDelete(messageId)
+  }
+
+  const confirmDelete = () => {
+    if (messageToDelete) {
+      onDeleteMessage(messageToDelete)
+      setMessageToDelete(null)
     }
+  }
+
+  const cancelDelete = () => {
+    setMessageToDelete(null)
   }
 
   const handleEditStart = (message: PeerMessage) => {
@@ -366,12 +376,21 @@ export function PeerChatBox({
 
                 <div
                   className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
-                    isOwnMessage
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-900"
+                    message.is_deleted
+                      ? "bg-gray-100 text-gray-500"
+                      : isOwnMessage
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-900"
                   }`}
                 >
-                  {editingMessageId === message.id ? (
+                  {message.is_deleted ? (
+                    <>
+                      <p className="text-sm italic">This message was deleted</p>
+                      <span className="text-xs text-gray-400">
+                        {formatTimestamp(message.created_at)}
+                      </span>
+                    </>
+                  ) : editingMessageId === message.id ? (
                     <div className="bg-white border rounded-lg p-2">
                       <input
                         ref={editInputRef}
@@ -517,7 +536,7 @@ export function PeerChatBox({
                   )}
                 </div>
 
-                {Object.keys(reactionGroups).length > 0 && (
+                {!message.is_deleted && Object.keys(reactionGroups).length > 0 && (
                   <div className={`flex flex-wrap gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
                     {Object.entries(reactionGroups).map(([emoji, reactions]) => {
                       const userReaction = reactions.find(r => r.user_id === currentUserId)
@@ -649,6 +668,31 @@ export function PeerChatBox({
         </div>
       </div>
     </section>
+
+    {messageToDelete && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+          <h3 className="text-lg font-semibold mb-2">Delete Message</h3>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to delete this message? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={cancelDelete}
+              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   )
 }

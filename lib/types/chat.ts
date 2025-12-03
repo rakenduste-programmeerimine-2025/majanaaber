@@ -28,6 +28,7 @@ export interface Message {
   content: string
   created_at: string
   edited_at?: string | null
+  is_deleted?: boolean
   sender_id: string
   sender: {
     first_name: string
@@ -106,6 +107,7 @@ export interface PeerMessage {
   content: string
   created_at: string
   edited_at?: string | null
+  is_deleted?: boolean
   reply_to_message_id?: string | null
   sender: {
     first_name: string

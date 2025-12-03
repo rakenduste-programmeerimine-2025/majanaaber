@@ -441,11 +441,22 @@ export function ChatBox({
                   <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
                     <div
                       className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
-                        isOwnMessage
-                          ? "bg-blue-500 text-white"
-                          : "bg-white text-gray-800"
+                        msg.is_deleted
+                          ? "bg-gray-100 text-gray-500"
+                          : isOwnMessage
+                            ? "bg-blue-500 text-white"
+                            : "bg-white text-gray-800"
                       }`}
                     >
+                    {msg.is_deleted ? (
+                      <>
+                        <p className="text-sm italic">This message was deleted</p>
+                        <span className="text-xs text-gray-400">
+                          {formatTimestamp(msg.created_at)}
+                        </span>
+                      </>
+                    ) : (
+                    <>
                     <>
                       <button
                         onClick={(e) => {
@@ -636,9 +647,11 @@ export function ChatBox({
                         ))}
                       </div>
                     )}
+                    </>
+                    )}
                     </div>
 
-                    {groupReactions(msg.reactions).length > 0 && (
+                    {!msg.is_deleted && groupReactions(msg.reactions).length > 0 && (
                       <div className={`flex flex-wrap gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
                         {groupReactions(msg.reactions).map(group => {
                           const userReaction = msg.reactions?.find(
