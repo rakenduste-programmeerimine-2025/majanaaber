@@ -19,6 +19,7 @@ interface Notice {
   id: string
   title: string
   content: string
+  event_date: string | null
   created_at: string
   created_by: string | null
 }
@@ -42,6 +43,7 @@ export function NoticeBoard({
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [eventDate, setEventDate] = useState("")
 
   const loadNotices = async () => {
     try {
@@ -144,6 +146,7 @@ export function NoticeBoard({
           .update({
             title: title.trim(),
             content: content.trim(),
+            event_date: eventDate || null,
           })
           .eq("id", editingNotice.id)
 
@@ -154,6 +157,7 @@ export function NoticeBoard({
           building_id: buildingId,
           title: title.trim(),
           content: content.trim(),
+          event_date: eventDate || null,
           created_by: user.id,
         })
 
@@ -173,6 +177,7 @@ export function NoticeBoard({
     setEditingNotice(notice)
     setTitle(notice.title)
     setContent(notice.content)
+    setEventDate(notice.event_date ?? "")
     setShowAddForm(true)
   }
 
@@ -271,6 +276,15 @@ export function NoticeBoard({
                   required
                 />
               </div>
+              <div className="mb-3">
+  <label className="block text-sm font-medium mb-1">Event Date</label>
+  <input
+    type="date"
+    value={eventDate}
+    onChange={(e) => setEventDate(e.target.value)}
+    className="w-full border rounded px-3 py-2 text-sm"
+  />
+</div>
               <div className="flex gap-2">
                 <Button
                   type="submit"
@@ -317,11 +331,9 @@ export function NoticeBoard({
                       {notice.title}
                     </CardTitle>
                     <CardDescription className="text-xs mt-1">
-                      {new Date(notice.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      {new Date(notice.created_at).toLocaleDateString("en-US")}
+                      {notice.event_date && ` • Event: ${new Date(notice.event_date).toLocaleDateString("en-US")}`
+                      }
                     </CardDescription>
                   </div>
                   {isManager && (
@@ -354,6 +366,7 @@ export function NoticeBoard({
             </Card>
           ))
         )}
+        {/* Event Date */}
       </div>
     </div>
   )
