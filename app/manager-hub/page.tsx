@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { changeBuildingManager } from "@/app/actions/auth"
 import { AddBuildingForm } from "@/components/add-building-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -203,33 +204,18 @@ export default function ManagerHubPage() {
     }
 
     try {
-      const supabase = createClient()
+      const result = await changeBuildingManager(buildingId, newManagerId)
 
-      // Update building manager_id
-      const { error: updateError } = await supabase
-        .from("buildings")
-        .update({ manager_id: newManagerId })
-        .eq("id", buildingId)
-
-      if (updateError) throw updateError
-
-      // Update new manager's role to building_manager if not already
-      const { error: roleError } = await supabase
-        .from("profiles")
-        .update({ role: "building_manager" })
-        .eq("id", newManagerId)
-
-      if (roleError) throw roleError
+      if (!result.success) {
+        throw new Error(result.error)
+      }
 
       setChangeManagerBuildingId(null)
       setSearchUserQuery("")
 
-      // Reload page to refresh role and show updated buildings
-      setTimeout(() => {
-        window.location.reload()
-      }, 300)
+      // Hard refresh to ensure middleware runs and new user is redirected to appropriate dashboard
+      window.location.reload()
     } catch (err: any) {
-      console.error("Error changing manager:", err)
       alert("Failed to change manager: " + err.message)
     }
   }
