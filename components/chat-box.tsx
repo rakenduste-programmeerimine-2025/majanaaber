@@ -135,6 +135,7 @@ interface ChatBoxProps {
   onAddReaction: (messageId: string, emoji: string) => Promise<void>
   onRemoveReaction: (messageId: string, reactionId: string) => Promise<void>
   onMarkAsRead: (messageId: string) => Promise<void>
+  headerAction?: React.ReactNode
 }
 
 export function ChatBox({
@@ -151,6 +152,7 @@ export function ChatBox({
   onAddReaction,
   onRemoveReaction,
   onMarkAsRead,
+  headerAction,
 }: ChatBoxProps) {
   const [input, setInput] = useState("")
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -413,7 +415,10 @@ export function ChatBox({
       </div>
 
       <div className="flex flex-col flex-1 min-h-0">
-        <h3 className="text-xl font-semibold mb-2">Building Chat</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xl font-semibold">Building Chat</h3>
+          {headerAction}
+        </div>
         <div className="relative flex-1 min-h-0">
           <div
             ref={messagesContainerRef}

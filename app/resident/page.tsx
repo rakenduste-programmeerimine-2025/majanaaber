@@ -155,30 +155,30 @@ export default function ResidentDashboard() {
           </div>
         </section>
 
-        <div className="flex flex-col">
-          <Link
-            href={`/resident/messages?building=${building.id}`}
-            className="mb-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors self-end"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Direct Messages
-          </Link>
-          <ChatBox
-            buildingName={building.full_address}
-            messages={messages}
-            currentUserId={currentUserId}
-            onSendMessage={sendMessage}
-            onDeleteMessage={deleteMessage}
-            onEditMessage={editMessage}
-            isSending={isSending}
-            typingUsers={typingUsers}
-            onTypingStart={handleTypingStart}
-            onTypingStop={handleTypingStop}
-            onAddReaction={addReaction}
-            onRemoveReaction={removeReaction}
-            onMarkAsRead={markMessageAsRead}
-          />
-        </div>
+        <ChatBox
+          buildingName={building.full_address}
+          messages={messages}
+          currentUserId={currentUserId}
+          onSendMessage={sendMessage}
+          onDeleteMessage={deleteMessage}
+          onEditMessage={editMessage}
+          isSending={isSending}
+          typingUsers={typingUsers}
+          onTypingStart={handleTypingStart}
+          onTypingStop={handleTypingStop}
+          onAddReaction={addReaction}
+          onRemoveReaction={removeReaction}
+          onMarkAsRead={markMessageAsRead}
+          headerAction={
+            <Link
+              href={`/resident/messages?building=${building.id}`}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Direct Messages
+            </Link>
+          }
+        />
       </main>
 
       <div className="h-[10vh]" />

@@ -47,7 +47,7 @@ export default function ManagerMessagesPage() {
         .eq("id", user.id)
         .single()
 
-      if (profile?.role === "manager" || profile?.role === "admin") {
+      if (profile?.role === "building_manager" || profile?.role === "building_owner") {
         setCurrentUserId(user.id)
         setIsAuthorized(true)
       } else {
