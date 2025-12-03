@@ -22,19 +22,17 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [role, setRole] = useState<
-    "building_manager" | "apartment_owner" | "resident"
-  >("resident")
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [apartmentNumber, setApartmentNumber] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [password, setPassword] = useState("")
-  const [repeatPassword, setRepeatPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [role, setRole] = useState<"building_manager" | "apartment_owner" | "resident">("resident");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [apartmentNumber, setApartmentNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,11 +54,9 @@ export function SignUpForm({
     }
 
     if (role !== "building_manager" && !apartmentNumber.trim()) {
-      setError(
-        "Apartment number is required for apartment owners and residents",
-      )
-      setIsLoading(false)
-      return
+      setError("Apartment number is required for apartment owners and residents");
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -126,7 +122,7 @@ export function SignUpForm({
                 >
                   <option value="resident">Resident (Renter/Tenant)</option>
                   <option value="apartment_owner">Apartment Owner</option>
-                  <option value="building_manager">Building Manager</option>
+                  <option value="building_manager">Building Owner</option>
                 </select>
               </div>
               <div className="grid gap-2">

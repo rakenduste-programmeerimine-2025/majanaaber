@@ -77,10 +77,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (
-      (pathname.startsWith("/admin") || pathname.startsWith("/manager")) &&
-      userRole !== "building_manager"
-    ) {
+    if (pathname.startsWith("/admin") && userRole !== "building_manager") {
       const url = request.nextUrl.clone();
       url.pathname = "/resident-hub";
       return NextResponse.redirect(url);

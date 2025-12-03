@@ -7,7 +7,7 @@ CREATE INDEX idx_profiles_deactivated_at ON public.profiles(deactivated_at)
   WHERE deactivated_at IS NOT NULL;
 
 -- Function to deactivate a user account
--- Only building_managers can deactivate other users' accounts
+-- Only building_manager can deactivate other users' accounts
 -- Users can deactivate their own accounts
 CREATE OR REPLACE FUNCTION public.deactivate_account(
   target_user_id UUID,
@@ -47,7 +47,7 @@ END;
 $$;
 
 -- Function to reactivate a user account
--- Only building_managers can reactivate accounts
+-- Only building_manager can reactivate accounts
 CREATE OR REPLACE FUNCTION public.reactivate_account(
   target_user_id UUID
 )
