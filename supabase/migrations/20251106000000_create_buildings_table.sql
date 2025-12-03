@@ -48,11 +48,13 @@ CREATE POLICY "Users can only insert buildings for themselves"
   );
 
 -- Only the user who added the building can update it
+-- The USING clause checks that the current user is the current manager (can edit)
+-- The WITH CHECK allows the update as long as current manager is updating it
 CREATE POLICY "Building creators can update their buildings"
   ON public.buildings
   FOR UPDATE
   USING (manager_id = auth.uid())
-  WITH CHECK (manager_id = auth.uid());
+  WITH CHECK (true);
 
 -- Only the user who added the building can delete it
 CREATE POLICY "Building creators can delete their buildings"
