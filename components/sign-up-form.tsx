@@ -22,17 +22,18 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [role, setRole] = useState<"building_manager" | "apartment_owner" | "resident">("resident");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [apartmentNumber, setApartmentNumber] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [password, setPassword] = useState("");
-  const [repeatPassword, setRepeatPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [role, setRole] = useState<
+    "building_manager" | "apartment_owner" | "resident"
+  >("resident")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [password, setPassword] = useState("")
+  const [repeatPassword, setRepeatPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,18 +54,11 @@ export function SignUpForm({
       return
     }
 
-    if (role !== "building_manager" && !apartmentNumber.trim()) {
-      setError("Apartment number is required for apartment owners and residents");
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const signUpData = {
         role: role,
         first_name: firstName,
         last_name: lastName,
-        apartment_number: apartmentNumber || null,
         phone_number: phoneNumber,
       }
       console.log("Sign-up metadata:", signUpData)
@@ -78,7 +72,6 @@ export function SignUpForm({
             role: role,
             first_name: firstName,
             last_name: lastName,
-            apartment_number: apartmentNumber || null,
             phone_number: phoneNumber,
           },
         },
@@ -158,19 +151,6 @@ export function SignUpForm({
                   onChange={e => setEmail(e.target.value)}
                 />
               </div>
-              {role !== "building_manager" && (
-                <div className="grid gap-2">
-                  <Label htmlFor="apartment">Apartment Number</Label>
-                  <Input
-                    id="apartment"
-                    type="text"
-                    placeholder="101"
-                    required
-                    value={apartmentNumber}
-                    onChange={e => setApartmentNumber(e.target.value)}
-                  />
-                </div>
-              )}
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
