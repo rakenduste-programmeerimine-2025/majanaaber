@@ -12,24 +12,39 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import { Search } from "lucide-react"
 
 interface Building {
   id: string
-  name: string
   full_address: string
   city: string
   apartment_count: number | null
   created_at: string
 }
 
+interface Apartment {
+  id: string
+  building_id: string
+  apartment_number: string
+  resident_role: string
+  building: {
+    full_address: string
+    city: string
+  }
+}
+
 export default function ProtectedPage() {
   const [buildings, setBuildings] = useState<Building[]>([])
+  const [apartments, setApartments] = useState<Apartment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [buildingSearchQuery, setBuildingSearchQuery] = useState("")
+  const [apartmentSearchQuery, setApartmentSearchQuery] = useState("")
 
-  const loadBuildings = async () => {
+  const loadData = async () => {
     try {
       const supabase = createClient()
 
@@ -37,31 +52,104 @@ export default function ProtectedPage() {
         data: { user },
       } = await supabase.auth.getUser()
 
-      const { data, error: buildingsError } = await supabase
+      if (!user) {
+        throw new Error("User not authenticated")
+      }
+
+      // Load buildings managed by user
+      const { data: buildingsData, error: buildingsError } = await supabase
         .from("buildings")
-        .select("id, name, full_address, city, apartment_count, created_at")
-        .eq("manager_id", user?.id)
+        .select("id, full_address, city, apartment_count, created_at")
+        .eq("manager_id", user.id)
         .order("created_at", { ascending: false })
 
       if (buildingsError) {
         throw buildingsError
       }
 
-      setBuildings(data || [])
+      setBuildings(buildingsData || [])
+
+      // Load apartments where user is a resident
+      const { data: apartmentsData, error: apartmentsError } = await supabase
+        .from("building_residents")
+        .select(
+          `
+          id,
+          building_id,
+          apartment_number,
+          resident_role,
+          building:buildings(full_address, city)
+        `,
+        )
+        .eq("profile_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (apartmentsError) {
+        throw apartmentsError
+      }
+
+      // Map the data to match our Apartment interface
+      const mappedApartments = (apartmentsData || []).map(item => ({
+        ...item,
+        building: Array.isArray(item.building)
+          ? item.building[0]
+          : item.building,
+      }))
+      setApartments(mappedApartments as Apartment[])
     } catch (err: any) {
-      setError(err.message || "Failed to load buildings")
+      setError(err.message || "Failed to load data")
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadBuildings()
+    loadData()
+
+    const supabase = createClient()
+
+    // Subscribe to building_residents changes
+    const apartmentsSubscription = supabase
+      .channel("building_residents_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "building_residents",
+        },
+        () => {
+          loadData()
+        },
+      )
+      .subscribe()
+
+    // Subscribe to buildings changes
+    const buildingsSubscription = supabase
+      .channel("buildings_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "buildings",
+        },
+        () => {
+          loadData()
+        },
+      )
+      .subscribe()
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      apartmentsSubscription.unsubscribe()
+      buildingsSubscription.unsubscribe()
+    }
   }, [])
 
   const handleAddSuccess = () => {
     setShowAddForm(false)
-    loadBuildings()
+    loadData()
   }
 
   const handleDeleteBuilding = async (buildingId: string) => {
@@ -80,133 +168,281 @@ export default function ProtectedPage() {
         throw error
       }
 
-      loadBuildings()
+      loadData()
     } catch (err: any) {
       alert("Failed to delete building: " + err.message)
     }
   }
 
+  // Filter data based on search queries
+  const filteredBuildings = buildings.filter(building => {
+    const query = buildingSearchQuery.toLowerCase()
+    return (
+      building.full_address.toLowerCase().includes(query) ||
+      building.city.toLowerCase().includes(query)
+    )
+  })
+
+  const filteredApartments = apartments.filter(apartment => {
+    const query = apartmentSearchQuery.toLowerCase()
+    return (
+      apartment.apartment_number.toLowerCase().includes(query) ||
+      apartment.building.full_address.toLowerCase().includes(query) ||
+      apartment.building.city.toLowerCase().includes(query)
+    )
+  })
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg">Loading buildings...</p>
+        <p className="text-lg">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Building Management</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Manage apartment buildings and their information
-        </p>
-      </div>
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-          <p className="text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
-
-      {/* Add Building Button */}
-      {!showAddForm && (
-        <div className="mb-6">
-          <Button
-            onClick={() => setShowAddForm(true)}
-            size="lg"
-          >
-            + Add New Building
-          </Button>
-        </div>
-      )}
-
-      {/* Add Building Form */}
-      {showAddForm && (
+    <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold">Add New Building</h2>
-            <Button
-              variant="outline"
-              onClick={() => setShowAddForm(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-          <AddBuildingForm onSuccess={handleAddSuccess} />
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-gray-600">Manage your apartments and buildings</p>
         </div>
-      )}
 
-      {/* Buildings List */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Your Buildings</h2>
-        {buildings.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-gray-500">
-                No buildings yet. Add your first building to get started!
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {buildings.map(building => (
-              <Card key={building.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{building.name}</CardTitle>
-                  <CardDescription>{building.full_address}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        City:
-                      </span>
-                      <Badge variant="secondary">{building.city}</Badge>
-                    </div>
-                    {building.apartment_count !== null && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          Apartments:
-                        </span>
-                        <Badge variant="secondary">
-                          {building.apartment_count}
-                        </Badge>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        Added:
-                      </span>
-                      <span className="text-sm">
-                        {new Date(building.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="pt-4 flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        asChild
-                      >
-                        <Link href={`/manager?building=${building.id}`}>
-                          Manage Building
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteBuilding(building.id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-700">{error}</p>
           </div>
         )}
+
+        {/* 2-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Apartments */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold">My Apartments</h2>
+              <Badge variant="outline">{apartments.length}</Badge>
+            </div>
+
+            {apartments.length > 0 && (
+              <div className="relative w-full mb-6">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search apartments..."
+                  value={apartmentSearchQuery}
+                  onChange={e => setApartmentSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            )}
+
+            {apartments.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">
+                    You are not connected to any apartments yet.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : filteredApartments.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">
+                    No apartments match your search.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {filteredApartments.map(apartment => (
+                  <Card
+                    key={apartment.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardContent className="pt-6">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-gray-600">Building</p>
+                          <p className="font-semibold text-lg">
+                            {apartment.building.full_address}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                              Apartment
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {apartment.apartment_number}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                              Role
+                            </p>
+                            <Badge
+                              variant={
+                                apartment.resident_role === "apartment_owner"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {apartment.resident_role === "apartment_owner"
+                                ? "Apt. Owner"
+                                : "Resident"}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                              Location
+                            </p>
+                            <p className="text-gray-700">
+                              {apartment.building.city}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            asChild
+                          >
+                            <Link
+                              href={`/resident?building=${apartment.building_id}`}
+                            >
+                              Select
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column - Buildings */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold">My Buildings</h2>
+              <Badge variant="outline">{buildings.length}</Badge>
+            </div>
+
+            {!showAddForm && (
+              <div className="mb-6">
+                <Button
+                  onClick={() => setShowAddForm(true)}
+                  className="w-full"
+                >
+                  + Add New Building
+                </Button>
+              </div>
+            )}
+
+            {showAddForm && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">Add New Building</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAddForm(false)}
+                  >
+                    ✕
+                  </Button>
+                </div>
+                <AddBuildingForm onSuccess={handleAddSuccess} />
+              </div>
+            )}
+
+            {buildings.length > 0 && !showAddForm && (
+              <div className="relative w-full mb-6">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search buildings..."
+                  value={buildingSearchQuery}
+                  onChange={e => setBuildingSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            )}
+
+            {buildings.length === 0 && !showAddForm ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">
+                    No buildings yet. Add your first building to get started!
+                  </p>
+                </CardContent>
+              </Card>
+            ) : filteredBuildings.length === 0 && !showAddForm ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">
+                    No buildings match your search.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : !showAddForm ? (
+              <div className="space-y-3">
+                {filteredBuildings.map(building => (
+                  <Card
+                    key={building.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardContent className="pt-6">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="font-semibold text-lg">
+                            {building.full_address}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {building.city}
+                          </p>
+                        </div>
+
+                        {building.apartment_count !== null && (
+                          <div>
+                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                              Apartments
+                            </p>
+                            <p className="font-semibold">
+                              {building.apartment_count}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 pt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            asChild
+                          >
+                            <Link href={`/manager?building=${building.id}`}>
+                              Manage
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteBuilding(building.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   )

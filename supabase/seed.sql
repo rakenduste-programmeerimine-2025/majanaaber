@@ -29,7 +29,7 @@ INSERT INTO auth.users (
   '$2a$06$ozTEg4IawObrJCjXBz.o/udeVQ3ujNETRD5gJOnyZA/sXzPT5Hb9K',
   now(),
   '{"provider":"email","providers":["email"]}',
-  '{"first_name":"John","last_name":"Manager","role":"building_owner"}',
+  '{"first_name":"John","last_name":"Manager","role":"building_manager"}',
   now(),
   now(),
   'authenticated',
@@ -115,19 +115,17 @@ INSERT INTO auth.users (
   ''
 );
 
--- Create profiles for test users
-INSERT INTO profiles (id, first_name, last_name, phone_number, role)
+INSERT INTO profiles (id, first_name, last_name, phone_number, role, email)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'John', 'Manager', '+3725551001', 'building_owner'),
-  ('00000000-0000-0000-0000-000000000002', 'Alice', 'Smith', '+3725551002', 'resident'),
-  ('00000000-0000-0000-0000-000000000003', 'Bob', 'Johnson', '+3725551003', 'resident')
+  ('00000000-0000-0000-0000-000000000001', 'John', 'Manager', '+3725551001', 'building_manager', 'manager@test.com'),
+  ('00000000-0000-0000-0000-000000000002', 'Alice', 'Smith', '+3725551002', 'resident', 'resident1@test.com'),
+  ('00000000-0000-0000-0000-000000000003', 'Bob', 'Johnson', '+3725551003', 'resident', 'resident2@test.com')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create a test building
-INSERT INTO buildings (id, name, street_name, house_number, city, county, postal_code, full_address, manager_id)
+INSERT INTO buildings (id, street_name, house_number, city, county, postal_code, full_address, manager_id)
 VALUES (
   '10000000-0000-0000-0000-000000000001',
-  'Test Building',
   'Test Street',
   '123',
   'Tallinn',
@@ -138,7 +136,7 @@ VALUES (
 );
 
 -- Add residents to the building
-INSERT INTO building_residents (building_id, profile_id, apartment_number, is_approved)
+INSERT INTO building_residents (building_id, profile_id, apartment_number, resident_role, is_approved)
 VALUES
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '101', true),
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', '102', true);
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '101', 'resident', true),
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', '102', 'resident', true);

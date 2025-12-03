@@ -48,6 +48,11 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
     setError(null)
   }
 
+  const handleAddressError = (errorMessage: string) => {
+    setError(errorMessage)
+    setSelectedAddress(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -71,7 +76,6 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
         }
 
         buildingData = {
-          name: `${formData.street_name} ${formData.house_number}`.trim(),
           street_name: formData.street_name,
           house_number: formData.house_number,
           city: formData.city,
@@ -91,11 +95,7 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
             "Please select an address using the Estonian address search",
           )
         }
-
         buildingData = {
-          name:
-            selectedAddress.full_address ||
-            `${selectedAddress.street_name} ${selectedAddress.house_number}`.trim(),
           street_name: selectedAddress.street_name,
           house_number: selectedAddress.house_number,
           city: selectedAddress.city || "",
@@ -180,6 +180,7 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
               <div className="mt-2 mb-8">
                 <EstonianAds
                   onAddressSelect={handleAddressSelect}
+                  onError={handleAddressError}
                   height="60px"
                   mode={3}
                   language="et"

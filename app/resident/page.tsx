@@ -5,11 +5,15 @@ import { createClient } from "@/lib/supabase/client"
 import type { Building } from "@/lib/types/chat"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { ChatBox } from "@/components/chat-box"
-import { NoticeBoardDisplay } from "@/components/notice-board-display"
+import { NoticeBoard } from "@/components/notice-board"
 import { BuildingCalendar } from "@/components/building-calendar"
 
+interface ResidentBuilding extends Building {
+  full_address: string
+}
+
 export default function ResidentDashboard() {
-  const [building, setBuilding] = useState<Building | null>(null)
+  const [building, setBuilding] = useState<ResidentBuilding | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -46,7 +50,7 @@ export default function ResidentDashboard() {
 
         const { data: managerBuilding } = await supabase
           .from("buildings")
-          .select("id, name")
+          .select("id, full_address")
           .eq("manager_id", user.id)
           .limit(1)
           .single()
@@ -56,7 +60,7 @@ export default function ResidentDashboard() {
         } else {
           const { data: residentData, error: residentError } = await supabase
             .from("building_residents")
-            .select("building_id, buildings(id, name)")
+            .select("building_id, buildings(id, full_address)")
             .eq("profile_id", user.id)
             .eq("is_approved", true)
             .limit(1)
@@ -68,7 +72,7 @@ export default function ResidentDashboard() {
             return
           }
 
-          userBuilding = (residentData.buildings as any)
+          userBuilding = residentData.buildings as any
         }
 
         if (!userBuilding) {
@@ -77,7 +81,10 @@ export default function ResidentDashboard() {
           return
         }
 
-        setBuilding({ id: userBuilding.id, name: userBuilding.name })
+        setBuilding({
+          id: userBuilding.id,
+          full_address: userBuilding.full_address,
+        })
       } catch (err: any) {
         console.error("Error loading building:", err)
         setError(err.message)
@@ -103,7 +110,8 @@ export default function ResidentDashboard() {
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-bold mb-4">No Building Found</h2>
           <p className="text-gray-600 mb-6">
-            {error || "You need to create a building or be assigned to one to access the chat."}
+            {error ||
+              "You need to create a building or be assigned to one to access the chat."}
           </p>
           <div className="space-y-3">
             <a
@@ -113,7 +121,8 @@ export default function ResidentDashboard() {
               Go to Building Management
             </a>
             <p className="text-sm text-gray-500">
-              Create a building or ask your building manager to add you as a resident.
+              Create a building or ask your building manager to add you as a
+              resident.
             </p>
           </div>
         </div>
@@ -123,14 +132,29 @@ export default function ResidentDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <main className="flex justify-center items-start gap-10 px-6 mt-[15vh]">
+      {/* Building Header */}
+      <div className="bg-white border-b border-gray-300 px-6 py-4 mt-[10vh]">
+        <div className="container mx-auto">
+          <h1 className="text-2xl font-bold">{building.full_address}</h1>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex justify-center items-start gap-10 px-6 mt-8">
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
-          <NoticeBoardDisplay buildingName={building.name} />
-          <BuildingCalendar />
+          {/* Notices */}
+          <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
+            <NoticeBoard buildingId={building.id} />
+          </div>
+
+          {/* Calendar */}
+          <div className="w-1/2 pl-6 flex flex-col items-center">
+            <BuildingCalendar />
+          </div>
         </section>
 
         <ChatBox
-          buildingName={building.name}
+          buildingName={building.full_address}
           messages={messages}
           currentUserId={currentUserId}
           onSendMessage={sendMessage}

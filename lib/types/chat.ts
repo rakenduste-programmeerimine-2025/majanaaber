@@ -49,7 +49,6 @@ export interface Message {
 
 export interface Building {
   id: string
-  name: string
 }
 
 // P2P Messaging Types
