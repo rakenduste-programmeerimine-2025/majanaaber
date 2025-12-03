@@ -203,7 +203,7 @@ export function NoticeForm({
 
             {/* Existing attachments (when editing) */}
             {existingAttachments.length > 0 && (
-              <div className="mt-2 space-y-2">
+              <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
                 <p className="text-xs text-gray-500 font-medium">
                   Current attachments:
                 </p>
@@ -239,7 +239,7 @@ export function NoticeForm({
 
             {/* Selected files preview */}
             {selectedFiles.length > 0 && (
-              <div className="mt-2 space-y-2">
+              <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
                 <p className="text-xs text-gray-500 font-medium">
                   New files to upload:
                 </p>

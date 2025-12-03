@@ -51,12 +51,12 @@ export function NoticeBoard({
   const filteredNotices = notices.filter(notice => {
     if (!showArchived && notice.is_archived) return false
     if (showArchived && !notice.is_archived) return false
-    if (
-      !showArchived &&
-      notice.expires_at &&
-      new Date(notice.expires_at) < new Date()
-    )
-      return false
+    // Check expiration - compare at end of day so same-day notices still show
+    if (!showArchived && notice.expires_at) {
+      const expiryDate = new Date(notice.expires_at)
+      expiryDate.setHours(23, 59, 59, 999) // End of expiry day
+      if (expiryDate < new Date()) return false
+    }
     const matchesSearch =
       searchQuery === "" ||
       notice.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -384,8 +384,8 @@ export function NoticeBoard({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center mb-4">
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex justify-between items-center mb-4 flex-shrink-0">
         <h3 className="font-semibold text-lg">
           {showArchived ? "Archived Notices" : "Notices"}
         </h3>
@@ -408,21 +408,23 @@ export function NoticeBoard({
         </div>
       </div>
 
-      <NoticeFilters
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        filterCategory={filterCategory}
-        onCategoryChange={setFilterCategory}
-      />
+      <div className="flex-shrink-0">
+        <NoticeFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filterCategory={filterCategory}
+          onCategoryChange={setFilterCategory}
+        />
+      </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex-shrink-0">
           <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
       {showAddForm && isManager && (
-        <>
+        <div className="flex-shrink-0 max-h-[60%] overflow-y-auto mb-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -457,10 +459,10 @@ export function NoticeBoard({
               setExistingAttachments(prev => prev.filter(a => a.id !== id))
             }
           />
-        </>
+        </div>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-2">
+      <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {filteredNotices.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
