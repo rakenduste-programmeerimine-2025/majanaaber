@@ -181,7 +181,7 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
           </div>
 
           {/* ADS Component */}
-          {!useManualEntry && (
+          {!useManualEntry && !selectedAddress && (
             <div className="relative z-20">
               <Label>Search Address</Label>
               <div className="mt-2 mb-8">
@@ -193,34 +193,36 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
                   language="et"
                 />
               </div>
-              {selectedAddress && (
-                <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                        Selected Address:
-                      </p>
-                      <p className="text-sm text-green-700 dark:text-green-300">
-                        {selectedAddress.full_address}
-                      </p>
-                      {selectedAddress.postal_code && (
-                        <p className="text-xs text-green-600 dark:text-green-400">
-                          Postal Code: {selectedAddress.postal_code}
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleClearSelection}
-                      className="flex-shrink-0"
-                    >
-                      Change
-                    </Button>
-                  </div>
+            </div>
+          )}
+
+          {/* Selected Address Display */}
+          {!useManualEntry && selectedAddress && (
+            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                    Selected Address:
+                  </p>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    {selectedAddress.full_address}
+                  </p>
+                  {selectedAddress.postal_code && (
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      Postal Code: {selectedAddress.postal_code}
+                    </p>
+                  )}
                 </div>
-              )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearSelection}
+                  className="flex-shrink-0"
+                >
+                  Change
+                </Button>
+              </div>
             </div>
           )}
 
