@@ -387,9 +387,9 @@ export default function ManagerDashboard() {
     )
   }
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Building Header */}
-      <div className="bg-white border-b border-gray-300 px-6 py-4 mt-[10vh]">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 px-6 py-4 mt-[10vh]">
         <div className="container mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold">{building.full_address}</h1>
           <Button
@@ -687,9 +687,9 @@ export default function ManagerDashboard() {
       {/* Main Content */}
       <main className="flex justify-center items-start gap-10 px-6 mt-8">
         {/* Left: Notices + Calendar */}
-        <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
+        <section className="flex bg-white dark:bg-gray-800 p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300 dark:border-gray-700">
           {/* Notices */}
-          <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
+          <div className="w-1/2 pr-6 border-r border-gray-300 dark:border-gray-700 flex flex-col">
             <NoticeBoard
               buildingId={buildingId}
               isManager={true}
@@ -701,7 +701,7 @@ export default function ManagerDashboard() {
             {buildingId ? (
               <BuildingCalendar buildingId={buildingId} />
             ) : (
-              <div className="p-4 text-sm text-gray-500">
+              <div className="p-4 text-sm text-gray-500 dark:text-gray-400">
                 No building selected
               </div>
             )}

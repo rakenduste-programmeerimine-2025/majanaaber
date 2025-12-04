@@ -9,15 +9,26 @@ import { createClient } from "@/lib/supabase/client"
 
 export default function ManagerMessagesPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null)
-  const [selectedOtherUserId, setSelectedOtherUserId] = useState<string | null>(null)
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null)
+  const [selectedOtherUserId, setSelectedOtherUserId] = useState<string | null>(
+    null,
+  )
   const [otherUserName, setOtherUserName] = useState<string>("")
   const [showNewMessageModal, setShowNewMessageModal] = useState(false)
-  const [residents, setResidents] = useState<Array<{id: string, first_name: string, last_name: string}>>([])
+  const [residents, setResidents] = useState<
+    Array<{ id: string; first_name: string; last_name: string }>
+  >([])
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
 
   const supabase = createClient()
-  const { conversations, isLoading, getOrCreateConversation, refreshConversations } = useConversations()
+  const {
+    conversations,
+    isLoading,
+    getOrCreateConversation,
+    refreshConversations,
+  } = useConversations()
 
   const {
     messages,
@@ -35,7 +46,9 @@ export default function ManagerMessagesPage() {
 
   useEffect(() => {
     const checkAuthorization = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         setIsAuthorized(false)
         return
@@ -47,7 +60,10 @@ export default function ManagerMessagesPage() {
         .eq("id", user.id)
         .single()
 
-      if (profile?.role === "building_manager" || profile?.role === "building_owner") {
+      if (
+        profile?.role === "building_manager" ||
+        profile?.role === "building_owner"
+      ) {
         setCurrentUserId(user.id)
         setIsAuthorized(true)
       } else {
@@ -71,10 +87,19 @@ export default function ManagerMessagesPage() {
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col items-center justify-center h-64">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You do not have permission to access this page.</p>
-          <p className="text-gray-600 mt-2">Only building managers can access direct messages here.</p>
-          <a href="/resident/messages" className="mt-4 text-blue-600 hover:underline">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Access Denied
+          </h1>
+          <p className="text-gray-600">
+            You do not have permission to access this page.
+          </p>
+          <p className="text-gray-600 mt-2">
+            Only building managers can access direct messages here.
+          </p>
+          <a
+            href="/resident/messages"
+            className="mt-4 text-blue-600 hover:underline"
+          >
             Go to Resident Messages
           </a>
         </div>
@@ -82,7 +107,10 @@ export default function ManagerMessagesPage() {
     )
   }
 
-  const handleSelectConversation = async (conversationId: string, otherUserId: string) => {
+  const handleSelectConversation = async (
+    conversationId: string,
+    otherUserId: string,
+  ) => {
     setSelectedConversationId(conversationId)
     setSelectedOtherUserId(otherUserId)
 
@@ -98,7 +126,9 @@ export default function ManagerMessagesPage() {
   }
 
   const handleStartNewConversation = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) return
 
     const { data: managedBuildings } = await supabase
@@ -112,26 +142,31 @@ export default function ManagerMessagesPage() {
 
     const { data: buildingResidents } = await supabase
       .from("building_residents")
-      .select(`
+      .select(
+        `
         profile_id,
         profiles!inner(id, first_name, last_name)
-      `)
+      `,
+      )
       .in("building_id", buildingIds)
       .eq("is_approved", true)
       .neq("profile_id", user.id)
 
     if (buildingResidents) {
       // Remove duplicates
-      const uniqueResidents = buildingResidents.reduce((acc: any[], br: any) => {
-        if (!acc.find(r => r.id === br.profiles.id)) {
-          acc.push({
-            id: br.profiles.id,
-            first_name: br.profiles.first_name,
-            last_name: br.profiles.last_name,
-          })
-        }
-        return acc
-      }, [])
+      const uniqueResidents = buildingResidents.reduce(
+        (acc: any[], br: any) => {
+          if (!acc.find(r => r.id === br.profiles.id)) {
+            acc.push({
+              id: br.profiles.id,
+              first_name: br.profiles.first_name,
+              last_name: br.profiles.last_name,
+            })
+          }
+          return acc
+        },
+        [],
+      )
 
       setResidents(uniqueResidents)
       setShowNewMessageModal(true)
@@ -160,8 +195,8 @@ export default function ManagerMessagesPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 bg-white rounded-lg border overflow-hidden">
-          <div className="p-4 border-b bg-gray-50">
+        <div className="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b bg-gray-50 dark:bg-gray-700">
             <h2 className="font-semibold">Conversations</h2>
           </div>
           <div className="overflow-y-auto max-h-[600px]">
@@ -192,10 +227,12 @@ export default function ManagerMessagesPage() {
               onMarkAsRead={markMessageAsRead}
             />
           ) : (
-            <div className="h-[600px] border rounded-lg bg-white flex items-center justify-center text-gray-500">
+            <div className="h-[600px] border rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
               <div className="text-center">
                 <p className="text-lg font-medium">No conversation selected</p>
-                <p className="text-sm mt-2">Select a conversation or start a new one</p>
+                <p className="text-sm mt-2">
+                  Select a conversation or start a new one
+                </p>
               </div>
             </div>
           )}
@@ -204,7 +241,7 @@ export default function ManagerMessagesPage() {
 
       {showNewMessageModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">New Message</h2>
               <button
@@ -217,13 +254,15 @@ export default function ManagerMessagesPage() {
 
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {residents.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No residents found</p>
+                <p className="text-gray-500 text-center py-4">
+                  No residents found
+                </p>
               ) : (
-                residents.map((resident) => (
+                residents.map(resident => (
                   <button
                     key={resident.id}
                     onClick={() => handleCreateConversation(resident.id)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-lg border"
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg border"
                   >
                     <span className="font-medium">
                       {resident.first_name} {resident.last_name}
