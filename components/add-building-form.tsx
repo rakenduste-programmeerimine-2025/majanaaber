@@ -193,9 +193,9 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
 
           {/* ADS Component */}
           {!useManualEntry && !selectedAddress && (
-            <div className="relative z-20">
+            <div className="relative z-20 pb-12">
               <Label>Search Address</Label>
-              <div className="mt-2 mb-8">
+              <div className="mt-2">
                 <EstonianAds
                   onAddressSelect={handleAddressSelect}
                   onError={handleAddressError}
