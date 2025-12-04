@@ -98,7 +98,7 @@ export default function ManagerMessagesPage() {
           </p>
           <a
             href="/resident/messages"
-            className="mt-4 text-blue-600 hover:underline"
+            className="mt-4 text-primary hover:underline"
           >
             Go to Resident Messages
           </a>

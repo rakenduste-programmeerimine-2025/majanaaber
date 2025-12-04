@@ -191,7 +191,7 @@ export function NoticeCard({
               className="flex items-center gap-2 mt-3 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
             >
               {notice.attachment_type?.startsWith("image/") ? (
-                <ImageIcon className="h-4 w-4 text-blue-600" />
+                <ImageIcon className="h-4 w-4 text-primary" />
               ) : (
                 <FileText className="h-4 w-4 text-red-600" />
               )}

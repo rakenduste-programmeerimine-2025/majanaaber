@@ -369,8 +369,8 @@ export function PeerChatBox({
 
   return (
     <>
-      <section className="flex flex-col h-[600px] border rounded-lg bg-white dark:bg-gray-900">
-        <div className="border-b p-4 bg-gray-50 dark:bg-gray-800">
+      <section className="flex flex-col h-[600px] border rounded-lg bg-background">
+        <div className="border-b p-4 bg-card">
           <h2 className="text-lg font-semibold">{otherUserName}</h2>
         </div>
 
