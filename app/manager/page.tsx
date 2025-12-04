@@ -726,7 +726,7 @@ export default function ManagerDashboard() {
           headerAction={
             <Link
               href={`/manager/messages?building=${buildingId}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
             >
               <MessageSquare className="h-4 w-4" />
               Direct Messages
