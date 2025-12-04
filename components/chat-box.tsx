@@ -598,7 +598,7 @@ export function ChatBox({
                               </>
                               {!isOwnMessage && (
                                 <div className="flex justify-between items-start mb-1">
-                                  <span className="font-semibold text-sm text-blue-600">
+                                  <span className="font-semibold text-sm text-primary">
                                     {msg.sender
                                       ? `${msg.sender.first_name} ${msg.sender.last_name}`
                                       : "Unknown User"}

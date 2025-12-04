@@ -111,7 +111,7 @@ const AttachmentDisplay = memo(
             href={fileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex items-center gap-2 p-2 rounded border ${isOwnMessage ? "bg-blue-600 border-blue-500" : "bg-gray-100 border-gray-300"} hover:opacity-90 max-w-full`}
+            className={`flex items-center gap-2 p-2 rounded border ${isOwnMessage ? "bg-primary border-primary" : "bg-muted border-muted"} hover:opacity-90 max-w-full`}
           >
             <span className="text-2xl flex-shrink-0">📄</span>
             <div className="flex-1 min-w-0">
@@ -408,7 +408,7 @@ export function PeerChatBox({
                   className={`${isOwnMessage ? "items-end" : "items-start"} flex flex-col`}
                 >
                   {!isOwnMessage && (
-                    <span className="text-xs text-gray-500 mb-1">
+                    <span className="text-xs text-muted-foreground mb-1">
                       {senderName}
                     </span>
                   )}
@@ -431,10 +431,10 @@ export function PeerChatBox({
                   <div
                     className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
                       message.is_deleted
-                        ? "bg-gray-100 text-gray-500"
+                        ? "bg-muted text-muted-foreground"
                         : isOwnMessage
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-200 text-gray-900"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground"
                     }`}
                   >
                     {message.is_deleted ? (
@@ -467,7 +467,7 @@ export function PeerChatBox({
                         <div className="flex gap-2 mt-2">
                           <button
                             onClick={handleEditSave}
-                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                            className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm"
                           >
                             Save
                           </button>
@@ -732,14 +732,14 @@ export function PeerChatBox({
               placeholder="Type a message..."
               disabled={isSending}
               maxLength={MAX_MESSAGE_LENGTH}
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <button
               onClick={handleSendMessage}
               disabled={
                 (!input.trim() && selectedFiles.length === 0) || isSending
               }
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSending ? "Sending..." : "Send"}
             </button>
