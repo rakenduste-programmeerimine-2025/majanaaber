@@ -20,7 +20,7 @@ export function NavBar({ links }: NavBarProps) {
           <Link
             key={label}
             href={disabled ? "#" : href}
-            className={`font-medium hover:text-blue-600 ${
+            className={`font-medium hover:text-primary ${
               disabled ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >

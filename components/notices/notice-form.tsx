@@ -4,12 +4,7 @@ import { RefObject } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
@@ -75,13 +70,20 @@ export function NoticeForm({
           <CardTitle className="text-base">
             {editingNotice ? "Edit Notice" : "Add New Notice"}
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-3"
+        >
           <div>
             <div className="flex justify-between items-center">
               <Label htmlFor="title">Title</Label>
@@ -124,7 +126,10 @@ export function NoticeForm({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="priority">Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select
+                value={priority}
+                onValueChange={setPriority}
+              >
                 <SelectTrigger id="priority">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
@@ -134,14 +139,17 @@ export function NoticeForm({
                   </SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="low">
-                    <span className="text-blue-600">Low</span>
+                    <span className="text-primary">Low</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label htmlFor="category">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
+              <Select
+                value={category}
+                onValueChange={setCategory}
+              >
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -149,7 +157,10 @@ export function NoticeForm({
                   {Object.entries(categoryConfig).map(([key, config]) => {
                     const Icon = config.icon
                     return (
-                      <SelectItem key={key} value={key}>
+                      <SelectItem
+                        key={key}
+                        value={key}
+                      >
                         <span
                           className={`flex items-center gap-1.5 ${config.color}`}
                         >
@@ -213,7 +224,7 @@ export function NoticeForm({
                     className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border"
                   >
                     {attachment.file_type.startsWith("image/") ? (
-                      <ImageIcon className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                      <ImageIcon className="h-4 w-4 text-primary flex-shrink-0" />
                     ) : (
                       <FileText className="h-4 w-4 text-red-600 flex-shrink-0" />
                     )}
@@ -282,7 +293,11 @@ export function NoticeForm({
           </div>
 
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Saving..." : editingNotice ? "Update" : "Add"}
             </Button>
             <Button

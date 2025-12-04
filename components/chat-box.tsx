@@ -123,7 +123,7 @@ const AttachmentDisplay = memo(
             href={fileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex items-center gap-2 p-2 rounded border ${isOwnMessage ? "bg-blue-600 border-blue-500" : "bg-gray-100 border-gray-300"} hover:opacity-90 max-w-full`}
+            className={`flex items-center gap-2 p-2 rounded border ${isOwnMessage ? "bg-primary border-primary" : "bg-muted border-muted"} hover:opacity-90 max-w-full`}
           >
             <span className="text-2xl flex-shrink-0">📄</span>
             <div className="flex-1 min-w-0">
@@ -810,7 +810,7 @@ export function ChatBox({
             {showScrollButton && (
               <button
                 onClick={scrollToBottom}
-                className="absolute bottom-2 right-2 bg-blue-500 dark:bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-all z-10"
+                className="absolute bottom-2 right-2 bg-primary text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:opacity-90 transition-all z-10"
                 title="Scroll to bottom"
               >
                 ↓
@@ -933,7 +933,7 @@ export function ChatBox({
                   input.length > MAX_MESSAGE_LENGTH ||
                   isSending
                 }
-                className="bg-blue-500 dark:bg-blue-600 text-white px-4 rounded hover:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
+                className="bg-primary text-primary-foreground px-4 rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSending ? "Sending..." : "Send"}
               </button>
