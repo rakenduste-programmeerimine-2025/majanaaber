@@ -103,7 +103,7 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
                   {dayEvents.slice(0, 3).map(ev => (
                     <div
                       key={ev.id}
-                      className="w-1.5 h-1.5 bg-blue-600 rounded-full"
+                      className="w-1.5 h-1.5 bg-primary rounded-full"
                     ></div>
                   ))}
                 </div>
