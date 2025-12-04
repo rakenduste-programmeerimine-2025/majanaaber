@@ -151,7 +151,7 @@ export default function ResidentDashboard() {
 
           {/* Calendar */}
           <div className="w-1/2 pl-6 flex flex-col items-center">
-            <BuildingCalendar />
+          <BuildingCalendar buildingId={building.id} />
           </div>
         </section>
 

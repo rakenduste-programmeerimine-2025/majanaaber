@@ -8,6 +8,7 @@ import { ChatBox } from "@/components/chat-box"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { BuildingCalendar } from "@/components/building-calendar"
 import Link from "next/link"
 import { MessageSquare } from "lucide-react"
 
@@ -45,6 +46,12 @@ interface EditingResident {
   residentRole: "resident" | "apartment_owner"
 }
 
+interface Notice {
+  id: string
+  title: string
+  event_date: string | null
+}
+
 export default function ManagerDashboard() {
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,6 +68,8 @@ export default function ManagerDashboard() {
   })
   const [editingResident, setEditingResident] =
     useState<EditingResident | null>(null)
+
+  const [notices, setNotices] = useState<Notice[]>([])
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
 
@@ -140,6 +149,26 @@ export default function ManagerDashboard() {
     loadBuilding()
   }, [buildingId])
 
+  useEffect(() => {
+    const loadNotices = async () => {
+      if (!buildingId) return
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("notices")
+        .select("id, title, event_date")
+        .eq("building_id", buildingId)
+        .order("event_date", { ascending: true })
+
+      if (error) {
+        console.error("Error loading notices:", error)
+        return
+      }
+
+      setNotices(data || [])
+    }
+
+    loadNotices()
+  }, [buildingId])
   const loadResidents = async () => {
     if (!buildingId) return
 
@@ -357,7 +386,6 @@ export default function ManagerDashboard() {
       </div>
     )
   }
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Building Header */}
@@ -669,22 +697,14 @@ export default function ManagerDashboard() {
           </div>
 
           {/* Calendar */}
-          <div className="w-1/2 pl-6 flex flex-col items-center">
-            <div className="flex items-center justify-between w-full mb-3">
-              <button>{"<"}</button>
-              <h3 className="font-semibold">November 2025</h3>
-              <button>{">"}</button>
-            </div>
-            <div className="grid grid-cols-7 gap-2 w-full">
-              {[...Array(30)].map((_, i) => (
-                <button
-                  key={i}
-                  className="p-2 bg-gray-100 rounded hover:bg-blue-100"
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
+          <div className="w-1/2 pl-6">
+            {buildingId ? (
+              <BuildingCalendar buildingId={buildingId} />
+            ) : (
+              <div className="p-4 text-sm text-gray-500">
+                No building selected
+              </div>
+            )}
           </div>
         </section>
 
