@@ -389,7 +389,7 @@ export default function ManagerDashboard() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Building Header */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 px-6 py-4 mt-[10vh]">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 px-6 py-4">
         <div className="container mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold">{building.full_address}</h1>
           <Button
