@@ -14,7 +14,7 @@ interface NavBarProps {
 
 export function NavBar({ links }: NavBarProps) {
   return (
-    <nav className="bg-gray-50 border-b border-b-foreground/10">
+    <nav className="bg-gray-50 dark:bg-gray-900 border-b border-b-foreground/10">
       <div className="max-w-7xl mx-auto flex gap-5 p-3 px-5">
         {links.map(({ label, href, disabled }) => (
           <Link

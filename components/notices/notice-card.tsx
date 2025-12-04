@@ -154,7 +154,7 @@ export function NoticeCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => onDelete(notice.id)}
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                 title="Delete notice permanently"
               >
                 <Trash2 className="h-3 w-3" />
@@ -172,7 +172,10 @@ export function NoticeCard({
         {notice.attachments && notice.attachments.length > 0 && (
           <div className="mt-3 space-y-2">
             {notice.attachments.map(attachment => (
-              <AttachmentDisplay key={attachment.id} attachment={attachment} />
+              <AttachmentDisplay
+                key={attachment.id}
+                attachment={attachment}
+              />
             ))}
           </div>
         )}

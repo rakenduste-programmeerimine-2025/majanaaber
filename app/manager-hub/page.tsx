@@ -266,7 +266,7 @@ export default function ManagerHubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 py-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -275,7 +275,7 @@ export default function ManagerHubPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
             <p className="text-red-700">{error}</p>
           </div>
         )}
@@ -392,23 +392,23 @@ export default function ManagerHubPage() {
           {/* Right Column - Buildings */}
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold">My Buildings</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-semibold">My Buildings</h2>
+                {!showAddForm && (
+                  <Button
+                    onClick={() => setShowAddForm(true)}
+                    size="sm"
+                    className="h-9"
+                  >
+                    + Add New Building
+                  </Button>
+                )}
+              </div>
               <Badge variant="outline">{buildings.length}</Badge>
             </div>
 
-            {!showAddForm && (
-              <div className="mb-6">
-                <Button
-                  onClick={() => setShowAddForm(true)}
-                  className="w-full"
-                >
-                  + Add New Building
-                </Button>
-              </div>
-            )}
-
             {showAddForm && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold">Add New Building</h3>
                   <Button
@@ -425,13 +425,13 @@ export default function ManagerHubPage() {
 
             {buildings.length > 0 && !showAddForm && (
               <div className="relative w-full mb-6">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <Input
                   type="text"
                   placeholder="Search buildings..."
                   value={buildingSearchQuery}
                   onChange={e => setBuildingSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 />
               </div>
             )}
@@ -565,7 +565,7 @@ export default function ManagerHubPage() {
                       filteredUsers.map(user => (
                         <div
                           key={user.id}
-                          className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50 cursor-pointer"
+                          className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                           onClick={() =>
                             handleChangeManager(
                               changeManagerBuildingId,
