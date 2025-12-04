@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS public.notices (
   building_id UUID REFERENCES public.buildings(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
+  event_date DATE,
   created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -93,7 +94,3 @@ CREATE TRIGGER set_notices_updated_at
   BEFORE UPDATE ON public.notices
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_updated_at();
-
--- Add DATE to notices table
-ALTER TABLE public.notices
-ADD COLUMN event_date DATE;
