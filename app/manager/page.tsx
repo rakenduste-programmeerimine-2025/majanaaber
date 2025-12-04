@@ -387,7 +387,7 @@ export default function ManagerDashboard() {
     )
   }
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col min-h-screen bg-background">
       {/* Building Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 px-6 py-4 mt-[10vh]">
         <div className="container mx-auto flex items-center justify-between">
