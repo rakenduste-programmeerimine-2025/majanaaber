@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { NoticeBoard } from "@/components/notice-board"
+import { NoticeBoard } from "@/components/notices"
 import { ChatBox } from "@/components/chat-box"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { Button } from "@/components/ui/button"
@@ -80,11 +80,6 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     const loadBuilding = async () => {
-      if (!buildingId) {
-        setLoading(false)
-        return
-      }
-
       try {
         const supabase = createClient()
 
@@ -98,6 +93,26 @@ export default function ManagerDashboard() {
         }
 
         setCurrentUserId(user.id)
+
+        // If no building ID is provided, try to find the manager's building
+        if (!buildingId) {
+          const { data: managerBuilding, error: buildingError } = await supabase
+            .from("buildings")
+            .select("id, full_address, manager_id")
+            .eq("manager_id", user.id)
+            .limit(1)
+            .single()
+
+          if (buildingError || !managerBuilding) {
+            throw new Error(
+              "No building found. Please create a building first.",
+            )
+          }
+
+          // Redirect to the same page with building ID
+          window.location.href = `/manager?building=${managerBuilding.id}`
+          return
+        }
 
         // Fetch building and verify ownership
         const { data, error } = await supabase
