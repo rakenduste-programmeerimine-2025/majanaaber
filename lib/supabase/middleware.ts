@@ -77,9 +77,27 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (pathname.startsWith("/admin") && userRole !== "building_owner") {
+    if (pathname.startsWith("/admin") && userRole !== "building_manager") {
       const url = request.nextUrl.clone();
-      url.pathname = "/protected";
+      url.pathname = "/resident-hub";
+      return NextResponse.redirect(url);
+    }
+
+    if (
+      pathname.startsWith("/manager-hub") &&
+      userRole !== "building_manager"
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/resident-hub";
+      return NextResponse.redirect(url);
+    }
+
+    if (
+      pathname.startsWith("/resident-hub") &&
+      (userRole === "building_manager")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/manager-hub";
       return NextResponse.redirect(url);
     }
   }

@@ -2,15 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { changeBuildingManager } from "@/app/actions/auth"
 import { AddBuildingForm } from "@/components/add-building-form"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
@@ -35,7 +30,7 @@ interface Apartment {
   }
 }
 
-export default function ProtectedPage() {
+export default function ManagerHubPage() {
   const [buildings, setBuildings] = useState<Building[]>([])
   const [apartments, setApartments] = useState<Apartment[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,6 +38,14 @@ export default function ProtectedPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [buildingSearchQuery, setBuildingSearchQuery] = useState("")
   const [apartmentSearchQuery, setApartmentSearchQuery] = useState("")
+  const [changeManagerBuildingId, setChangeManagerBuildingId] = useState<
+    string | null
+  >(null)
+  const [allUsers, setAllUsers] = useState<
+    Array<{ id: string; first_name: string; last_name: string; email: string }>
+  >([])
+  const [searchUserQuery, setSearchUserQuery] = useState("")
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false)
 
   const loadData = async () => {
     try {
@@ -56,7 +59,6 @@ export default function ProtectedPage() {
         throw new Error("User not authenticated")
       }
 
-      // Load buildings managed by user
       const { data: buildingsData, error: buildingsError } = await supabase
         .from("buildings")
         .select("id, full_address, city, apartment_count, created_at")
@@ -69,7 +71,6 @@ export default function ProtectedPage() {
 
       setBuildings(buildingsData || [])
 
-      // Load apartments where user is a resident
       const { data: apartmentsData, error: apartmentsError } = await supabase
         .from("building_residents")
         .select(
@@ -88,7 +89,6 @@ export default function ProtectedPage() {
         throw apartmentsError
       }
 
-      // Map the data to match our Apartment interface
       const mappedApartments = (apartmentsData || []).map(item => ({
         ...item,
         building: Array.isArray(item.building)
@@ -108,7 +108,6 @@ export default function ProtectedPage() {
 
     const supabase = createClient()
 
-    // Subscribe to building_residents changes
     const apartmentsSubscription = supabase
       .channel("building_residents_changes")
       .on(
@@ -124,7 +123,6 @@ export default function ProtectedPage() {
       )
       .subscribe()
 
-    // Subscribe to buildings changes
     const buildingsSubscription = supabase
       .channel("buildings_changes")
       .on(
@@ -140,7 +138,6 @@ export default function ProtectedPage() {
       )
       .subscribe()
 
-    // Cleanup subscriptions on unmount
     return () => {
       apartmentsSubscription.unsubscribe()
       buildingsSubscription.unsubscribe()
@@ -174,7 +171,75 @@ export default function ProtectedPage() {
     }
   }
 
-  // Filter data based on search queries
+  const loadUsersForManagerChange = async () => {
+    try {
+      setIsSearchingUsers(true)
+      const supabase = createClient()
+
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error("User not authenticated")
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .neq("id", user.id)
+        .limit(100)
+
+      if (error) throw error
+
+      setAllUsers(data || [])
+    } catch (err: any) {
+      console.error("Error loading users:", err)
+      alert("Failed to load users: " + err.message)
+    } finally {
+      setIsSearchingUsers(false)
+    }
+  }
+
+  const handleChangeManager = async (
+    buildingId: string,
+    newManagerId: string,
+  ) => {
+    if (
+      !confirm(
+        "Are you sure you want to transfer this building to the selected manager?",
+      )
+    ) {
+      return
+    }
+
+    try {
+      const result = await changeBuildingManager(buildingId, newManagerId)
+
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+
+      setChangeManagerBuildingId(null)
+      setSearchUserQuery("")
+
+      // Hard refresh to ensure middleware runs and new user is redirected to appropriate dashboard
+      window.location.reload()
+    } catch (err: any) {
+      alert("Failed to change manager: " + err.message)
+    }
+  }
+
+  const filteredUsers = allUsers.filter(user => {
+    const query = searchUserQuery.toLowerCase()
+    return (
+      user.first_name?.toLowerCase().includes(query) ||
+      user.last_name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query)
+    )
+  })
+
   const filteredBuildings = buildings.filter(building => {
     const query = buildingSearchQuery.toLowerCase()
     return (
@@ -428,6 +493,16 @@ export default function ProtectedPage() {
                             </Link>
                           </Button>
                           <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setChangeManagerBuildingId(building.id)
+                              loadUsersForManagerChange()
+                            }}
+                          >
+                            Change Manager
+                          </Button>
+                          <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => handleDeleteBuilding(building.id)}
@@ -443,6 +518,91 @@ export default function ProtectedPage() {
             ) : null}
           </div>
         </div>
+
+        {/* Change Manager Overlay */}
+        {changeManagerBuildingId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md mx-4">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">
+                      Select New Manager
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setChangeManagerBuildingId(null)
+                        setSearchUserQuery("")
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={searchUserQuery}
+                      onChange={e => setSearchUserQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {isSearchingUsers ? (
+                      <p className="text-center text-gray-500">
+                        Loading users...
+                      </p>
+                    ) : filteredUsers.length === 0 ? (
+                      <p className="text-center text-gray-500 text-sm">
+                        No users found
+                      </p>
+                    ) : (
+                      filteredUsers.map(user => (
+                        <div
+                          key={user.id}
+                          className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50 cursor-pointer"
+                          onClick={() =>
+                            handleChangeManager(
+                              changeManagerBuildingId,
+                              user.id,
+                            )
+                          }
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">
+                              {user.first_name} {user.last_name}
+                            </p>
+                            <p className="text-sm text-gray-600 truncate">
+                              {user.email}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="ml-2 flex-shrink-0"
+                            onClick={e => {
+                              e.stopPropagation()
+                              handleChangeManager(
+                                changeManagerBuildingId,
+                                user.id,
+                              )
+                            }}
+                          >
+                            Select
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )

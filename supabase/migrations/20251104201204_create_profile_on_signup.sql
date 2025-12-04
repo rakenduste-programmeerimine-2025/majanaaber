@@ -12,16 +12,16 @@ BEGIN
     role,
     first_name,
     last_name,
-    apartment_number,
-    phone_number
+    phone_number,
+    email
   )
   VALUES (
     NEW.id,
     COALESCE((NEW.raw_user_meta_data->>'role')::public.user_role, 'resident'::public.user_role),
     COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-    NEW.raw_user_meta_data->>'apartment_number',
-    COALESCE(NEW.raw_user_meta_data->>'phone_number', '')
+    COALESCE(NEW.raw_user_meta_data->>'phone_number', ''),
+    NEW.email
   );
 
   RAISE LOG 'Profile created successfully for user %', NEW.id;

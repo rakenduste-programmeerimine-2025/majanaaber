@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { NoticeBoard } from "@/components/notice-board"
+import { NoticeBoard } from "@/components/notices"
 import { ChatBox } from "@/components/chat-box"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { BuildingCalendar } from "@/components/building-calendar"
+import Link from "next/link"
+import { MessageSquare } from "lucide-react"
 
 interface Building {
   id: string
@@ -45,9 +47,9 @@ interface EditingResident {
 }
 
 interface Notice {
-  id: string;
-  title: string;
-  event_date: string | null;
+  id: string
+  title: string
+  event_date: string | null
 }
 
 export default function ManagerDashboard() {
@@ -67,7 +69,7 @@ export default function ManagerDashboard() {
   const [editingResident, setEditingResident] =
     useState<EditingResident | null>(null)
 
-  const [notices, setNotices] = useState<Notice[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([])
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
 
@@ -87,11 +89,6 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     const loadBuilding = async () => {
-      if (!buildingId) {
-        setLoading(false)
-        return
-      }
-
       try {
         const supabase = createClient()
 
@@ -105,6 +102,26 @@ export default function ManagerDashboard() {
         }
 
         setCurrentUserId(user.id)
+
+        // If no building ID is provided, try to find the manager's building
+        if (!buildingId) {
+          const { data: managerBuilding, error: buildingError } = await supabase
+            .from("buildings")
+            .select("id, full_address, manager_id")
+            .eq("manager_id", user.id)
+            .limit(1)
+            .single()
+
+          if (buildingError || !managerBuilding) {
+            throw new Error(
+              "No building found. Please create a building first.",
+            )
+          }
+
+          // Redirect to the same page with building ID
+          window.location.href = `/manager?building=${managerBuilding.id}`
+          return
+        }
 
         // Fetch building and verify ownership
         const { data, error } = await supabase
@@ -133,25 +150,25 @@ export default function ManagerDashboard() {
   }, [buildingId])
 
   useEffect(() => {
-  const loadNotices = async () => {
-    if (!buildingId) return;
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("notices")
-      .select("id, title, event_date")
-      .eq("building_id", buildingId)
-      .order("event_date", { ascending: true });
+    const loadNotices = async () => {
+      if (!buildingId) return
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("notices")
+        .select("id, title, event_date")
+        .eq("building_id", buildingId)
+        .order("event_date", { ascending: true })
 
-    if (error) {
-      console.error("Error loading notices:", error);
-      return;
+      if (error) {
+        console.error("Error loading notices:", error)
+        return
+      }
+
+      setNotices(data || [])
     }
 
-    setNotices(data || []);
-  };
-
-  loadNotices();
-}, [buildingId]);
+    loadNotices()
+  }, [buildingId])
   const loadResidents = async () => {
     if (!buildingId) return
 
@@ -212,9 +229,15 @@ export default function ManagerDashboard() {
   const addResident = async (profileId: string) => {
     if (!buildingId) return
 
-    // Check if already added
-    if (residents.some(r => r.profile_id === profileId)) {
-      alert("This user is already a resident of this building")
+    // Check if already added to the same apartment
+    if (
+      residents.some(
+        r =>
+          r.profile_id === profileId &&
+          r.apartment_number === residentForm.apartmentNumber,
+      )
+    ) {
+      alert("This user is already a resident of this apartment")
       return
     }
 
@@ -662,7 +685,7 @@ export default function ManagerDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex items-start gap-10 px-6 mt-8 w-full">
+      <main className="flex justify-center items-start gap-10 px-6 mt-8">
         {/* Left: Notices + Calendar */}
         <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
           {/* Notices */}
@@ -678,7 +701,9 @@ export default function ManagerDashboard() {
             {buildingId ? (
               <BuildingCalendar buildingId={buildingId} />
             ) : (
-              <div className="p-4 text-sm text-gray-500">No building selected</div>
+              <div className="p-4 text-sm text-gray-500">
+                No building selected
+              </div>
             )}
           </div>
         </section>
@@ -698,6 +723,15 @@ export default function ManagerDashboard() {
           onAddReaction={addReaction}
           onRemoveReaction={removeReaction}
           onMarkAsRead={markMessageAsRead}
+          headerAction={
+            <Link
+              href={`/manager/messages?building=${buildingId}`}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Direct Messages
+            </Link>
+          }
         />
       </main>
 
