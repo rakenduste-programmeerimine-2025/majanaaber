@@ -323,7 +323,7 @@ export function EstonianAds({
         ref={containerRef}
         id={uniqueId}
         style={{ width, height }}
-        className="border border-gray-300 dark:border-gray-700 rounded-md relative z-10"
+        className="relative z-10 overflow-visible"
       />
     </div>
   )
