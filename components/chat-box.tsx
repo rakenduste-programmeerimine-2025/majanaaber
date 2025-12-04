@@ -90,7 +90,10 @@ const AttachmentDisplay = memo(({ attachment, isOwnMessage }: { attachment: Atta
               src={fileUrl}
               alt={attachment.file_name}
               className="max-w-full max-h-96 w-auto h-auto rounded cursor-pointer hover:opacity-90"
-              onClick={() => window.open(fileUrl, '_blank')}
+              onClick={(e) => {
+                e.stopPropagation()
+                window.open(fileUrl, '_blank')
+              }}
               onLoad={() => console.log('[IMAGE] Loaded:', attachment.file_name)}
               onError={() => {
                 console.log('[IMAGE] Error loading:', attachment.file_name)
@@ -135,6 +138,7 @@ interface ChatBoxProps {
   onAddReaction: (messageId: string, emoji: string) => Promise<void>
   onRemoveReaction: (messageId: string, reactionId: string) => Promise<void>
   onMarkAsRead: (messageId: string) => Promise<void>
+  headerAction?: React.ReactNode
 }
 
 export function ChatBox({
@@ -151,6 +155,7 @@ export function ChatBox({
   onAddReaction,
   onRemoveReaction,
   onMarkAsRead,
+  headerAction,
 }: ChatBoxProps) {
   const [input, setInput] = useState("")
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -348,7 +353,7 @@ export function ChatBox({
     setReplyingTo(null)
   }
 
-  const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😀"]
+  const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "😀", "🔥", "✅"]
 
   const handleEmojiClick = async (messageId: string, emoji: string) => {
     const message = messages.find(m => m.id === messageId)
@@ -413,7 +418,10 @@ export function ChatBox({
       </div>
 
       <div className="flex flex-col flex-1 min-h-0">
-        <h3 className="text-xl font-semibold mb-2">Building Chat</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xl font-semibold">Building Chat</h3>
+          {headerAction}
+        </div>
         <div className="relative flex-1 min-h-0">
           <div
             ref={messagesContainerRef}
@@ -436,11 +444,22 @@ export function ChatBox({
                   <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
                     <div
                       className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
-                        isOwnMessage
-                          ? "bg-blue-500 text-white"
-                          : "bg-white text-gray-800"
+                        msg.is_deleted
+                          ? "bg-gray-100 text-gray-500"
+                          : isOwnMessage
+                            ? "bg-blue-500 text-white"
+                            : "bg-white text-gray-800"
                       }`}
                     >
+                    {msg.is_deleted ? (
+                      <>
+                        <p className="text-sm italic">This message was deleted</p>
+                        <span className="text-xs text-gray-400">
+                          {formatTimestamp(msg.created_at)}
+                        </span>
+                      </>
+                    ) : (
+                    <>
                     <>
                       <button
                         onClick={(e) => {
@@ -467,7 +486,7 @@ export function ChatBox({
                       {showMessageMenu === msg.id && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className={`absolute top-0 ${isOwnMessage ? '-left-32' : '-right-32'} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                          className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? '-left-32' : '-right-32'} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
                         >
                           <button
                             onClick={() => {
@@ -631,9 +650,11 @@ export function ChatBox({
                         ))}
                       </div>
                     )}
+                    </>
+                    )}
                     </div>
 
-                    {groupReactions(msg.reactions).length > 0 && (
+                    {!msg.is_deleted && groupReactions(msg.reactions).length > 0 && (
                       <div className={`flex flex-wrap gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
                         {groupReactions(msg.reactions).map(group => {
                           const userReaction = msg.reactions?.find(

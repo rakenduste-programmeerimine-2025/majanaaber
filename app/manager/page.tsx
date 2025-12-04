@@ -8,6 +8,8 @@ import { ChatBox } from "@/components/chat-box"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Link from "next/link"
+import { MessageSquare } from "lucide-react"
 
 interface Building {
   id: string
@@ -686,6 +688,15 @@ export default function ManagerDashboard() {
           onAddReaction={addReaction}
           onRemoveReaction={removeReaction}
           onMarkAsRead={markMessageAsRead}
+          headerAction={
+            <Link
+              href={`/manager/messages?building=${buildingId}`}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Direct Messages
+            </Link>
+          }
         />
       </main>
 

@@ -7,6 +7,8 @@ import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { ChatBox } from "@/components/chat-box"
 import { NoticeBoard } from "@/components/notice-board"
 import { BuildingCalendar } from "@/components/building-calendar"
+import Link from "next/link"
+import { MessageSquare } from "lucide-react"
 
 interface ResidentBuilding extends Building {
   full_address: string
@@ -167,6 +169,15 @@ export default function ResidentDashboard() {
           onAddReaction={addReaction}
           onRemoveReaction={removeReaction}
           onMarkAsRead={markMessageAsRead}
+          headerAction={
+            <Link
+              href={`/resident/messages?building=${building.id}`}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Direct Messages
+            </Link>
+          }
         />
       </main>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
-import type { Message } from "@/lib/types/chat"
+import type { PeerMessage } from "@/lib/types/chat"
 
 const MAX_MESSAGE_LENGTH = 1000
 
@@ -9,8 +9,8 @@ interface TypingUser {
   userName: string
 }
 
-export function useBuildingMessages(buildingId: string | null) {
-  const [messages, setMessages] = useState<Message[]>([])
+export function usePeerMessages(conversationId: string | null, otherUserId: string | null) {
+  const [messages, setMessages] = useState<PeerMessage[]>([])
   const [isSending, setIsSending] = useState(false)
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -20,9 +20,9 @@ export function useBuildingMessages(buildingId: string | null) {
   const supabase = createClient()
 
   useEffect(() => {
-    if (!buildingId) return
+    if (!conversationId) return
 
-    loadMessages(buildingId)
+    loadMessages(conversationId)
 
     const initChannel = async () => {
       const {
@@ -42,18 +42,18 @@ export function useBuildingMessages(buildingId: string | null) {
       }
 
       const channel = supabase
-        .channel(`building_messages:${buildingId}`)
+        .channel(`peer_messages:${conversationId}`)
         .on(
           "postgres_changes",
           {
             event: "INSERT",
             schema: "public",
-            table: "building_messages",
-            filter: `building_id=eq.${buildingId}`,
+            table: "peer_messages",
+            filter: `conversation_id=eq.${conversationId}`,
           },
           async payload => {
             const { data } = await supabase
-              .from("building_messages")
+              .from("peer_messages")
               .select(
                 `
               id,
@@ -62,24 +62,26 @@ export function useBuildingMessages(buildingId: string | null) {
               edited_at,
               is_deleted,
               sender_id,
+              receiver_id,
+              conversation_id,
               reply_to_message_id,
-              sender:profiles!building_messages_sender_id_fkey(first_name, last_name),
-              reactions:message_reactions(id, user_id, emoji, created_at),
-              read_receipts:message_read_receipts(id, user_id, read_at),
-              attachments:message_attachments(id, message_id, file_name, file_path, file_type, file_size, created_at)
+              sender:profiles!peer_messages_sender_id_fkey(first_name, last_name),
+              receiver:profiles!peer_messages_receiver_id_fkey(first_name, last_name),
+              reactions:peer_message_reactions(id, user_id, emoji, created_at),
+              read_receipts:peer_message_read_receipts(id, user_id, read_at),
+              attachments:peer_message_attachments(id, message_id, file_name, file_path, file_type, file_size, created_at)
             `,
               )
               .eq("id", payload.new.id)
               .single()
 
-            // Fetch replied message separately if it exists
             if (data && data.reply_to_message_id) {
               const { data: repliedMsg } = await supabase
-                .from("building_messages")
+                .from("peer_messages")
                 .select(`
                   id,
                   content,
-                  sender:profiles!building_messages_sender_id_fkey(first_name, last_name)
+                  sender:profiles!peer_messages_sender_id_fkey(first_name, last_name)
                 `)
                 .eq("id", data.reply_to_message_id)
                 .single()
@@ -90,7 +92,7 @@ export function useBuildingMessages(buildingId: string | null) {
             }
 
             if (data) {
-              setMessages(prev => [...prev, data as unknown as Message])
+              setMessages(prev => [...prev, data as unknown as PeerMessage])
             }
           },
         )
@@ -180,11 +182,11 @@ export function useBuildingMessages(buildingId: string | null) {
         channelRef.current = null
       }
     }
-  }, [buildingId])
+  }, [conversationId])
 
-  const loadMessages = async (buildingId: string) => {
-    const { data, error} = await supabase
-      .from("building_messages")
+  const loadMessages = async (conversationId: string) => {
+    const { data, error } = await supabase
+      .from("peer_messages")
       .select(
         `
         id,
@@ -193,14 +195,17 @@ export function useBuildingMessages(buildingId: string | null) {
         edited_at,
         is_deleted,
         sender_id,
+        receiver_id,
+        conversation_id,
         reply_to_message_id,
-        sender:profiles!building_messages_sender_id_fkey(first_name, last_name),
-        reactions:message_reactions(id, user_id, emoji, created_at),
-        read_receipts:message_read_receipts(id, user_id, read_at),
-        attachments:message_attachments(id, message_id, file_name, file_path, file_type, file_size, created_at)
+        sender:profiles!peer_messages_sender_id_fkey(first_name, last_name),
+        receiver:profiles!peer_messages_receiver_id_fkey(first_name, last_name),
+        reactions:peer_message_reactions(id, user_id, emoji, created_at),
+        read_receipts:peer_message_read_receipts(id, user_id, read_at),
+        attachments:peer_message_attachments(id, message_id, file_name, file_path, file_type, file_size, created_at)
       `,
       )
-      .eq("building_id", buildingId)
+      .eq("conversation_id", conversationId)
       .order("created_at", { ascending: false })
       .limit(100)
 
@@ -209,16 +214,15 @@ export function useBuildingMessages(buildingId: string | null) {
       return
     }
 
-    // Fetch replied messages separately for any messages that have replies
     const messagesWithReplies = await Promise.all(
       (data || []).map(async (msg: any) => {
         if (msg.reply_to_message_id) {
           const { data: repliedMsg } = await supabase
-            .from("building_messages")
+            .from("peer_messages")
             .select(`
               id,
               content,
-              sender:profiles!building_messages_sender_id_fkey(first_name, last_name)
+              sender:profiles!peer_messages_sender_id_fkey(first_name, last_name)
             `)
             .eq("id", msg.reply_to_message_id)
             .single()
@@ -230,7 +234,7 @@ export function useBuildingMessages(buildingId: string | null) {
     )
 
     // Reverse to show oldest first (since we ordered by descending to get latest 100)
-    setMessages(messagesWithReplies.reverse() as unknown as Message[])
+    setMessages(messagesWithReplies.reverse() as unknown as PeerMessage[])
   }
 
   const uploadFiles = async (
@@ -254,7 +258,7 @@ export function useBuildingMessages(buildingId: string | null) {
       }
 
       const { data: attachment, error: dbError } = await supabase
-        .from("message_attachments")
+        .from("peer_message_attachments")
         .insert({
           message_id: messageId,
           file_name: file.name,
@@ -283,7 +287,7 @@ export function useBuildingMessages(buildingId: string | null) {
     replyToMessageId?: string | null,
     files?: File[],
   ) => {
-    if ((!content.trim() && (!files || files.length === 0)) || !buildingId)
+    if ((!content.trim() && (!files || files.length === 0)) || !conversationId || !otherUserId)
       return
     if (content.length > MAX_MESSAGE_LENGTH) return
 
@@ -296,10 +300,11 @@ export function useBuildingMessages(buildingId: string | null) {
       if (!user) return
 
       const { data: newMessage, error } = await supabase
-        .from("building_messages")
+        .from("peer_messages")
         .insert({
-          building_id: buildingId,
+          conversation_id: conversationId,
           sender_id: user.id,
+          receiver_id: otherUserId,
           content: content.trim() || "(attached file)",
           reply_to_message_id: replyToMessageId || null,
         })
@@ -334,7 +339,7 @@ export function useBuildingMessages(buildingId: string | null) {
   const deleteMessage = async (messageId: string) => {
     try {
       const { error } = await supabase
-        .from("building_messages")
+        .from("peer_messages")
         .update({ is_deleted: true })
         .eq("id", messageId)
 
@@ -366,7 +371,7 @@ export function useBuildingMessages(buildingId: string | null) {
 
     try {
       const { error } = await supabase
-        .from("building_messages")
+        .from("peer_messages")
         .update({
           content: newContent.trim(),
           edited_at: new Date().toISOString(),
@@ -444,13 +449,12 @@ export function useBuildingMessages(buildingId: string | null) {
     )
 
     if (alreadyReacted) {
-      // User already has this reaction, silently return
       return
     }
 
     try {
       const { data, error } = await supabase
-        .from("message_reactions")
+        .from("peer_message_reactions")
         .insert({
           message_id: messageId,
           user_id: userIdRef.current,
@@ -480,7 +484,6 @@ export function useBuildingMessages(buildingId: string | null) {
         )
       }
     } catch (err: any) {
-      // Handle duplicate key constraint violation (PostgreSQL error code 23505)
       if (err.code === '23505') {
         // Race condition: reaction was added between our check and insert
         // This is expected behavior in real-time systems, not an error
@@ -488,7 +491,6 @@ export function useBuildingMessages(buildingId: string | null) {
         return
       }
 
-      // Real error - show to user
       console.error("Error adding reaction:", err)
       alert("Failed to add reaction: " + err.message)
     }
@@ -497,7 +499,7 @@ export function useBuildingMessages(buildingId: string | null) {
   const removeReaction = async (messageId: string, reactionId: string) => {
     try {
       const { error } = await supabase
-        .from("message_reactions")
+        .from("peer_message_reactions")
         .delete()
         .eq("id", reactionId)
 
@@ -542,7 +544,7 @@ export function useBuildingMessages(buildingId: string | null) {
 
     try {
       const { data, error } = await supabase
-        .from("message_read_receipts")
+        .from("peer_message_read_receipts")
         .insert({
           message_id: messageId,
           user_id: userIdRef.current,
@@ -551,8 +553,7 @@ export function useBuildingMessages(buildingId: string | null) {
         .single()
 
       if (error) {
-        // Silently ignore duplicate key errors (409)
-        if (error.code === '23505' || error.message.includes('duplicate')) {
+        if (error.code === '23505') {
           return
         }
         throw error
@@ -577,7 +578,6 @@ export function useBuildingMessages(buildingId: string | null) {
         )
       }
     } catch (err: any) {
-      // Silently ignore duplicate key errors (PostgreSQL error code 23505)
       if (err.code !== '23505') {
         console.error("Error marking message as read:", err)
       }
