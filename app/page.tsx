@@ -1,12 +1,12 @@
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { LandingHero } from "@/components/landing/landing-hero";
-import { LandingFeatures } from "@/components/landing/landing-features";
-import { LandingCTA } from "@/components/landing/landing-cta";
-import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
-import { Building2 } from "lucide-react";
+import { EnvVarWarning } from "@/components/env-var-warning"
+import { AuthButton } from "@/components/auth-button"
+import { ThemeSwitcher } from "@/components/theme-switcher"
+import { LandingHero } from "@/components/landing/landing-hero"
+import { LandingFeatures } from "@/components/landing/landing-features"
+import { LandingCTA } from "@/components/landing/landing-cta"
+import { hasEnvVars } from "@/lib/utils"
+import Link from "next/link"
+import { Building2 } from "lucide-react"
 
 export default function Home() {
   return (
@@ -14,11 +14,17 @@ export default function Home() {
       <div className="flex-1 w-full flex flex-col items-center">
         <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
           <div className="w-full max-w-7xl flex justify-between items-center p-3 px-5 text-sm">
-            <Link href={"/"} className="flex items-center gap-2 font-semibold">
+            <Link
+              href={"/"}
+              className="flex items-center gap-2 font-semibold"
+            >
               <Building2 className="w-5 h-5" />
               <span>MajaNaaber</span>
             </Link>
-            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+            <div className="flex items-center gap-4">
+              {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+              <ThemeSwitcher />
+            </div>
           </div>
         </nav>
 
@@ -36,5 +42,5 @@ export default function Home() {
         </footer>
       </div>
     </main>
-  );
+  )
 }
