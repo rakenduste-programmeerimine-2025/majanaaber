@@ -45,9 +45,7 @@ export const AttachmentDisplay = memo(
       >
         <FileText className="h-4 w-4 text-destructive flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-foreground truncate">
-            {attachment.file_name}
-          </div>
+          <div className="text-foreground truncate">{attachment.file_name}</div>
           <div className="text-xs text-muted-foreground">
             {formatFileSize(attachment.file_size)}
           </div>

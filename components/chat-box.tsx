@@ -560,7 +560,7 @@ export function ChatBox({
                                 {showMessageMenu === msg.id && (
                                   <div
                                     onClick={e => e.stopPropagation()}
-                                    className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? "-left-32" : "-right-32"} bg-white border border-gray-300 rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                                    className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? "-left-32" : "-right-32"} bg-card border border-border rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
                                   >
                                     <button
                                       onClick={() => {
@@ -610,7 +610,7 @@ export function ChatBox({
                                   <input
                                     ref={editInputRef}
                                     type="text"
-                                    className="border border-border rounded p-2 text-sm text-foreground bg-background"
+                                    className="border border-border rounded p-2 text-sm text-foreground bg-background focus:outline-none"
                                     value={editInput}
                                     onChange={e => {
                                       if (
@@ -658,12 +658,16 @@ export function ChatBox({
                                   {msg.replied_message && (
                                     <div
                                       className={`border-l-2 pl-2 mb-2 text-xs ${
-                                        isOwnMessage ? "border-primary-foreground/30" : "border-muted"
+                                        isOwnMessage
+                                          ? "border-primary-foreground/30"
+                                          : "border-muted"
                                       }`}
                                     >
                                       <div
                                         className={`font-semibold ${
-                                          isOwnMessage ? "text-primary-foreground/80" : "text-muted-foreground"
+                                          isOwnMessage
+                                            ? "text-primary-foreground/80"
+                                            : "text-muted-foreground"
                                         }`}
                                       >
                                         {msg.replied_message.sender
@@ -672,7 +676,9 @@ export function ChatBox({
                                       </div>
                                       <div
                                         className={`${
-                                          isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"
+                                          isOwnMessage
+                                            ? "text-primary-foreground/70"
+                                            : "text-muted-foreground"
                                         } truncate`}
                                       >
                                         {msg.replied_message.content}
@@ -910,7 +916,7 @@ export function ChatBox({
               <input
                 ref={inputRef}
                 type="text"
-                className="border border-border rounded p-2 flex-1 bg-background text-foreground placeholder-muted-foreground"
+                className="border border-border rounded p-2 flex-1 bg-background text-foreground placeholder-muted-foreground focus:outline-none"
                 value={input}
                 onChange={e => {
                   if (e.target.value.length <= MAX_MESSAGE_LENGTH) {

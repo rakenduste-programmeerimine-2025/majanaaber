@@ -53,9 +53,7 @@ export function ConversationsList({
             key={conversation.id}
             onClick={() => onSelectConversation(conversation.id, otherUserId)}
             className={`w-full px-4 py-3 hover:bg-muted/30 transition-colors text-left ${
-              isActive
-                ? "bg-primary/10 border-l-4 border-primary"
-                : ""
+              isActive ? "bg-primary/10 border-l-4 border-primary" : ""
             }`}
           >
             <div className="flex items-start justify-between">
