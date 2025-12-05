@@ -318,9 +318,11 @@ export default function ProfilePage() {
                   type="email"
                   value={profile?.email || ""}
                   disabled
-                    className="bg-muted"
+                  className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                <p className="text-xs text-muted-foreground">
+                  Email cannot be changed
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -345,9 +347,7 @@ export default function ProfilePage() {
 
               {error && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <p className="text-sm text-destructive">
-                    {error}
-                  </p>
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
 
@@ -417,9 +417,7 @@ export default function ProfilePage() {
 
               {passwordError && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <p className="text-sm text-destructive">
-                    {passwordError}
-                  </p>
+                  <p className="text-sm text-destructive">{passwordError}</p>
                 </div>
               )}
 
@@ -456,9 +454,7 @@ export default function ProfilePage() {
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">
-                  Member since
-                </span>
+                <span className="text-muted-foreground">Member since</span>
                 <span>
                   {profile?.created_at
                     ? new Date(profile.created_at).toLocaleDateString()
@@ -472,7 +468,9 @@ export default function ProfilePage() {
                   Connected Buildings
                 </span>
                 {buildings.length === 0 ? (
-                  <p className="text-muted-foreground italic">No buildings connected</p>
+                  <p className="text-muted-foreground italic">
+                    No buildings connected
+                  </p>
                 ) : (
                   <div className="space-y-2">
                     {buildings.map(building => (

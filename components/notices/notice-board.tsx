@@ -106,7 +106,9 @@ export function NoticeBoard({
     if (!isManager && notices.length > 0) {
       // Mark all visible non-archived notices as read
       const visibleNotices = notices.filter(
-        n => !n.is_archived && (!n.expires_at || new Date(n.expires_at) > new Date())
+        n =>
+          !n.is_archived &&
+          (!n.expires_at || new Date(n.expires_at) > new Date()),
       )
       visibleNotices.forEach(notice => {
         markAsRead(notice.id)
@@ -193,13 +195,15 @@ export function NoticeBoard({
         continue
       }
 
-      const { error: dbError } = await supabase.from("notice_attachments").insert({
-        notice_id: noticeId,
-        file_name: file.name,
-        file_path: fileName,
-        file_type: file.type,
-        file_size: file.size,
-      })
+      const { error: dbError } = await supabase
+        .from("notice_attachments")
+        .insert({
+          notice_id: noticeId,
+          file_name: file.name,
+          file_path: fileName,
+          file_type: file.type,
+          file_size: file.size,
+        })
 
       if (dbError) console.error("Error creating attachment record:", dbError)
     }
@@ -258,7 +262,10 @@ export function NoticeBoard({
                 .remove([attachment.file_path])
             }
           }
-          await supabase.from("notice_attachments").delete().in("id", removedIds)
+          await supabase
+            .from("notice_attachments")
+            .delete()
+            .in("id", removedIds)
         }
 
         if (selectedFiles.length > 0) {
@@ -333,7 +340,10 @@ export function NoticeBoard({
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("notices").delete().eq("id", noticeId)
+      const { error } = await supabase
+        .from("notices")
+        .delete()
+        .eq("id", noticeId)
       if (error) throw error
       loadNotices()
     } catch (err: any) {
@@ -401,7 +411,10 @@ export function NoticeBoard({
             </Button>
           )}
           {isManager && !showAddForm && !showArchived && (
-            <Button size="sm" onClick={() => setShowAddForm(true)}>
+            <Button
+              size="sm"
+              onClick={() => setShowAddForm(true)}
+            >
               + Add Notice
             </Button>
           )}

@@ -464,7 +464,9 @@ export default function ManagerDashboard() {
                 )}
 
                 {searchQuery && !isSearching && searchResults.length === 0 && (
-                  <p className="text-sm text-muted-foreground mt-2">No users found</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    No users found
+                  </p>
                 )}
 
                 {/* Resident Form */}
@@ -551,7 +553,7 @@ export default function ManagerDashboard() {
                       <div key={resident.id}>
                         {editingResident?.id === resident.id ? (
                           /* Edit Form */
-                          <div className="border rounded-md p-4 bg-yellow-50">
+                          <div className="border rounded-md p-4 bg-muted/50">
                             <h4 className="font-semibold mb-3">
                               Edit Resident: {resident.profile.first_name}{" "}
                               {resident.profile.last_name}

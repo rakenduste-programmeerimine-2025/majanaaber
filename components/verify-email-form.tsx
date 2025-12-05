@@ -80,9 +80,7 @@ export function VerifyEmailForm({
 
             {error && (
               <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
-                <p className="text-sm text-destructive">
-                  {error}
-                </p>
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
 
