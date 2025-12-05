@@ -193,9 +193,9 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
 
           {/* ADS Component */}
           {!useManualEntry && !selectedAddress && (
-            <div className="relative z-20">
+            <div className="relative z-20 pb-12">
               <Label>Search Address</Label>
-              <div className="mt-2 mb-8">
+              <div className="mt-2">
                 <EstonianAds
                   onAddressSelect={handleAddressSelect}
                   onError={handleAddressError}
@@ -209,17 +209,17 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
 
           {/* Selected Address Display */}
           {!useManualEntry && selectedAddress && (
-            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+            <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md">
               <div className="flex justify-between items-start gap-2">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                  <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
                     Selected Address:
                   </p>
-                  <p className="text-sm text-green-700 dark:text-green-300">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
                     {selectedAddress.full_address}
                   </p>
                   {selectedAddress.postal_code && (
-                    <p className="text-xs text-green-600 dark:text-green-400">
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
                       Postal Code: {selectedAddress.postal_code}
                     </p>
                   )}
@@ -247,8 +247,8 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
 
           {/* Error Message */}
           {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 

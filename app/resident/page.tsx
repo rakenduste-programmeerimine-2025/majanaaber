@@ -111,18 +111,18 @@ export default function ResidentDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-bold mb-4">No Building Found</h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             {error ||
               "You need to create a building or be assigned to one to access the chat."}
           </p>
           <div className="space-y-3">
             <a
               href="/resident-hub"
-              className="inline-block bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 transition"
+              className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded hover:opacity-90 transition"
             >
               Go to My Apartments
             </a>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Create a building or ask your building manager to add you as a
               resident.
             </p>
@@ -133,9 +133,9 @@ export default function ResidentDashboard() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-background">
       {/* Building Header */}
-      <div className="bg-white border-b border-gray-300 px-6 py-4 mt-[10vh]">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="container mx-auto">
           <h1 className="text-2xl font-bold">{building.full_address}</h1>
         </div>
@@ -143,15 +143,15 @@ export default function ResidentDashboard() {
 
       {/* Main Content */}
       <main className="flex justify-center items-start gap-10 px-6 mt-8">
-        <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
+        <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border">
           {/* Notices */}
-          <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
+          <div className="w-1/2 pr-6 border-r border-border flex flex-col">
             <NoticeBoard buildingId={building.id} />
           </div>
 
           {/* Calendar */}
           <div className="w-1/2 pl-6 flex flex-col items-center">
-          <BuildingCalendar buildingId={building.id} />
+            <BuildingCalendar buildingId={building.id} />
           </div>
         </section>
 
@@ -172,7 +172,7 @@ export default function ResidentDashboard() {
           headerAction={
             <Link
               href={`/resident/messages?building=${building.id}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
             >
               <MessageSquare className="h-4 w-4" />
               Direct Messages

@@ -1,24 +1,24 @@
-"use client";
+"use client"
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   checkPasswordStrength,
   getStrengthColor,
   getStrengthText,
-} from "@/lib/password-strength";
-import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+} from "@/lib/password-strength"
+import { useState } from "react"
+import { Eye, EyeOff } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface PasswordStrengthInputProps {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  showRequirements?: boolean;
-  required?: boolean;
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  showRequirements?: boolean
+  required?: boolean
 }
 
 export function PasswordStrengthInput({
@@ -30,9 +30,9 @@ export function PasswordStrengthInput({
   showRequirements = true,
   required = false,
 }: PasswordStrengthInputProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const { strength, requirements } = checkPasswordStrength(value);
-  const showIndicator = value.length > 0;
+  const [showPassword, setShowPassword] = useState(false)
+  const { strength, requirements } = checkPasswordStrength(value)
+  const showIndicator = value.length > 0
 
   return (
     <div className="grid gap-2">
@@ -44,7 +44,7 @@ export function PasswordStrengthInput({
           placeholder={placeholder}
           required={required}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={e => onChange(e.target.value)}
           className="pr-10"
         />
         <Button
@@ -68,10 +68,14 @@ export function PasswordStrengthInput({
             <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all ${getStrengthColor(strength)}`}
-                style={{ width: `${(requirements.filter((r) => r.met).length / requirements.length) * 100}%` }}
+                style={{
+                  width: `${(requirements.filter(r => r.met).length / requirements.length) * 100}%`,
+                }}
               />
             </div>
-            <span className="text-xs font-medium">{getStrengthText(strength)}</span>
+            <span className="text-xs font-medium">
+              {getStrengthText(strength)}
+            </span>
           </div>
 
           {showRequirements && (
@@ -79,7 +83,7 @@ export function PasswordStrengthInput({
               {requirements.map((req, index) => (
                 <li
                   key={index}
-                  className={`flex items-center gap-1 ${req.met ? "text-green-600" : "text-muted-foreground"}`}
+                  className={`flex items-center gap-1 ${req.met ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
                 >
                   <span>{req.met ? "✓" : "○"}</span>
                   <span>{req.label}</span>
@@ -90,5 +94,5 @@ export function PasswordStrengthInput({
         </div>
       )}
     </div>
-  );
+  )
 }

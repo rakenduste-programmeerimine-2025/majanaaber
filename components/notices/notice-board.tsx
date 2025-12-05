@@ -106,7 +106,9 @@ export function NoticeBoard({
     if (!isManager && notices.length > 0) {
       // Mark all visible non-archived notices as read
       const visibleNotices = notices.filter(
-        n => !n.is_archived && (!n.expires_at || new Date(n.expires_at) > new Date())
+        n =>
+          !n.is_archived &&
+          (!n.expires_at || new Date(n.expires_at) > new Date()),
       )
       visibleNotices.forEach(notice => {
         markAsRead(notice.id)
@@ -193,13 +195,15 @@ export function NoticeBoard({
         continue
       }
 
-      const { error: dbError } = await supabase.from("notice_attachments").insert({
-        notice_id: noticeId,
-        file_name: file.name,
-        file_path: fileName,
-        file_type: file.type,
-        file_size: file.size,
-      })
+      const { error: dbError } = await supabase
+        .from("notice_attachments")
+        .insert({
+          notice_id: noticeId,
+          file_name: file.name,
+          file_path: fileName,
+          file_type: file.type,
+          file_size: file.size,
+        })
 
       if (dbError) console.error("Error creating attachment record:", dbError)
     }
@@ -258,7 +262,10 @@ export function NoticeBoard({
                 .remove([attachment.file_path])
             }
           }
-          await supabase.from("notice_attachments").delete().in("id", removedIds)
+          await supabase
+            .from("notice_attachments")
+            .delete()
+            .in("id", removedIds)
         }
 
         if (selectedFiles.length > 0) {
@@ -333,7 +340,10 @@ export function NoticeBoard({
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("notices").delete().eq("id", noticeId)
+      const { error } = await supabase
+        .from("notices")
+        .delete()
+        .eq("id", noticeId)
       if (error) throw error
       loadNotices()
     } catch (err: any) {
@@ -378,7 +388,7 @@ export function NoticeBoard({
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="text-sm text-gray-500">Loading notices...</p>
+        <p className="text-sm text-muted-foreground">Loading notices...</p>
       </div>
     )
   }
@@ -401,7 +411,10 @@ export function NoticeBoard({
             </Button>
           )}
           {isManager && !showAddForm && !showArchived && (
-            <Button size="sm" onClick={() => setShowAddForm(true)}>
+            <Button
+              size="sm"
+              onClick={() => setShowAddForm(true)}
+            >
               + Add Notice
             </Button>
           )}
@@ -418,8 +431,8 @@ export function NoticeBoard({
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex-shrink-0">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md flex-shrink-0">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
@@ -465,7 +478,7 @@ export function NoticeBoard({
           {filteredNotices.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-sm text-gray-500">
+                <p className="text-center text-sm text-muted-foreground">
                   {notices.length === 0
                     ? "No notices yet."
                     : "No notices match your search."}

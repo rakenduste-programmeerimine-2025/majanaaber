@@ -48,13 +48,13 @@ export function checkPasswordStrength(password: string): {
 export function getStrengthColor(strength: PasswordStrength): string {
   switch (strength) {
     case 'weak':
-      return 'bg-red-500';
+      return 'bg-destructive';
     case 'fair':
       return 'bg-orange-500';
     case 'good':
       return 'bg-yellow-500';
     case 'strong':
-      return 'bg-green-500';
+      return 'bg-emerald-500';
   }
 }
 

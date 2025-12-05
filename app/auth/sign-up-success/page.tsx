@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Card,
@@ -6,31 +6,31 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/client"
+import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 
 export default function Page() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const email = searchParams.get("email");
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const email = searchParams.get("email")
 
   const handleResendEmail = async () => {
     if (!email) {
-      setError("Email not found. Please sign up again.");
-      return;
+      setError("Email not found. Please sign up again.")
+      return
     }
 
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
-    setMessage(null);
+    const supabase = createClient()
+    setIsLoading(true)
+    setError(null)
+    setMessage(null)
 
     try {
       const { error } = await supabase.auth.resend({
@@ -39,17 +39,17 @@ export default function Page() {
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
         },
-      });
+      })
 
-      if (error) throw error;
+      if (error) throw error
 
-      setMessage("Verification email sent! Please check your inbox.");
+      setMessage("Verification email sent! Please check your inbox.")
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
@@ -70,14 +70,14 @@ export default function Page() {
                 </p>
 
                 {message && (
-                  <div className="p-3 rounded-md bg-green-50 border border-green-200">
-                    <p className="text-sm text-green-800">{message}</p>
+                  <div className="p-3 rounded-md bg-emerald-50 border border-emerald-200">
+                    <p className="text-sm text-emerald-800">{message}</p>
                   </div>
                 )}
 
                 {error && (
-                  <div className="p-3 rounded-md bg-red-50 border border-red-200">
-                    <p className="text-sm text-red-800">{error}</p>
+                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                    <p className="text-sm text-destructive">{error}</p>
                   </div>
                 )}
 
@@ -94,7 +94,10 @@ export default function Page() {
                 )}
 
                 <div className="text-center text-sm">
-                  <Link href="/auth/login" className="underline underline-offset-4">
+                  <Link
+                    href="/auth/login"
+                    className="underline underline-offset-4"
+                  >
                     Back to login
                   </Link>
                 </div>
@@ -104,5 +107,5 @@ export default function Page() {
         </div>
       </div>
     </div>
-  );
+  )
 }
