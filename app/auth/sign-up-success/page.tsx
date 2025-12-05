@@ -70,14 +70,14 @@ export default function Page() {
                 </p>
 
                 {message && (
-                  <div className="p-3 rounded-md bg-green-50 border border-green-200">
-                    <p className="text-sm text-green-800">{message}</p>
+                  <div className="p-3 rounded-md bg-emerald-50 border border-emerald-200">
+                    <p className="text-sm text-emerald-800">{message}</p>
                   </div>
                 )}
 
                 {error && (
-                  <div className="p-3 rounded-md bg-red-50 border border-red-200">
-                    <p className="text-sm text-red-800">{error}</p>
+                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                    <p className="text-sm text-destructive">{error}</p>
                   </div>
                 )}
 

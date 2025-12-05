@@ -92,7 +92,7 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
             <button
               key={idx}
               className={`p-2 rounded text-sm relative
-                  ${dayEvents.length > 0 ? "bg-blue-200 dark:bg-blue-900/40 hover:bg-blue-300 dark:hover:bg-blue-900/60" : "bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-gray-600"}
+                  ${dayEvents.length > 0 ? "bg-primary/20 hover:bg-primary/30" : "bg-muted/30 hover:bg-muted/50"}
                   `}
             >
               {day}

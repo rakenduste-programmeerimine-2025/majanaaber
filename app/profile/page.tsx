@@ -274,7 +274,7 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Profile Settings</h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Manage your account information
           </p>
         </div>
@@ -318,9 +318,9 @@ export default function ProfilePage() {
                   type="email"
                   value={profile?.email || ""}
                   disabled
-                  className="bg-gray-100 dark:bg-gray-800"
+                    className="bg-muted"
                 />
-                <p className="text-xs text-gray-500">Email cannot be changed</p>
+                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
 
               <div className="space-y-2">
@@ -344,16 +344,16 @@ export default function ProfilePage() {
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                  <p className="text-sm text-red-700 dark:text-red-300">
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <p className="text-sm text-destructive">
                     {error}
                   </p>
                 </div>
               )}
 
               {success && (
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                  <p className="text-sm text-green-700 dark:text-green-300">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
                     {success}
                   </p>
                 </div>
@@ -416,16 +416,16 @@ export default function ProfilePage() {
               </div>
 
               {passwordError && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                  <p className="text-sm text-red-700 dark:text-red-300">
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <p className="text-sm text-destructive">
                     {passwordError}
                   </p>
                 </div>
               )}
 
               {passwordSuccess && (
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                  <p className="text-sm text-green-700 dark:text-green-300">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
                     {passwordSuccess}
                   </p>
                 </div>
@@ -450,13 +450,13 @@ export default function ProfilePage() {
           <CardContent>
             <div className="space-y-4 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600 dark:text-gray-400">Role</span>
+                <span className="text-muted-foreground">Role</span>
                 <Badge variant="secondary">
                   {getRoleLabel(profile?.role || "")}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="text-muted-foreground">
                   Member since
                 </span>
                 <span>
@@ -468,23 +468,23 @@ export default function ProfilePage() {
 
               {/* Buildings Section */}
               <div className="pt-2 border-t">
-                <span className="text-gray-600 dark:text-gray-400 block mb-2">
+                <span className="text-muted-foreground block mb-2">
                   Connected Buildings
                 </span>
                 {buildings.length === 0 ? (
-                  <p className="text-gray-500 italic">No buildings connected</p>
+                  <p className="text-muted-foreground italic">No buildings connected</p>
                 ) : (
                   <div className="space-y-2">
                     {buildings.map(building => (
                       <div
                         key={`${building.type}-${building.id}`}
-                        className="flex justify-between items-start gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded"
+                        className="flex justify-between items-start gap-2 p-2 bg-muted/20 rounded"
                       >
                         <div className="min-w-0 flex-1">
                           <p className="font-medium truncate">
                             {building.full_address}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             {building.city}
                           </p>
                         </div>

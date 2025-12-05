@@ -106,8 +106,8 @@ export function LoginForm({
                 <div
                   className={`p-3 rounded-md text-sm ${
                     isLockoutError
-                      ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
-                      : "text-red-500"
+                      ? "bg-destructive/10 border border-destructive/20 text-destructive"
+                      : "text-destructive"
                   }`}
                 >
                   {error}

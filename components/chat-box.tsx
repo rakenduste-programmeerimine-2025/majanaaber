@@ -68,12 +68,12 @@ const AttachmentDisplay = memo(
       const isImage = attachment.file_type.startsWith("image/")
       return (
         <div
-          className={`flex items-center gap-2 p-2 rounded bg-gray-100 dark:bg-gray-800 animate-pulse ${isImage ? "min-h-[200px]" : ""}`}
+          className={`flex items-center gap-2 p-2 rounded bg-muted/30 animate-pulse ${isImage ? "min-h-[200px]" : ""}`}
         >
-          <div className="w-12 h-12 bg-gray-300 rounded"></div>
+          <div className="w-12 h-12 bg-muted rounded"></div>
           <div className="flex-1">
-            <div className="h-3 bg-gray-300 rounded w-24 mb-1"></div>
-            <div className="h-2 bg-gray-300 rounded w-16"></div>
+            <div className="h-3 bg-muted rounded w-24 mb-1"></div>
+            <div className="h-2 bg-muted rounded w-16"></div>
           </div>
         </div>
       )
@@ -81,8 +81,8 @@ const AttachmentDisplay = memo(
 
     if (!fileUrl) {
       return (
-        <div className="flex items-center gap-2 p-2 rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900">
-          <span className="text-sm text-red-600">Failed to load file</span>
+        <div className="flex items-center gap-2 p-2 rounded bg-destructive/10 border border-destructive/20">
+          <span className="text-sm text-destructive">Failed to load file</span>
         </div>
       )
     }
@@ -94,8 +94,8 @@ const AttachmentDisplay = memo(
         {isImage ? (
           <div className="relative">
             {imageError ? (
-              <div className="flex items-center gap-2 p-2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600">
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center gap-2 p-2 rounded bg-muted/30 border border-border">
+                <span className="text-sm text-muted-foreground">
                   📷 {attachment.file_name}
                 </span>
               </div>
@@ -128,12 +128,12 @@ const AttachmentDisplay = memo(
             <span className="text-2xl flex-shrink-0">📄</span>
             <div className="flex-1 min-w-0">
               <div
-                className={`text-sm font-medium truncate ${isOwnMessage ? "text-white" : "text-gray-800"}`}
+                className={`text-sm font-medium truncate ${isOwnMessage ? "text-primary-foreground" : "text-foreground"}`}
               >
                 {attachment.file_name}
               </div>
               <div
-                className={`text-xs ${isOwnMessage ? "text-blue-100" : "text-gray-500"}`}
+                className={`text-xs ${isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"}`}
               >
                 {formatFileSize(attachment.file_size)}
               </div>
@@ -470,7 +470,7 @@ export function ChatBox({
       `,
         }}
       />
-      <section className="flex flex-col bg-white dark:bg-gray-900 p-6 shadow-lg border border-gray-300 dark:border-gray-700 w-[30%] h-[70vh]">
+      <section className="flex flex-col bg-card p-6 shadow-lg border border-border w-[30%] h-[70vh] flex-shrink-0">
         <div className="flex flex-col mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -479,7 +479,7 @@ export function ChatBox({
           </div>
         </div>
 
-        <div className="flex flex-col flex-1 min-h-0">
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xl font-semibold">Building Chat</h3>
             {headerAction}
@@ -487,10 +487,10 @@ export function ChatBox({
           <div className="relative flex-1 min-h-0">
             <div
               ref={messagesContainerRef}
-              className="chat-scrollbar flex-1 overflow-y-auto border rounded p-3 space-y-2 bg-gray-50 dark:bg-gray-800 absolute inset-0 cursor-default"
+              className="chat-scrollbar flex-1 overflow-y-auto border rounded p-3 space-y-2 bg-muted/10 absolute inset-0 cursor-default"
             >
               {messages.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center">
+                <p className="text-muted-foreground text-sm text-center">
                   No messages yet. Start the conversation!
                 </p>
               ) : (
@@ -509,10 +509,10 @@ export function ChatBox({
                         <div
                           className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
                             msg.is_deleted
-                              ? "bg-gray-100 text-gray-500"
+                              ? "bg-muted text-muted-foreground"
                               : isOwnMessage
-                                ? "bg-blue-500 text-white"
-                                : "bg-white text-gray-800"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-secondary-foreground"
                           }`}
                         >
                           {msg.is_deleted ? (
@@ -520,7 +520,7 @@ export function ChatBox({
                               <p className="text-sm italic">
                                 This message was deleted
                               </p>
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-muted-foreground/60">
                                 {formatTimestamp(msg.created_at)}
                               </span>
                             </>
@@ -536,7 +536,7 @@ export function ChatBox({
                                         : msg.id,
                                     )
                                   }}
-                                  className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? "-left-12" : "-right-12"} bg-gray-200 text-gray-600 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-300`}
+                                  className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? "-left-12" : "-right-12"} bg-muted text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/80`}
                                   title="Add reaction"
                                 >
                                   😊
@@ -551,7 +551,7 @@ export function ChatBox({
                                         : msg.id,
                                     )
                                   }}
-                                  className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? "-left-6" : "-right-6"} bg-gray-700 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-600`}
+                                  className={`absolute top-1/2 -translate-y-1/2 ${isOwnMessage ? "-left-6" : "-right-6"} bg-muted text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/80`}
                                   title="More actions"
                                 >
                                   ⋮
@@ -567,7 +567,7 @@ export function ChatBox({
                                         handleReply(msg)
                                         setShowMessageMenu(null)
                                       }}
-                                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm"
+                                      className="w-full text-left px-4 py-2 hover:bg-muted/50 text-foreground text-sm"
                                     >
                                       Reply
                                     </button>
@@ -578,7 +578,7 @@ export function ChatBox({
                                             handleEditClick(msg.id, msg.content)
                                             setShowMessageMenu(null)
                                           }}
-                                          className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm"
+                                          className="w-full text-left px-4 py-2 hover:bg-muted/50 text-foreground text-sm"
                                         >
                                           Edit
                                         </button>
@@ -587,7 +587,7 @@ export function ChatBox({
                                             handleDeleteClick(msg.id)
                                             setShowMessageMenu(null)
                                           }}
-                                          className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400 text-sm"
+                                          className="w-full text-left px-4 py-2 hover:bg-destructive/10 text-destructive text-sm"
                                         >
                                           Delete
                                         </button>
@@ -610,7 +610,7 @@ export function ChatBox({
                                   <input
                                     ref={editInputRef}
                                     type="text"
-                                    className="border rounded p-2 text-sm text-gray-800"
+                                    className="border border-border rounded p-2 text-sm text-foreground bg-background"
                                     value={editInput}
                                     onChange={e => {
                                       if (
@@ -628,14 +628,14 @@ export function ChatBox({
                                   <div className="flex gap-2">
                                     <button
                                       onClick={() => handleEditSave(msg.id)}
-                                      className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600"
+                                      className="bg-emerald-500 text-white px-3 py-1 rounded text-xs hover:bg-emerald-600"
                                       disabled={!editInput.trim()}
                                     >
                                       Save
                                     </button>
                                     <button
                                       onClick={handleEditCancel}
-                                      className="bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600"
+                                      className="bg-muted text-muted-foreground px-3 py-1 rounded text-xs hover:bg-muted/80"
                                     >
                                       Cancel
                                     </button>
@@ -645,8 +645,8 @@ export function ChatBox({
                                       className={`text-xs ${
                                         editInput.length >
                                         MAX_MESSAGE_LENGTH * 0.9
-                                          ? "text-red-500"
-                                          : "text-gray-500"
+                                          ? "text-destructive"
+                                          : "text-muted-foreground"
                                       }`}
                                     >
                                       {editInput.length}/{MAX_MESSAGE_LENGTH}
@@ -657,17 +657,23 @@ export function ChatBox({
                                 <>
                                   {msg.replied_message && (
                                     <div
-                                      className={`border-l-2 pl-2 mb-2 text-xs ${isOwnMessage ? "border-blue-300" : "border-gray-400"}`}
+                                      className={`border-l-2 pl-2 mb-2 text-xs ${
+                                        isOwnMessage ? "border-primary-foreground/30" : "border-muted"
+                                      }`}
                                     >
                                       <div
-                                        className={`font-semibold ${isOwnMessage ? "text-blue-200" : "text-gray-600"}`}
+                                        className={`font-semibold ${
+                                          isOwnMessage ? "text-primary-foreground/80" : "text-muted-foreground"
+                                        }`}
                                       >
                                         {msg.replied_message.sender
                                           ? `${msg.replied_message.sender.first_name} ${msg.replied_message.sender.last_name}`
                                           : "Unknown User"}
                                       </div>
                                       <div
-                                        className={`${isOwnMessage ? "text-blue-100" : "text-gray-500"} truncate`}
+                                        className={`${
+                                          isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"
+                                        } truncate`}
                                       >
                                         {msg.replied_message.content}
                                       </div>
@@ -695,8 +701,8 @@ export function ChatBox({
                                     <span
                                       className={`text-xs italic ${
                                         isOwnMessage
-                                          ? "text-blue-200"
-                                          : "text-gray-400"
+                                          ? "text-primary-foreground/70"
+                                          : "text-muted-foreground"
                                       }`}
                                     >
                                       (edited)
@@ -708,15 +714,15 @@ export function ChatBox({
                                 <span
                                   className={`text-xs ${
                                     isOwnMessage
-                                      ? "text-blue-100"
-                                      : "text-gray-500"
+                                      ? "text-primary-foreground/70"
+                                      : "text-muted-foreground"
                                   }`}
                                 >
                                   {formatTimestamp(msg.created_at)}
                                 </span>
                                 {isOwnMessage && readCount > 0 && (
                                   <span
-                                    className="text-xs text-blue-100 flex items-center gap-1"
+                                    className="text-xs text-primary-foreground/70 flex items-center gap-1"
                                     title={`Read by ${readCount} ${readCount === 1 ? "person" : "people"}`}
                                   >
                                     <span>✓✓</span>
@@ -728,7 +734,7 @@ export function ChatBox({
                               {showEmojiPicker === msg.id && (
                                 <div
                                   onClick={e => e.stopPropagation()}
-                                  className={`absolute top-full mt-1 ${isOwnMessage ? "right-0" : "left-0"} bg-white border border-gray-300 rounded shadow-lg p-1 flex gap-0.5 z-20`}
+                                  className={`absolute top-full mt-1 ${isOwnMessage ? "right-0" : "left-0"} bg-background border border-border rounded shadow-lg p-1 flex gap-0.5 z-20`}
                                 >
                                   {EMOJIS.map(emoji => (
                                     <button
@@ -737,7 +743,7 @@ export function ChatBox({
                                         handleEmojiClick(msg.id, emoji)
                                         setShowEmojiPicker(null)
                                       }}
-                                      className="hover:bg-gray-100 dark:hover:bg-gray-800 rounded p-0.5 text-sm"
+                                      className="hover:bg-muted/50 rounded p-0.5 text-sm"
                                     >
                                       {emoji}
                                     </button>
@@ -774,9 +780,9 @@ export function ChatBox({
                                     }}
                                     className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs ${
                                       group.hasCurrentUser
-                                        ? "bg-blue-100 border border-blue-300"
-                                        : "bg-gray-100 border border-gray-300"
-                                    } hover:bg-blue-50 transition`}
+                                        ? "bg-primary/20 border border-primary/30"
+                                        : "bg-muted/30 border border-muted"
+                                    } hover:bg-primary/30 transition`}
                                   >
                                     <span className="text-xs">
                                       {group.emoji}
@@ -797,7 +803,7 @@ export function ChatBox({
               {typingUsers.filter(u => u.userId !== currentUserId).length >
                 0 && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-300 text-gray-700 p-3 rounded-lg text-sm italic">
+                  <div className="bg-muted/30 text-muted-foreground p-3 rounded-lg text-sm italic">
                     {typingUsers.filter(u => u.userId !== currentUserId)
                       .length === 1
                       ? `${typingUsers.filter(u => u.userId !== currentUserId)[0].userName} is typing...`
@@ -819,21 +825,21 @@ export function ChatBox({
           </div>
           <div className="flex flex-col gap-1 mt-2">
             {replyingTo && (
-              <div className="bg-gray-100 dark:bg-gray-800 border-l-2 border-blue-500 dark:border-blue-400 p-2 rounded flex justify-between items-start">
+              <div className="bg-muted/20 border-l-2 border-primary p-2 rounded flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="text-xs font-semibold text-gray-700">
+                  <div className="text-xs font-semibold text-foreground">
                     Replying to{" "}
                     {replyingTo.sender
                       ? `${replyingTo.sender.first_name} ${replyingTo.sender.last_name}`
                       : "Unknown User"}
                   </div>
-                  <div className="text-xs text-gray-600 truncate">
+                  <div className="text-xs text-muted-foreground truncate">
                     {replyingTo.content}
                   </div>
                 </div>
                 <button
                   onClick={cancelReply}
-                  className="text-gray-500 hover:text-gray-700 ml-2"
+                  className="text-muted-foreground hover:text-foreground ml-2"
                   title="Cancel reply"
                 >
                   ×
@@ -841,9 +847,9 @@ export function ChatBox({
               </div>
             )}
             {selectedFiles.length > 0 && (
-              <div className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2">
+              <div className="bg-muted/20 border border-border rounded p-2">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs text-gray-600 font-medium">
+                  <span className="text-xs text-muted-foreground font-medium">
                     {selectedFiles.length} / {MAX_FILES_PER_MESSAGE} files
                   </span>
                 </div>
@@ -851,7 +857,7 @@ export function ChatBox({
                   {selectedFiles.map((file, index) => (
                     <div
                       key={index}
-                      className="relative bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 flex items-center gap-2 max-w-xs"
+                      className="relative bg-background border border-border rounded p-2 flex items-center gap-2 max-w-xs"
                     >
                       {file.type.startsWith("image/") ? (
                         <img
@@ -860,7 +866,7 @@ export function ChatBox({
                           className="w-16 h-16 object-cover rounded"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-2xl">
+                        <div className="w-16 h-16 bg-muted rounded flex items-center justify-center text-2xl">
                           📄
                         </div>
                       )}
@@ -868,13 +874,13 @@ export function ChatBox({
                         <div className="text-sm font-medium truncate">
                           {file.name}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                           {formatFileSize(file.size)}
                         </div>
                       </div>
                       <button
                         onClick={() => removeFile(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center hover:opacity-90"
                         title="Remove file"
                       >
                         ×
@@ -895,7 +901,7 @@ export function ChatBox({
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                className="bg-muted text-muted-foreground px-3 rounded hover:bg-muted/80"
                 title="Attach file"
                 disabled={isSending}
               >
@@ -904,7 +910,7 @@ export function ChatBox({
               <input
                 ref={inputRef}
                 type="text"
-                className="border border-gray-300 dark:border-gray-600 rounded p-2 flex-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                className="border border-border rounded p-2 flex-1 bg-background text-foreground placeholder-muted-foreground"
                 value={input}
                 onChange={e => {
                   if (e.target.value.length <= MAX_MESSAGE_LENGTH) {
@@ -942,8 +948,8 @@ export function ChatBox({
               <span
                 className={`text-xs text-right ${
                   input.length > MAX_MESSAGE_LENGTH * 0.9
-                    ? "text-red-500"
-                    : "text-gray-500"
+                    ? "text-destructive"
+                    : "text-muted-foreground"
                 }`}
               >
                 {input.length}/{MAX_MESSAGE_LENGTH}
@@ -954,22 +960,22 @@ export function ChatBox({
 
         {messageToDelete && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+            <div className="bg-background rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
               <h3 className="text-lg font-semibold mb-2">Delete Message</h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Are you sure you want to delete this message? This action cannot
                 be undone.
               </p>
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={cancelDelete}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-300 transition"
+                  className="px-4 py-2 border border-border rounded hover:bg-muted/50 transition text-foreground"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded hover:opacity-90 transition"
                 >
                   Delete
                 </button>
