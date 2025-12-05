@@ -312,7 +312,9 @@ export function EstonianAds({
         style={{ width, height }}
         className="flex items-center justify-center border border-border rounded-md bg-muted/20"
       >
-        <p className="text-muted-foreground">Loading Estonian address search...</p>
+        <p className="text-muted-foreground">
+          Loading Estonian address search...
+        </p>
       </div>
     )
   }

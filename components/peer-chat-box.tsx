@@ -416,7 +416,9 @@ export function PeerChatBox({
                   {message.replied_message && (
                     <div
                       className={`text-xs mb-1 p-2 rounded border-l-2 ${
-                        isOwnMessage ? "bg-primary/20 border-primary" : "bg-muted/30 border-muted"
+                        isOwnMessage
+                          ? "bg-primary/20 border-primary"
+                          : "bg-muted/30 border-muted"
                       }`}
                     >
                       <div className="font-medium">
@@ -577,7 +579,9 @@ export function PeerChatBox({
                         <div className="flex items-center gap-2 mt-1">
                           <span
                             className={`text-xs ${
-                              isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"
+                              isOwnMessage
+                                ? "text-primary-foreground/70"
+                                : "text-muted-foreground"
                             }`}
                           >
                             {formatTimestamp(message.created_at)}
@@ -585,14 +589,18 @@ export function PeerChatBox({
                           {message.edited_at && (
                             <span
                               className={`text-xs italic ${
-                                isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"
+                                isOwnMessage
+                                  ? "text-primary-foreground/70"
+                                  : "text-muted-foreground"
                               }`}
                             >
                               (edited)
                             </span>
                           )}
                           {isOwnMessage && isRead && (
-                            <span className="text-xs text-primary-foreground/70">✓✓</span>
+                            <span className="text-xs text-primary-foreground/70">
+                              ✓✓
+                            </span>
                           )}
                         </div>
                       </>
@@ -672,7 +680,9 @@ export function PeerChatBox({
                   ? `${replyingTo.sender.first_name} ${replyingTo.sender.last_name}`
                   : "Unknown"}
               </span>
-              <p className="text-muted-foreground truncate">{replyingTo.content}</p>
+              <p className="text-muted-foreground truncate">
+                {replyingTo.content}
+              </p>
             </div>
             <button
               onClick={() => setReplyingTo(null)}
@@ -734,7 +744,7 @@ export function PeerChatBox({
               placeholder="Type a message..."
               disabled={isSending}
               maxLength={MAX_MESSAGE_LENGTH}
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none"
             />
             <button
               onClick={handleSendMessage}
