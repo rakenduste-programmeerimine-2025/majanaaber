@@ -26,19 +26,19 @@ export function NoticeFilters({
   return (
     <div className="flex gap-2 mb-4">
       <div className="relative flex-1">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search notices..."
           value={searchQuery}
           onChange={e => onSearchChange(e.target.value)}
-          className="pl-8 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          className="pl-8"
         />
       </div>
       <Select
         value={filterCategory}
         onValueChange={onCategoryChange}
       >
-        <SelectTrigger className="w-[140px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+        <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Category" />
         </SelectTrigger>
         <SelectContent>

@@ -378,7 +378,7 @@ export function NoticeBoard({
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="text-sm text-gray-500">Loading notices...</p>
+        <p className="text-sm text-muted-foreground">Loading notices...</p>
       </div>
     )
   }
@@ -418,8 +418,8 @@ export function NoticeBoard({
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex-shrink-0">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md flex-shrink-0">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
@@ -465,7 +465,7 @@ export function NoticeBoard({
           {filteredNotices.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-sm text-gray-500">
+                <p className="text-center text-sm text-muted-foreground">
                   {notices.length === 0
                     ? "No notices yet."
                     : "No notices match your search."}

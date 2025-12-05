@@ -379,7 +379,7 @@ export default function ManagerDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-lg mb-2">Unable to load building</p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             You may not have permission to manage this building.
           </p>
         </div>
@@ -389,7 +389,7 @@ export default function ManagerDashboard() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Building Header */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="container mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold">{building.full_address}</h1>
           <Button
@@ -404,13 +404,13 @@ export default function ManagerDashboard() {
       {/* Residents Overlay */}
       {showResidentsOverlay && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-[600px] max-h-[80vh] flex flex-col">
+          <div className="bg-background rounded-lg shadow-xl w-[600px] max-h-[80vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-2xl font-bold">Residents</h2>
               <button
                 onClick={() => setShowResidentsOverlay(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-muted-foreground hover:text-foreground text-2xl"
               >
                 ×
               </button>
@@ -437,7 +437,7 @@ export default function ManagerDashboard() {
                     {searchResults.map(profile => (
                       <div
                         key={profile.id}
-                        className="flex items-center justify-between p-3 hover:bg-gray-50 border-b last:border-b-0 cursor-pointer"
+                        className="flex items-center justify-between p-3 hover:bg-muted border-b last:border-b-0 cursor-pointer"
                         onClick={() =>
                           setResidentForm(prev => ({
                             ...prev,
@@ -449,11 +449,11 @@ export default function ManagerDashboard() {
                           <p className="font-medium">
                             {profile.first_name} {profile.last_name}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             {profile.email}
                           </p>
                         </div>
-                        <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        <div className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
                           {residentForm.profileId === profile.id
                             ? "Selected"
                             : "Select"}
@@ -464,12 +464,12 @@ export default function ManagerDashboard() {
                 )}
 
                 {searchQuery && !isSearching && searchResults.length === 0 && (
-                  <p className="text-sm text-gray-500 mt-2">No users found</p>
+                  <p className="text-sm text-muted-foreground mt-2">No users found</p>
                 )}
 
                 {/* Resident Form */}
                 {residentForm.profileId && (
-                  <div className="border rounded-md p-4 bg-blue-50 mb-4">
+                  <div className="border rounded-md p-4 bg-muted/30 mb-4">
                     <h4 className="font-semibold mb-3">Add Resident Details</h4>
 
                     <div className="mb-3">
@@ -542,7 +542,7 @@ export default function ManagerDashboard() {
                   Current Residents
                 </h3>
                 {residents.length === 0 ? (
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     No residents added yet. Search and add residents above.
                   </p>
                 ) : (
@@ -631,16 +631,16 @@ export default function ManagerDashboard() {
                                 {resident.profile.first_name}{" "}
                                 {resident.profile.last_name}
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 {resident.profile.email}
                               </p>
                               <div className="flex gap-2 mt-1">
                                 {resident.apartment_number && (
-                                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                  <span className="text-xs bg-muted px-2 py-1 rounded">
                                     Apt: {resident.apartment_number}
                                   </span>
                                 )}
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
                                   {resident.resident_role === "apartment_owner"
                                     ? "Apt. owner"
                                     : "Resident"}
@@ -685,11 +685,11 @@ export default function ManagerDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex justify-center items-start gap-10 px-6 mt-8">
+      <main className="flex justify-center items-stretch gap-10 px-6 mt-8 mb-8">
         {/* Left: Notices + Calendar */}
-        <section className="flex bg-white dark:bg-gray-800 p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300 dark:border-gray-700">
+        <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0">
           {/* Notices */}
-          <div className="w-1/2 pr-6 border-r border-gray-300 dark:border-gray-700 flex flex-col">
+          <div className="w-1/2 pr-6 border-r border-border flex flex-col">
             <NoticeBoard
               buildingId={buildingId}
               isManager={true}
@@ -701,7 +701,7 @@ export default function ManagerDashboard() {
             {buildingId ? (
               <BuildingCalendar buildingId={buildingId} />
             ) : (
-              <div className="p-4 text-sm text-gray-500 dark:text-gray-400">
+              <div className="p-4 text-sm text-muted-foreground">
                 No building selected
               </div>
             )}
