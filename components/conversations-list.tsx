@@ -26,7 +26,7 @@ export function ConversationsList({
 
   if (conversations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
         <p className="text-lg font-medium">No conversations yet</p>
         <p className="text-sm mt-2">Start a new conversation to get started</p>
       </div>
@@ -52,9 +52,9 @@ export function ConversationsList({
           <button
             key={conversation.id}
             onClick={() => onSelectConversation(conversation.id, otherUserId)}
-            className={`w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left ${
+            className={`w-full px-4 py-3 hover:bg-muted/30 transition-colors text-left ${
               isActive
-                ? "bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500"
+                ? "bg-primary/10 border-l-4 border-primary"
                 : ""
             }`}
           >
@@ -63,7 +63,7 @@ export function ConversationsList({
                 <div className="flex items-center gap-2">
                   <h3
                     className={`text-sm font-medium truncate ${
-                      isUnread ? "font-semibold" : "dark:text-gray-300"
+                      isUnread ? "font-semibold" : "text-foreground"
                     }`}
                   >
                     {otherParticipant.first_name} {otherParticipant.last_name}
@@ -78,8 +78,8 @@ export function ConversationsList({
                   <p
                     className={`text-sm mt-1 truncate ${
                       isUnread
-                        ? "font-medium text-gray-900 dark:text-gray-100"
-                        : "text-gray-600 dark:text-gray-400"
+                        ? "font-medium text-foreground"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {lastMessage.content}
@@ -87,7 +87,7 @@ export function ConversationsList({
                 )}
               </div>
               {lastMessage && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
+                <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                   {formatTimestamp(lastMessage.created_at)}
                 </span>
               )}

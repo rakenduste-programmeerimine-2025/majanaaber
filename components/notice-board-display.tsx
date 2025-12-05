@@ -10,7 +10,7 @@ export function NoticeBoardDisplay({ buildingName }: NoticeBoardDisplayProps) {
         <h3 className="font-semibold">Notices</h3>
       </div>
       <ul className="space-y-2 overflow-y-auto max-h-[60vh]">
-        <li className="p-2 bg-gray-100 dark:bg-gray-800 rounded text-gray-500 dark:text-gray-400 text-sm">
+        <li className="p-2 bg-muted/20 rounded text-muted-foreground text-sm">
           No notices yet
         </li>
       </ul>

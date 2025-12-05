@@ -79,7 +79,7 @@ export function PasswordStrengthInput({
               {requirements.map((req, index) => (
                 <li
                   key={index}
-                  className={`flex items-center gap-1 ${req.met ? "text-green-600" : "text-muted-foreground"}`}
+                  className={`flex items-center gap-1 ${req.met ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
                 >
                   <span>{req.met ? "✓" : "○"}</span>
                   <span>{req.label}</span>

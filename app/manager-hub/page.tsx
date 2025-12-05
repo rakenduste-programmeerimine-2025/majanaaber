@@ -271,12 +271,14 @@ export default function ManagerHubPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-gray-600">Manage your apartments and buildings</p>
+          <p className="text-muted-foreground">
+            Manage your apartments and buildings
+          </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-            <p className="text-red-700">{error}</p>
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-destructive">{error}</p>
           </div>
         )}
 
@@ -291,7 +293,7 @@ export default function ManagerHubPage() {
 
             {apartments.length > 0 && (
               <div className="relative w-full mb-6">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search apartments..."
@@ -305,7 +307,7 @@ export default function ManagerHubPage() {
             {apartments.length === 0 ? (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-muted-foreground">
                     You are not connected to any apartments yet.
                   </p>
                 </CardContent>
@@ -313,7 +315,7 @@ export default function ManagerHubPage() {
             ) : filteredApartments.length === 0 ? (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-muted-foreground\">
                     No apartments match your search.
                   </p>
                 </CardContent>
@@ -328,7 +330,9 @@ export default function ManagerHubPage() {
                     <CardContent className="pt-6">
                       <div className="space-y-3">
                         <div>
-                          <p className="text-sm text-gray-600">Building</p>
+                          <p className="text-sm text-muted-foreground">
+                            Building
+                          </p>
                           <p className="font-semibold text-lg">
                             {apartment.building.full_address}
                           </p>
@@ -336,7 +340,7 @@ export default function ManagerHubPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
                               Apartment
                             </p>
                             <p className="font-semibold text-lg">
@@ -344,7 +348,7 @@ export default function ManagerHubPage() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
                               Role
                             </p>
                             <Badge
@@ -363,10 +367,10 @@ export default function ManagerHubPage() {
 
                         <div className="flex items-end justify-between">
                           <div>
-                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
                               Location
                             </p>
-                            <p className="text-gray-700">
+                            <p className="text-foreground">
                               {apartment.building.city}
                             </p>
                           </div>
@@ -408,7 +412,7 @@ export default function ManagerHubPage() {
             </div>
 
             {showAddForm && (
-              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="mb-6 p-4 bg-primary/10 rounded-lg border border-primary/20\">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold">Add New Building</h3>
                   <Button
@@ -425,13 +429,13 @@ export default function ManagerHubPage() {
 
             {buildings.length > 0 && !showAddForm && (
               <div className="relative w-full mb-6">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search buildings..."
                   value={buildingSearchQuery}
                   onChange={e => setBuildingSearchQuery(e.target.value)}
-                  className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  className="pl-10"
                 />
               </div>
             )}
@@ -439,7 +443,7 @@ export default function ManagerHubPage() {
             {buildings.length === 0 && !showAddForm ? (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-muted-foreground">
                     No buildings yet. Add your first building to get started!
                   </p>
                 </CardContent>
@@ -447,7 +451,7 @@ export default function ManagerHubPage() {
             ) : filteredBuildings.length === 0 && !showAddForm ? (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-muted-foreground">
                     No buildings match your search.
                   </p>
                 </CardContent>
@@ -465,14 +469,14 @@ export default function ManagerHubPage() {
                           <p className="font-semibold text-lg">
                             {building.full_address}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             {building.city}
                           </p>
                         </div>
 
                         {building.apartment_count !== null && (
                           <div>
-                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
                               Apartments
                             </p>
                             <p className="font-semibold">
@@ -542,7 +546,7 @@ export default function ManagerHubPage() {
                   </div>
 
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="text"
                       placeholder="Search by name or email..."
@@ -554,18 +558,18 @@ export default function ManagerHubPage() {
 
                   <div className="max-h-96 overflow-y-auto space-y-2">
                     {isSearchingUsers ? (
-                      <p className="text-center text-gray-500">
+                      <p className="text-center text-muted-foreground\">
                         Loading users...
                       </p>
                     ) : filteredUsers.length === 0 ? (
-                      <p className="text-center text-gray-500 text-sm">
+                      <p className="text-center text-muted-foreground">
                         No users found
                       </p>
                     ) : (
                       filteredUsers.map(user => (
                         <div
                           key={user.id}
-                          className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                          className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/30 cursor-pointer\"
                           onClick={() =>
                             handleChangeManager(
                               changeManagerBuildingId,
@@ -577,7 +581,7 @@ export default function ManagerHubPage() {
                             <p className="font-medium truncate">
                               {user.first_name} {user.last_name}
                             </p>
-                            <p className="text-sm text-gray-600 truncate">
+                            <p className="text-sm text-muted-foreground truncate">
                               {user.email}
                             </p>
                           </div>

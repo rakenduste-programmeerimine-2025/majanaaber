@@ -12,17 +12,17 @@ export const MAX_FILES_PER_NOTICE = 5
 export const priorityConfig: Record<Priority, PriorityConfig> = {
   urgent: {
     label: "Urgent",
-    color: "text-red-600 dark:text-red-400",
+    color: "text-destructive",
     badgeVariant: "destructive",
   },
   normal: {
     label: "Normal",
-    color: "text-gray-600 dark:text-gray-400",
+    color: "text-muted-foreground",
     badgeVariant: "default",
   },
   low: {
     label: "Low",
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-primary",
     badgeVariant: "secondary",
   },
 }
@@ -31,7 +31,7 @@ export const categoryConfig: Record<Category, CategoryConfig> = {
   general: {
     label: "General",
     icon: Megaphone,
-    color: "text-gray-600 dark:text-gray-400",
+    color: "text-muted-foreground",
   },
   maintenance: {
     label: "Maintenance",
@@ -46,17 +46,17 @@ export const categoryConfig: Record<Category, CategoryConfig> = {
   payment: {
     label: "Payment",
     icon: DollarSign,
-    color: "text-green-600 dark:text-green-400",
+    color: "text-emerald-600 dark:text-emerald-400",
   },
   safety: {
     label: "Safety",
     icon: ShieldAlert,
-    color: "text-red-600 dark:text-red-400",
+    color: "text-destructive",
   },
   event: {
     label: "Event",
     icon: Calendar,
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-primary",
   },
 }
 

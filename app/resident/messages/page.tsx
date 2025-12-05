@@ -205,8 +205,8 @@ export default function MessagesPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 overflow-hidden">
-          <div className="p-4 border-b bg-gray-50 dark:bg-gray-700">
+        <div className="md:col-span-1 bg-card rounded-lg border overflow-hidden">
+          <div className="p-4 border-b bg-muted/30">
             <h2 className="font-semibold">Conversations</h2>
           </div>
           <div className="overflow-y-auto max-h-[600px]">
@@ -237,7 +237,7 @@ export default function MessagesPage() {
               onMarkAsRead={markMessageAsRead}
             />
           ) : (
-            <div className="h-[600px] border rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
+            <div className="h-[600px] border rounded-lg bg-card flex items-center justify-center text-muted-foreground">
               <div className="text-center">
                 <p className="text-lg font-medium">No conversation selected</p>
                 <p className="text-sm mt-2">
@@ -251,12 +251,12 @@ export default function MessagesPage() {
 
       {showNewMessageModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">New Message</h2>
               <button
                 onClick={() => setShowNewMessageModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-muted-foreground hover:text-foreground"
               >
                 ✕
               </button>
@@ -264,7 +264,7 @@ export default function MessagesPage() {
 
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {residents.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-muted-foreground text-center py-4">
                   No contacts found
                 </p>
               ) : (
@@ -272,13 +272,13 @@ export default function MessagesPage() {
                   <button
                     key={resident.id}
                     onClick={() => handleCreateConversation(resident.id)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg border flex items-center justify-between"
+                    className="w-full text-left px-4 py-3 hover:bg-muted/30 rounded-lg border flex items-center justify-between"
                   >
                     <span className="font-medium">
                       {resident.first_name} {resident.last_name}
                     </span>
                     {resident.isManager && (
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                      <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
                         Manager
                       </span>
                     )}

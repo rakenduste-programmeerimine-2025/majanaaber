@@ -88,7 +88,7 @@ export function NoticeForm({
             <div className="flex justify-between items-center">
               <Label htmlFor="title">Title</Label>
               <span
-                className={`text-xs ${title.length > 90 ? "text-amber-600" : "text-gray-400"}`}
+                className={`text-xs ${title.length > 90 ? "text-amber-600" : "text-muted-foreground"}`}
               >
                 {title.length}/100
               </span>
@@ -106,7 +106,7 @@ export function NoticeForm({
             <div className="flex justify-between items-center">
               <Label htmlFor="content">Content</Label>
               <span
-                className={`text-xs ${content.length > 900 ? "text-amber-600" : "text-gray-400"}`}
+                className={`text-xs ${content.length > 900 ? "text-amber-600" : "text-muted-foreground"}`}
               >
                 {content.length}/1000
               </span>
@@ -135,7 +135,7 @@ export function NoticeForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="urgent">
-                    <span className="text-red-600">Urgent</span>
+                    <span className="text-destructive">Urgent</span>
                   </SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="low">
@@ -183,7 +183,7 @@ export function NoticeForm({
               onChange={e => setExpiresAt(e.target.value)}
               min={new Date().toISOString().split("T")[0]}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Leave empty for no expiration
             </p>
           </div>
@@ -192,7 +192,7 @@ export function NoticeForm({
           <div>
             <div className="flex justify-between items-center">
               <Label htmlFor="attachments">Attachments (optional)</Label>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 {selectedFiles.length + existingAttachments.length}/
                 {MAX_FILES_PER_NOTICE}
               </span>
@@ -215,30 +215,30 @@ export function NoticeForm({
             {/* Existing attachments (when editing) */}
             {existingAttachments.length > 0 && (
               <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
-                <p className="text-xs text-gray-500 font-medium">
+                <p className="text-xs text-muted-foreground font-medium">
                   Current attachments:
                 </p>
                 {existingAttachments.map(attachment => (
                   <div
                     key={attachment.id}
-                    className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border"
+                    className="flex items-center gap-2 p-2 bg-muted/20 rounded border"
                   >
                     {attachment.file_type.startsWith("image/") ? (
                       <ImageIcon className="h-4 w-4 text-primary flex-shrink-0" />
                     ) : (
-                      <FileText className="h-4 w-4 text-red-600 flex-shrink-0" />
+                      <FileText className="h-4 w-4 text-destructive flex-shrink-0" />
                     )}
                     <span className="text-sm truncate flex-1">
                       {attachment.file_name}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {formatFileSize(attachment.file_size)}
                     </span>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
                       onClick={() => onRemoveExistingAttachment(attachment.id)}
                     >
                       <X className="h-3 w-3" />
@@ -251,13 +251,13 @@ export function NoticeForm({
             {/* Selected files preview */}
             {selectedFiles.length > 0 && (
               <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
-                <p className="text-xs text-gray-500 font-medium">
+                <p className="text-xs text-muted-foreground font-medium">
                   New files to upload:
                 </p>
                 {selectedFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800"
+                    className="flex items-center gap-2 p-2 bg-primary/10 rounded border border-primary/20"
                   >
                     {file.type.startsWith("image/") ? (
                       <img
@@ -266,17 +266,17 @@ export function NoticeForm({
                         className="w-10 h-10 object-cover rounded"
                       />
                     ) : (
-                      <FileText className="h-4 w-4 text-red-600 flex-shrink-0" />
+                      <FileText className="h-4 w-4 text-destructive flex-shrink-0" />
                     )}
                     <span className="text-sm truncate flex-1">{file.name}</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground\">
                       {formatFileSize(file.size)}
                     </span>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive/80"
                       onClick={() => onRemoveSelectedFile(index)}
                     >
                       <X className="h-3 w-3" />
@@ -286,7 +286,7 @@ export function NoticeForm({
               </div>
             )}
 
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1\">
               Supported: PDF, PNG, JPG, GIF, WebP (max {MAX_FILES_PER_NOTICE}{" "}
               files)
             </p>

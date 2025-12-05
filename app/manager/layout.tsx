@@ -21,7 +21,7 @@ export default function ManagerLayout({ children }: ManagerLayoutProps) {
         <div className="max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
           <div className="flex gap-5 items-center font-semibold">
             <DashboardBackLink />
-            <span className="text-gray-400">|</span>
+            <span className="text-muted-foreground">|</span>
             <span>Building Management</span>
           </div>
           <div className="flex items-center gap-4">
