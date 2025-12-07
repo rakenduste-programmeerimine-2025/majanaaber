@@ -435,7 +435,7 @@ export default function ManagerHubPage() {
                   placeholder="Search buildings..."
                   value={buildingSearchQuery}
                   onChange={e => setBuildingSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 />
               </div>
             )}

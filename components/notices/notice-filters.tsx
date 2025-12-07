@@ -31,7 +31,7 @@ export function NoticeFilters({
           placeholder="Search notices..."
           value={searchQuery}
           onChange={e => onSearchChange(e.target.value)}
-          className="pl-8"
+          className="pl-8 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
         />
       </div>
       <Select
