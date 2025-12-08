@@ -693,7 +693,7 @@ export default function ManagerDashboard() {
           style={{ maxWidth: "2000px" }}
         >
           {/* Left: Notices + Calendar */}
-          <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg">
+          <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg min-w-[640px]">
             {/* Notices */}
             <div className="w-1/2 pr-6 border-r border-border flex flex-col">
               <NoticeBoard

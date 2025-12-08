@@ -395,16 +395,33 @@ export function NoticeBoard({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center mb-4 flex-shrink-0">
+      <style>{`
+        @media (max-width: 1219px) {
+          .notice-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+          }
+          .notice-buttons {
+            width: 100%;
+            flex-direction: column;
+          }
+          .notice-action-button {
+            width: 100%;
+          }
+        }
+      `}</style>
+      <div className="notice-header flex justify-between items-center mb-4 flex-shrink-0">
         <h3 className="font-semibold text-lg">
           {showArchived ? "Archived Notices" : "Notices"}
         </h3>
-        <div className="flex gap-2">
+        <div className="notice-buttons flex gap-2">
           {isManager && (
             <Button
               size="sm"
               variant={showArchived ? "default" : "outline"}
               onClick={() => setShowArchived(!showArchived)}
+              className="notice-action-button"
             >
               <Archive className="h-4 w-4 mr-1" />
               {showArchived ? "View Active" : "View Archive"}
@@ -414,6 +431,7 @@ export function NoticeBoard({
             <Button
               size="sm"
               onClick={() => setShowAddForm(true)}
+              className="notice-action-button"
             >
               + Add Notice
             </Button>

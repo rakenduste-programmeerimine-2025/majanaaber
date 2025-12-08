@@ -433,13 +433,17 @@ export function PeerChatBox({
                   )}
 
                   <div
-                    className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
+                    className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group overflow-hidden ${
                       message.is_deleted
                         ? "bg-muted text-muted-foreground"
                         : isOwnMessage
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary text-secondary-foreground"
                     }`}
+                    style={{
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                    }}
                   >
                     {message.is_deleted ? (
                       <>
