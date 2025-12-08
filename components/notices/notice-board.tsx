@@ -428,10 +428,11 @@ export function NoticeBoard({
                 {showArchived ? "View Active" : "View Archive"}
               </Button>
             )}
-            {isManager && !showArchived && (
+            {isManager && (
               <Button
                 size="sm"
                 onClick={() => setShowAddForm(true)}
+                disabled={showArchived}
                 className="notice-action-button"
               >
                 + Add Notice
