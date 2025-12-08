@@ -143,42 +143,49 @@ export default function ResidentDashboard() {
 
       {/* Main Content */}
       <main className="flex justify-center items-start gap-10 px-6 mt-8">
-        <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border rounded-lg">
-          {/* Notices */}
-          <div className="w-1/2 pr-6 border-r border-border flex flex-col">
-            <NoticeBoard buildingId={building.id} />
-          </div>
+        <div
+          className="flex gap-10 items-start justify-center w-full"
+          style={{ maxWidth: "2000px" }}
+        >
+          {/* Left: Notices + Calendar */}
+          <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border rounded-lg">
+            {/* Notices */}
+            <div className="w-1/2 pr-6 border-r border-border flex flex-col">
+              <NoticeBoard buildingId={building.id} />
+            </div>
 
-          {/* Calendar */}
-          <div className="w-1/2 pl-6 flex flex-col items-center">
-            <BuildingCalendar buildingId={building.id} />
-          </div>
-        </section>
+            {/* Calendar */}
+            <div className="w-1/2 pl-6 flex flex-col items-center">
+              <BuildingCalendar buildingId={building.id} />
+            </div>
+          </section>
 
-        <ChatBox
-          buildingName={building.full_address}
-          messages={messages}
-          currentUserId={currentUserId}
-          onSendMessage={sendMessage}
-          onDeleteMessage={deleteMessage}
-          onEditMessage={editMessage}
-          isSending={isSending}
-          typingUsers={typingUsers}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-          onAddReaction={addReaction}
-          onRemoveReaction={removeReaction}
-          onMarkAsRead={markMessageAsRead}
-          headerAction={
-            <Link
-              href={`/resident/messages?building=${building.id}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Direct Messages
-            </Link>
-          }
-        />
+          {/* Right: Chat */}
+          <ChatBox
+            buildingName={building.full_address}
+            messages={messages}
+            currentUserId={currentUserId}
+            onSendMessage={sendMessage}
+            onDeleteMessage={deleteMessage}
+            onEditMessage={editMessage}
+            isSending={isSending}
+            typingUsers={typingUsers}
+            onTypingStart={handleTypingStart}
+            onTypingStop={handleTypingStop}
+            onAddReaction={addReaction}
+            onRemoveReaction={removeReaction}
+            onMarkAsRead={markMessageAsRead}
+            headerAction={
+              <Link
+                href={`/resident/messages?building=${building.id}`}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Direct Messages
+              </Link>
+            }
+          />
+        </div>
       </main>
 
       <div className="h-[10vh]" />

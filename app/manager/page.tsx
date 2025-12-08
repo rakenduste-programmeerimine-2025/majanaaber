@@ -688,53 +688,58 @@ export default function ManagerDashboard() {
 
       {/* Main Content */}
       <main className="flex justify-center items-stretch gap-10 px-6 mt-8 mb-8">
-        {/* Left: Notices + Calendar */}
-        <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg">
-          {/* Notices */}
-          <div className="w-1/2 pr-6 border-r border-border flex flex-col">
-            <NoticeBoard
-              buildingId={buildingId}
-              isManager={true}
-            />
-          </div>
+        <div
+          className="flex gap-10 items-stretch justify-center w-full"
+          style={{ maxWidth: "2000px" }}
+        >
+          {/* Left: Notices + Calendar */}
+          <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg">
+            {/* Notices */}
+            <div className="w-1/2 pr-6 border-r border-border flex flex-col">
+              <NoticeBoard
+                buildingId={buildingId}
+                isManager={true}
+              />
+            </div>
 
-          {/* Calendar */}
-          <div className="w-1/2 pl-6">
-            {buildingId ? (
-              <BuildingCalendar buildingId={buildingId} />
-            ) : (
-              <div className="p-4 text-sm text-muted-foreground">
-                No building selected
-              </div>
-            )}
-          </div>
-        </section>
+            {/* Calendar */}
+            <div className="w-1/2 pl-6">
+              {buildingId ? (
+                <BuildingCalendar buildingId={buildingId} />
+              ) : (
+                <div className="p-4 text-sm text-muted-foreground">
+                  No building selected
+                </div>
+              )}
+            </div>
+          </section>
 
-        {/* Right: Chat */}
-        <ChatBox
-          buildingName={building.full_address}
-          messages={messages}
-          currentUserId={currentUserId}
-          onSendMessage={sendMessage}
-          onDeleteMessage={deleteMessage}
-          onEditMessage={editMessage}
-          isSending={isSending}
-          typingUsers={typingUsers}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-          onAddReaction={addReaction}
-          onRemoveReaction={removeReaction}
-          onMarkAsRead={markMessageAsRead}
-          headerAction={
-            <Link
-              href={`/manager/messages?building=${buildingId}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Direct Messages
-            </Link>
-          }
-        />
+          {/* Right: Chat */}
+          <ChatBox
+            buildingName={building.full_address}
+            messages={messages}
+            currentUserId={currentUserId}
+            onSendMessage={sendMessage}
+            onDeleteMessage={deleteMessage}
+            onEditMessage={editMessage}
+            isSending={isSending}
+            typingUsers={typingUsers}
+            onTypingStart={handleTypingStart}
+            onTypingStop={handleTypingStop}
+            onAddReaction={addReaction}
+            onRemoveReaction={removeReaction}
+            onMarkAsRead={markMessageAsRead}
+            headerAction={
+              <Link
+                href={`/manager/messages?building=${buildingId}`}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Direct Messages
+              </Link>
+            }
+          />
+        </div>
       </main>
 
       {/* Empty space at bottom */}
