@@ -689,7 +689,7 @@ export default function ManagerDashboard() {
       {/* Main Content */}
       <main className="flex justify-center items-stretch gap-10 px-6 mt-8 mb-8">
         {/* Left: Notices + Calendar */}
-        <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0">
+        <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg">
           {/* Notices */}
           <div className="w-1/2 pr-6 border-r border-border flex flex-col">
             <NoticeBoard
@@ -728,7 +728,7 @@ export default function ManagerDashboard() {
           headerAction={
             <Link
               href={`/manager/messages?building=${buildingId}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
             >
               <MessageSquare className="h-4 w-4" />
               Direct Messages

@@ -470,7 +470,7 @@ export function ChatBox({
       `,
         }}
       />
-      <section className="flex flex-col bg-card p-6 shadow-lg border border-border w-[30%] h-[70vh] flex-shrink-0">
+      <section className="flex flex-col bg-card p-6 shadow-lg border border-border w-[30%] h-[70vh] flex-shrink-0 rounded-lg">
         <div className="flex flex-col mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
