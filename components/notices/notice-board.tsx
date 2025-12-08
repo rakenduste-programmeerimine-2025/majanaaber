@@ -415,28 +415,30 @@ export function NoticeBoard({
         <h3 className="font-semibold text-lg">
           {showArchived ? "Archived Notices" : "Notices"}
         </h3>
-        <div className="notice-buttons flex gap-2">
-          {isManager && (
-            <Button
-              size="sm"
-              variant={showArchived ? "default" : "outline"}
-              onClick={() => setShowArchived(!showArchived)}
-              className="notice-action-button"
-            >
-              <Archive className="h-4 w-4 mr-1" />
-              {showArchived ? "View Active" : "View Archive"}
-            </Button>
-          )}
-          {isManager && !showAddForm && !showArchived && (
-            <Button
-              size="sm"
-              onClick={() => setShowAddForm(true)}
-              className="notice-action-button"
-            >
-              + Add Notice
-            </Button>
-          )}
-        </div>
+        {!showAddForm && (
+          <div className="notice-buttons flex gap-2">
+            {isManager && (
+              <Button
+                size="sm"
+                variant={showArchived ? "default" : "outline"}
+                onClick={() => setShowArchived(!showArchived)}
+                className="notice-action-button"
+              >
+                <Archive className="h-4 w-4 mr-1" />
+                {showArchived ? "View Active" : "View Archive"}
+              </Button>
+            )}
+            {isManager && !showArchived && (
+              <Button
+                size="sm"
+                onClick={() => setShowAddForm(true)}
+                className="notice-action-button"
+              >
+                + Add Notice
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-shrink-0">

@@ -719,6 +719,12 @@ export default function ManagerDashboard() {
             width: 100% !important;
             padding-left: 0 !important;
             padding-top: 1.5rem;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+          }
+          .calendar-column > div {
+            padding-left: 0 !important;
           }
         }
       `}</style>
