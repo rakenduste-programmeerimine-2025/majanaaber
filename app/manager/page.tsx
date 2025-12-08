@@ -687,15 +687,50 @@ export default function ManagerDashboard() {
       )}
 
       {/* Main Content */}
+      <style>{`
+        @media (max-width: 1022px) {
+          .dashboard-container {
+            flex-direction: column;
+            gap: 1.5rem;
+          }
+          .dashboard-section {
+            width: 100% !important;
+            height: 500px !important;
+          }
+          .chatbox-container {
+            width: 100% !important;
+            height: 500px !important;
+          }
+        }
+        @media (max-width: 699px) {
+          .notices-calendar-section {
+            flex-direction: column;
+            height: auto !important;
+          }
+          .notices-column {
+            width: 100% !important;
+            height: 500px !important;
+            border-right: none !important;
+            border-bottom: 1px solid var(--border);
+            padding-right: 0 !important;
+            padding-bottom: 1.5rem;
+          }
+          .calendar-column {
+            width: 100% !important;
+            padding-left: 0 !important;
+            padding-top: 1.5rem;
+          }
+        }
+      `}</style>
       <main className="flex justify-center items-stretch gap-10 px-6 mt-8 mb-8">
         <div
-          className="flex gap-10 items-stretch justify-center w-full"
+          className="dashboard-container flex gap-10 items-stretch justify-center w-full"
           style={{ maxWidth: "2000px" }}
         >
           {/* Left: Notices + Calendar */}
-          <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg min-w-[640px]">
+          <section className="dashboard-section notices-calendar-section flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg">
             {/* Notices */}
-            <div className="w-1/2 pr-6 border-r border-border flex flex-col">
+            <div className="notices-column w-1/2 pr-6 border-r border-border flex flex-col overflow-y-auto">
               <NoticeBoard
                 buildingId={buildingId}
                 isManager={true}
@@ -703,7 +738,7 @@ export default function ManagerDashboard() {
             </div>
 
             {/* Calendar */}
-            <div className="w-1/2 pl-6">
+            <div className="calendar-column w-1/2 pl-6">
               {buildingId ? (
                 <BuildingCalendar buildingId={buildingId} />
               ) : (
@@ -738,6 +773,7 @@ export default function ManagerDashboard() {
                 Direct Messages
               </Link>
             }
+            className="chatbox-container w-[30%]"
           />
         </div>
       </main>

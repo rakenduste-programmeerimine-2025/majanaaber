@@ -164,6 +164,7 @@ interface ChatBoxProps {
   onRemoveReaction: (messageId: string, reactionId: string) => Promise<void>
   onMarkAsRead: (messageId: string) => Promise<void>
   headerAction?: React.ReactNode
+  className?: string
 }
 
 export function ChatBox({
@@ -181,6 +182,7 @@ export function ChatBox({
   onRemoveReaction,
   onMarkAsRead,
   headerAction,
+  className,
 }: ChatBoxProps) {
   const [input, setInput] = useState("")
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -470,7 +472,9 @@ export function ChatBox({
       `,
         }}
       />
-      <section className="flex flex-col bg-card p-6 shadow-lg border border-border w-[30%] h-[70vh] flex-shrink-0 rounded-lg min-w-[320px]">
+      <section
+        className={`flex flex-col bg-card p-6 shadow-lg border border-border w-[30%] h-[70vh] flex-shrink-0 rounded-lg min-w-[320px] ${className || ""}`}
+      >
         <div className="flex flex-col mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
