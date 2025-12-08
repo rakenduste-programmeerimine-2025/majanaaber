@@ -470,7 +470,7 @@ export function ChatBox({
       `,
         }}
       />
-      <section className="flex flex-col bg-card p-6 shadow-lg border border-border w-[30%] h-[70vh] flex-shrink-0 rounded-lg">
+      <section className="flex flex-col bg-card p-6 shadow-lg border border-border w-[30%] h-[70vh] flex-shrink-0 rounded-lg min-w-[320px]">
         <div className="flex flex-col mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -507,7 +507,7 @@ export function ChatBox({
                         className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}
                       >
                         <div
-                          className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
+                          className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group break-words overflow-hidden ${
                             msg.is_deleted
                               ? "bg-muted text-muted-foreground"
                               : isOwnMessage
@@ -687,7 +687,13 @@ export function ChatBox({
                                   )}
                                   {msg.content &&
                                     msg.content !== "(attached file)" && (
-                                      <p className="text-sm break-words">
+                                      <p
+                                        className="text-sm break-words word-break"
+                                        style={{
+                                          overflowWrap: "break-word",
+                                          wordBreak: "break-word",
+                                        }}
+                                      >
                                         {msg.content}
                                       </p>
                                     )}
@@ -896,7 +902,7 @@ export function ChatBox({
                 </div>
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <input
                 ref={fileInputRef}
                 type="file"
