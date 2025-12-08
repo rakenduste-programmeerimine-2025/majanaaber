@@ -1,6 +1,7 @@
 import { AuthButton } from "@/components/auth-button"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { DashboardBackLink } from "@/components/dashboard-back-link"
+import Link from "next/link"
 
 export default function ProfileLayout({
   children,
@@ -15,6 +16,12 @@ export default function ProfileLayout({
             <DashboardBackLink />
           </div>
           <div className="flex items-center gap-4">
+            <Link
+              href="/resident-hub"
+              className="text-sm hover:underline"
+            >
+              Home
+            </Link>
             <ThemeSwitcher />
             <AuthButton />
           </div>

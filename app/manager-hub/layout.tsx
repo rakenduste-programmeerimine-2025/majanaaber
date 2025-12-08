@@ -1,4 +1,3 @@
-import { NavBar } from "@/components/navbar"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { AuthButton } from "@/components/auth-button"
 import Link from "next/link"
@@ -8,10 +7,7 @@ interface ManagerLayoutProps {
 }
 
 export default function ManagerLayout({ children }: ManagerLayoutProps) {
-  const managerLinks = [
-    { label: "Home", href: `/manager-hub` },
-    { label: "Bookmarks", href: "#", disabled: true },
-  ]
+  const managerLinks = [{ label: "Hub", href: `/manager-hub` }]
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -23,6 +19,12 @@ export default function ManagerLayout({ children }: ManagerLayoutProps) {
           </div>
           <div className="flex items-center gap-4">
             <Link
+              href="/manager-hub"
+              className="text-sm hover:underline"
+            >
+              Home
+            </Link>
+            <Link
               href="/profile"
               className="text-sm hover:underline"
             >
@@ -33,9 +35,6 @@ export default function ManagerLayout({ children }: ManagerLayoutProps) {
           </div>
         </div>
       </nav>
-
-      <NavBar links={managerLinks} />
-
       <div className="flex-1">{children}</div>
     </main>
   )
