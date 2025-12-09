@@ -10,7 +10,7 @@ interface ManagerLayoutProps {
 
 export default function ManagerLayout({ children }: ManagerLayoutProps) {
   const managerLinks = [
-    { label: "Home", href: `/manager-hub` },
+    { label: "Home", href: `/manager` },
     { label: "Bookmarks", href: "#", disabled: true },
   ]
 
