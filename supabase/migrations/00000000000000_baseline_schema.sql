@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
-  apartment_number TEXT NOT NULL,
   phone_number TEXT NOT NULL,
   email TEXT,
   role TEXT DEFAULT 'resident' CHECK (role IN ('resident', 'building_manager')),
@@ -408,12 +407,11 @@ The caller must be authenticated and must be one of the two participants.';
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, first_name, last_name, apartment_number, phone_number, email)
+  INSERT INTO public.profiles (id, first_name, last_name, phone_number, email)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'apartment_number', ''),
     COALESCE(NEW.raw_user_meta_data->>'phone_number', ''),
     NEW.email
   );
