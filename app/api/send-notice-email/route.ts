@@ -108,7 +108,6 @@ export async function POST(request: Request) {
     })
 
     if (!recipientsToEmail || recipientsToEmail.length === 0) {
-      console.log("No recipients to email")
       return NextResponse.json(
         { message: "No recipients to email", sent: 0 },
         { status: 200 },
@@ -127,30 +126,7 @@ export async function POST(request: Request) {
           ? "🔵"
           : "⚪"
 
-    console.log(
-      `📧 [${MOCK_EMAIL ? "MOCK" : "REAL"}] Sending notice email to ${recipientsToEmail.length} recipients`,
-    )
-    console.log(`   Notice: ${notice.title}`)
-    console.log(`   Building: ${building.full_address}`)
-    console.log(`   Priority: ${notice.priority}`)
-    console.log(
-      `   Recipients: ${recipientsToEmail.map((r: any) => r.profiles.email).join(", ")}`,
-    )
-
     if (MOCK_EMAIL) {
-      console.log("\n📮 Email Preview:")
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      console.log(`From: Building Notices <notices@majanaaber.app>`)
-      console.log(`Subject: New Notice: ${notice.title}`)
-      console.log(`To: ${recipientsToEmail.map((r: any) => r.profiles.email).join(", ")}`)
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      console.log(`${priorityEmoji} ${notice.title}`)
-      console.log(`Posted by: ${authorName}`)
-      console.log(`Category: ${notice.category}`)
-      console.log(`Priority: ${notice.priority.toUpperCase()}`)
-      console.log(`\n${notice.content}\n`)
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-
       return NextResponse.json({
         message: `[MOCK] Would send ${recipientsToEmail.length} emails`,
         recipients: recipientsToEmail.length,
@@ -215,11 +191,7 @@ export async function POST(request: Request) {
           html: emailHtml,
         })
         return true
-      } catch (error) {
-        console.error(
-          `Failed to send email to ${recipient.profiles.email}:`,
-          error,
-        )
+      } catch {
         return false
       }
     })

@@ -62,14 +62,6 @@ export function SignUpForm({
     }
 
     try {
-      const signUpData = {
-        role: role,
-        first_name: firstName,
-        last_name: lastName,
-        phone_number: phoneNumber,
-      }
-      console.log("Sign-up metadata:", signUpData)
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -84,10 +76,8 @@ export function SignUpForm({
         },
       })
       if (error) {
-        console.error("Auth signup error:", error)
         throw error
       }
-      console.log("Sign-up successful, user:", data.user?.id)
 
       router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`)
     } catch (error: unknown) {

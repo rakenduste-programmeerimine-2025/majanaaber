@@ -33,11 +33,6 @@ const AttachmentDisplay = memo(
     const supabase = createClient()
 
     useEffect(() => {
-      console.log(
-        "[IMAGE] AttachmentDisplay mounted for:",
-        attachment.file_name,
-      )
-
       const getFileUrl = async () => {
         try {
           const { data, error } = await supabase.storage
@@ -45,17 +40,15 @@ const AttachmentDisplay = memo(
             .createSignedUrl(attachment.file_path, 3600)
 
           if (error) {
-            console.error("[IMAGE] Storage error:", error)
             setIsLoading(false)
             return
           }
 
           if (data?.signedUrl) {
-            console.log("[IMAGE] Got signed URL for:", attachment.file_name)
             setFileUrl(data.signedUrl)
           }
-        } catch (err) {
-          console.error("[IMAGE] Failed to get file URL:", err)
+        } catch {
+          // Failed to get file URL
         } finally {
           setIsLoading(false)
         }
@@ -108,11 +101,7 @@ const AttachmentDisplay = memo(
                   e.stopPropagation()
                   window.open(fileUrl, "_blank")
                 }}
-                onLoad={() =>
-                  console.log("[IMAGE] Loaded:", attachment.file_name)
-                }
                 onError={() => {
-                  console.log("[IMAGE] Error loading:", attachment.file_name)
                   setImageError(true)
                 }}
               />
@@ -201,7 +190,6 @@ export function ChatBox({
   const markedAsReadRef = useRef<Set<string>>(new Set())
 
   const scrollToBottom = () => {
-    console.log("[SCROLL] Scrolling to bottom")
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
@@ -210,20 +198,10 @@ export function ChatBox({
 
   // Simple scroll: only when user sends a message
   useEffect(() => {
-    console.log(
-      "[MESSAGES] Messages updated. Count:",
-      messages.length,
-      "Previous:",
-      prevMessagesLengthRef.current,
-      "isUserSending:",
-      isUserSendingRef.current,
-    )
-
     if (
       messages.length > prevMessagesLengthRef.current &&
       isUserSendingRef.current
     ) {
-      console.log("[SCROLL] Scheduling scroll to bottom in 100ms")
       setTimeout(() => scrollToBottom(), 100)
       isUserSendingRef.current = false
     }
@@ -260,17 +238,6 @@ export function ChatBox({
       const isAtBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight <
         50
-
-      console.log(
-        "[SCROLL EVENT] scrollTop:",
-        container.scrollTop,
-        "scrollHeight:",
-        container.scrollHeight,
-        "clientHeight:",
-        container.clientHeight,
-        "isAtBottom:",
-        isAtBottom,
-      )
 
       setShowScrollButton(!isAtBottom)
     }

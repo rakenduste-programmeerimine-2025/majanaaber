@@ -114,8 +114,6 @@ export default function MessagesPage() {
       return
     }
 
-    console.log("Fetching contacts for building:", buildingId)
-
     // Get all residents in the building
     const { data: buildingResidents, error: residentsError } = await supabase
       .from("building_residents")
@@ -178,7 +176,6 @@ export default function MessagesPage() {
       })
     }
 
-    console.log("Contacts list:", contactsList)
     setResidents(contactsList)
     setShowNewMessageModal(true)
   }
