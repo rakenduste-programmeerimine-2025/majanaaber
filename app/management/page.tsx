@@ -174,26 +174,35 @@ export default function ManagerDashboard() {
 
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
+      
+      // First get building_residents data
+      const { data: residentsData, error: residentsError } = await supabase
         .from("building_residents")
-        .select(
-          `
-          id,
-          profile_id,
-          apartment_number,
-          resident_role,
-          is_approved,
-          profile:profiles(id, first_name, last_name, email)
-        `,
-        )
+        .select("id, profile_id, apartment_number, resident_role, is_approved")
         .eq("building_id", buildingId)
 
-      if (error) throw error
-      // Map the data to match our Resident interface
-      const mappedData = (data || []).map(item => ({
-        ...item,
-        profile: Array.isArray(item.profile) ? item.profile[0] : item.profile,
+      if (residentsError) throw residentsError
+      
+      if (!residentsData || residentsData.length === 0) {
+        setResidents([])
+        return
+      }
+
+      // Then get profile details
+      const profileIds = residentsData.map(r => r.profile_id)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", profileIds)
+
+      if (profilesError) throw profilesError
+
+      // Combine the data
+      const mappedData = residentsData.map(resident => ({
+        ...resident,
+        profile: profilesData?.find(p => p.id === resident.profile_id) || null
       }))
+      
       setResidents(mappedData as Resident[])
     } catch (err: any) {
       console.error("Error loading residents:", err)

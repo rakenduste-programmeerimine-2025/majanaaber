@@ -434,9 +434,6 @@ BEGIN
   -- Extract role from metadata
   user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'resident');
   
-  -- Log for debugging (remove in production)
-  RAISE NOTICE 'Creating profile for user % with role %', NEW.id, user_role;
-  
   INSERT INTO public.profiles (id, first_name, last_name, phone_number, email, role)
   VALUES (
     NEW.id,
