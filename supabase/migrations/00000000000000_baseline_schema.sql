@@ -467,22 +467,23 @@ RETURNS TRIGGER AS $$
 DECLARE
   payload JSON;
 BEGIN
-  -- Create payload for the webhook
-  payload := json_build_object(
-    'notice_id', NEW.id,
-    'building_id', NEW.building_id,
-    'title', NEW.title,
-    'content', NEW.content,
-    'priority', NEW.priority,
-    'created_by', NEW.created_by
-  );
-
-  -- Send webhook notification
-  PERFORM net.http_post(
-    url := 'https://your-app.com/api/send-notice-email',
-    headers := '{"Content-Type": "application/json"}'::jsonb,
-    body := payload::text
-  );
+  -- TODO: Add webhook notification when needed
+  -- Currently disabled to avoid dependency on pg_net extension
+  -- 
+  -- payload := json_build_object(
+  --   'notice_id', NEW.id,
+  --   'building_id', NEW.building_id,
+  --   'title', NEW.title,
+  --   'content', NEW.content,
+  --   'priority', NEW.priority,
+  --   'created_by', NEW.created_by
+  -- );
+  --
+  -- PERFORM net.http_post(
+  --   url := 'https://your-app.com/api/send-notice-email',
+  --   headers := '{"Content-Type": "application/json"}'::jsonb,
+  --   body := payload::text
+  -- );
 
   RETURN NEW;
 END;
