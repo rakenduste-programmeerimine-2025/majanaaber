@@ -75,7 +75,10 @@ export function UpdatePasswordForm({
                 required
                 showRequirements
               />
-              <ErrorDisplay error={error} onClear={clearError} />
+              <ErrorDisplay
+                error={error}
+                onClear={clearError}
+              />
               <Button
                 type="submit"
                 className="w-full"

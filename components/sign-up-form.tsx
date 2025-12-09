@@ -197,7 +197,10 @@ export function SignUpForm({
                   onChange={e => setRepeatPassword(e.target.value)}
                 />
               </div>
-              <ErrorDisplay error={error} onClear={clearError} />
+              <ErrorDisplay
+                error={error}
+                onClear={clearError}
+              />
               <Button
                 type="submit"
                 className="w-full"
