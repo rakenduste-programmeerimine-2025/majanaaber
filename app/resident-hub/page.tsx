@@ -224,7 +224,7 @@ export default function ResidentHubPage() {
                         asChild
                       >
                         <Link
-                          href={`/resident?building=${apartment.building_id}`}
+                          href={`/residence?building=${apartment.building_id}`}
                         >
                           Select
                         </Link>

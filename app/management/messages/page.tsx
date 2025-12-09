@@ -97,7 +97,7 @@ export default function ManagerMessagesPage() {
             Only building managers can access direct messages here.
           </p>
           <a
-            href="/resident/messages"
+            href="/residence/messages"
             className="mt-4 text-primary hover:underline"
           >
             Go to Resident Messages
@@ -277,3 +277,4 @@ export default function ManagerMessagesPage() {
     </div>
   )
 }
+

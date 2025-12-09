@@ -174,7 +174,7 @@ export default function ResidentDashboard() {
             onMarkAsRead={markMessageAsRead}
             headerAction={
               <Link
-                href={`/resident/messages?building=${building.id}`}
+                href={`/residence/messages?building=${building.id}`}
                 className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
               >
                 <MessageSquare className="h-4 w-4" />
@@ -190,3 +190,4 @@ export default function ResidentDashboard() {
     </div>
   )
 }
+

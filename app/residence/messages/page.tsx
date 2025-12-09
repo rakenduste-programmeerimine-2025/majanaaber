@@ -198,7 +198,7 @@ export default function MessagesPage() {
         <h1 className="text-3xl font-bold">Direct Messages</h1>
         <button
           onClick={handleStartNewConversation}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
         >
           + New Message
         </button>
