@@ -638,6 +638,12 @@ CREATE POLICY "Managers can update their buildings"
   USING (manager_id = auth.uid())
   WITH CHECK (true); -- Allow changing manager_id to transfer ownership
 
+-- Only building managers can delete their buildings
+CREATE POLICY "Managers can delete their buildings"
+  ON public.buildings
+  FOR DELETE
+  USING (manager_id = auth.uid());
+
 -- =====================================================
 -- BUILDING RESIDENTS POLICIES
 -- =====================================================

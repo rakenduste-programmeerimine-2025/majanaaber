@@ -169,7 +169,7 @@ export default function ManagerHubPage() {
 
       loadData()
     } catch (err: any) {
-      alert("Failed to delete building: " + err.message)
+      handleError(err, "Failed to delete building")
     }
   }
 
