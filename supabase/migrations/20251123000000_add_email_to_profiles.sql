@@ -16,8 +16,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create trigger to sync email updates
-DROP TRIGGER IF EXISTS sync_email_to_profile ON auth.users;
+-- Create trigger to sync email updates (only drop if exists)
+DO $$
+BEGIN
+  DROP TRIGGER IF EXISTS sync_email_to_profile ON auth.users;
+EXCEPTION
+  WHEN undefined_object THEN NULL;
+END
+$$;
+
 CREATE TRIGGER sync_email_to_profile
   AFTER UPDATE OF email ON auth.users
   FOR EACH ROW

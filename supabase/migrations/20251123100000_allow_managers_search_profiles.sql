@@ -5,10 +5,16 @@
 -- Enable RLS on profiles if not already enabled
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can read their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Building owners can read all profiles" ON public.profiles;
-DROP POLICY IF EXISTS "Authenticated users can read profiles" ON public.profiles;
+-- Drop existing policies if they exist (suppress notices)
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Users can read their own profile" ON public.profiles;
+  DROP POLICY IF EXISTS "Building owners can read all profiles" ON public.profiles;
+  DROP POLICY IF EXISTS "Authenticated users can read profiles" ON public.profiles;
+EXCEPTION
+  WHEN undefined_object THEN NULL;
+END
+$$;
 
 -- Policy 1: Users can read their own profile
 CREATE POLICY "Users can read their own profile"
@@ -30,12 +36,18 @@ CREATE POLICY "Building managers can view all profiles"
 -- Enable RLS on building_residents if not already enabled
 ALTER TABLE public.building_residents ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can read their own resident records" ON public.building_residents;
-DROP POLICY IF EXISTS "Building managers can manage residents" ON public.building_residents;
-DROP POLICY IF EXISTS "Building managers can insert residents" ON public.building_residents;
-DROP POLICY IF EXISTS "Building managers can delete residents" ON public.building_residents;
-DROP POLICY IF EXISTS "Building managers can update residents" ON public.building_residents;
+-- Drop existing policies if they exist (suppress notices)
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Users can read their own resident records" ON public.building_residents;
+  DROP POLICY IF EXISTS "Building managers can manage residents" ON public.building_residents;
+  DROP POLICY IF EXISTS "Building managers can insert residents" ON public.building_residents;
+  DROP POLICY IF EXISTS "Building managers can delete residents" ON public.building_residents;
+  DROP POLICY IF EXISTS "Building managers can update residents" ON public.building_residents;
+EXCEPTION
+  WHEN undefined_object THEN NULL;
+END
+$$;
 
 -- Create policy for users to read their own resident records
 CREATE POLICY "Users can read their own resident records"
