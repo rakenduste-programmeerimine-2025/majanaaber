@@ -44,13 +44,15 @@ CREATE TABLE IF NOT EXISTS public.building_residents (
   building_id UUID REFERENCES public.buildings(id) ON DELETE CASCADE NOT NULL,
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   apartment_number TEXT NOT NULL,
+  resident_role TEXT DEFAULT 'resident' NOT NULL,
   is_approved BOOLEAN DEFAULT FALSE NOT NULL,
   approved_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   approved_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   
   -- Ensure unique combination of building and profile
-  CONSTRAINT unique_building_profile UNIQUE (building_id, profile_id)
+  CONSTRAINT unique_building_profile UNIQUE (building_id, profile_id),
+  CONSTRAINT valid_resident_role CHECK (resident_role IN ('resident', 'apartment_owner'))
 );
 
 -- Login attempts tracking
@@ -260,6 +262,7 @@ CREATE INDEX IF NOT EXISTS idx_buildings_ads_code ON public.buildings(ads_code);
 CREATE INDEX IF NOT EXISTS idx_building_residents_building_id ON public.building_residents(building_id);
 CREATE INDEX IF NOT EXISTS idx_building_residents_profile_id ON public.building_residents(profile_id);
 CREATE INDEX IF NOT EXISTS idx_building_residents_approved ON public.building_residents(is_approved);
+CREATE INDEX IF NOT EXISTS idx_building_residents_role ON public.building_residents(resident_role);
 
 -- Login attempts indexes
 CREATE INDEX IF NOT EXISTS idx_login_attempts_user_id ON public.login_attempts(user_id);
@@ -466,6 +469,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- SECURITY DEFINER function to check if user is approved resident of a building
+-- This bypasses RLS to avoid circular dependencies in policies
+CREATE OR REPLACE FUNCTION public.user_is_approved_resident_of_building(check_building_id UUID, check_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.building_residents
+    WHERE building_id = check_building_id
+    AND profile_id = check_user_id
+    AND is_approved = true
+  );
+$$;
+
 -- =====================================================
 -- 6. TRIGGERS
 -- =====================================================
@@ -553,9 +572,11 @@ CREATE POLICY "Building managers can view all profiles"
   ON public.profiles
   FOR SELECT
   USING (
-    EXISTS (
-      SELECT 1 FROM public.buildings WHERE manager_id = auth.uid()
-    )
+    -- Users can always see their own profile
+    auth.uid() = id
+    OR
+    -- Building managers can see all profiles (check auth metadata)
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'building_manager'
   );
 
 -- Users can insert their own profile
@@ -575,22 +596,11 @@ CREATE POLICY "Users can update their own profile"
 -- BUILDINGS POLICIES
 -- =====================================================
 
--- Residents can view buildings they belong to
-CREATE POLICY "Residents can view their buildings"
+-- Authenticated users can view buildings (addresses aren't sensitive data)
+CREATE POLICY "Authenticated users can view buildings"
   ON public.buildings
   FOR SELECT
-  USING (
-    -- Building managers can see their own buildings
-    manager_id = auth.uid()
-    OR
-    -- Residents can see buildings they belong to
-    EXISTS (
-      SELECT 1 FROM public.building_residents
-      WHERE building_id = buildings.id
-      AND profile_id = auth.uid()
-      AND is_approved = true
-    )
-  );
+  USING (auth.uid() IS NOT NULL);
 
 -- Authenticated users can insert buildings for themselves
 CREATE POLICY "Users can insert buildings for themselves"
@@ -652,17 +662,13 @@ CREATE POLICY "Building managers can update residents"
 -- NOTICES POLICIES
 -- =====================================================
 
--- Users can view notices for their buildings
+-- Users can view notices - building-specific filtering done at application level
 CREATE POLICY "Users can view notices for their buildings"
   ON public.notices
   FOR SELECT
   USING (
-    -- Building managers can see notices for their buildings
-    EXISTS (
-      SELECT 1 FROM public.buildings
-      WHERE id = notices.building_id
-      AND manager_id = auth.uid()
-    )
+    -- Building managers can see all notices
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
     OR
     -- Residents can see notices for buildings they belong to
     EXISTS (
@@ -678,31 +684,18 @@ CREATE POLICY "Building managers can create notices"
   ON public.notices
   FOR INSERT
   WITH CHECK (
-    auth.uid() IS NOT NULL
-    AND EXISTS (
-      SELECT 1 FROM public.buildings
-      WHERE id = notices.building_id
-      AND manager_id = auth.uid()
-    )
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
   );
 
--- Building managers can update their notices
+-- Building managers can update notices
 CREATE POLICY "Building managers can update notices"
   ON public.notices
   FOR UPDATE
   USING (
-    EXISTS (
-      SELECT 1 FROM public.buildings
-      WHERE id = notices.building_id
-      AND manager_id = auth.uid()
-    )
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
   )
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.buildings
-      WHERE id = notices.building_id
-      AND manager_id = auth.uid()
-    )
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
   );
 
 -- =====================================================
@@ -714,12 +707,8 @@ CREATE POLICY "Users can view messages in their buildings"
   ON public.building_messages
   FOR SELECT
   USING (
-    -- Building managers can see messages for their buildings
-    EXISTS (
-      SELECT 1 FROM public.buildings
-      WHERE id = building_messages.building_id
-      AND manager_id = auth.uid()
-    )
+    -- Building managers can see all messages
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
     OR
     -- Approved residents can see messages for buildings they belong to
     EXISTS (
@@ -737,12 +726,8 @@ CREATE POLICY "Approved users can send messages in their buildings"
     auth.uid() IS NOT NULL
     AND sender_id = auth.uid()
     AND (
-      -- Building managers can send messages in their buildings
-      EXISTS (
-        SELECT 1 FROM public.buildings
-        WHERE id = building_messages.building_id
-        AND manager_id = auth.uid()
-      )
+      -- Building managers can send messages
+      (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
       OR
       -- Approved residents can send messages in their buildings
       EXISTS (

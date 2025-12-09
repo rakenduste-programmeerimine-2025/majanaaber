@@ -136,7 +136,7 @@ VALUES (
 );
 
 -- Add residents to the building
-INSERT INTO building_residents (building_id, profile_id, apartment_number, is_approved)
+INSERT INTO building_residents (building_id, profile_id, apartment_number, resident_role, is_approved)
 VALUES
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '101', true),
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', '102', true);
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '101', 'resident', true),
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', '102', 'apartment_owner', true);
