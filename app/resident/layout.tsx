@@ -1,20 +1,19 @@
 import { AuthButton } from "@/components/auth-button"
 import { ThemeSwitcher } from "@/components/theme-switcher"
-import { DashboardBackLink } from "@/components/dashboard-back-link"
 import Link from "next/link"
+import { BackButton } from "@/components/back-button"
 
 export default function ResidentLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const residentLinks = [{ label: "Hub", href: "/resident-hub" }]
   return (
     <main className="min-h-screen flex flex-col">
       <nav className="w-full border-b border-b-foreground/10">
         <div className="w-full max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
           <div className="flex gap-5 items-center font-semibold">
-            <DashboardBackLink />
+            <BackButton />
             <span className="text-gray-400">|</span>
             <span>Resident</span>
           </div>
