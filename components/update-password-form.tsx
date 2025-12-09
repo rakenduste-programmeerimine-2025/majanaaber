@@ -14,13 +14,15 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { PasswordStrengthInput } from "@/components/password-strength-input"
 import { checkPasswordStrength } from "@/lib/password-strength"
+import { ErrorDisplay } from "@/components/ui/error-display"
+import { useErrorHandler } from "@/hooks/use-error-handler"
 
 export function UpdatePasswordForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const { error, handleError, clearError } = useErrorHandler()
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -28,12 +30,12 @@ export function UpdatePasswordForm({
     e.preventDefault()
     const supabase = createClient()
     setIsLoading(true)
-    setError(null)
+    clearError()
 
     try {
       const { score } = checkPasswordStrength(password)
       if (score < 4) {
-        setError("Password must meet all requirements.")
+        handleError("Password must meet all requirements.", undefined, false)
         setIsLoading(false)
         return
       }
@@ -43,7 +45,7 @@ export function UpdatePasswordForm({
       // Update this route to redirect to an authenticated route. The user already has an active session.
       router.push("/protected")
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      handleError(error, "An error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -73,7 +75,7 @@ export function UpdatePasswordForm({
                 required
                 showRequirements
               />
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              <ErrorDisplay error={error} onClear={clearError} />
               <Button
                 type="submit"
                 className="w-full"

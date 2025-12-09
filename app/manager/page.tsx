@@ -278,7 +278,11 @@ export default function ManagerHubPage() {
           </p>
         </div>
 
-        <ErrorDisplay error={error} onClear={clearError} className="mb-6" />
+        <ErrorDisplay
+          error={error}
+          onClear={clearError}
+          className="mb-6"
+        />
 
         {/* 2-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

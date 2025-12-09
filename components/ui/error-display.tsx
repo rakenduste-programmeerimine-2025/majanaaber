@@ -13,11 +13,12 @@ export function ErrorDisplay({ error, onClear, className }: ErrorDisplayProps) {
   if (!error) return null
 
   return (
-    <Alert variant="destructive" className={className}>
+    <Alert
+      variant="destructive"
+      className={className}
+    >
       <AlertCircle className="h-4 w-4 mt-0.5" />
-      <AlertDescription>
-        {error}
-      </AlertDescription>
+      <AlertDescription>{error}</AlertDescription>
       {onClear && (
         <Button
           variant="ghost"

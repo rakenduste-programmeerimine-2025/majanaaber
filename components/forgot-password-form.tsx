@@ -14,13 +14,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useState } from "react"
+import { ErrorDisplay } from "@/components/ui/error-display"
+import { useErrorHandler } from "@/hooks/use-error-handler"
 
 export function ForgotPasswordForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const { error, handleError, clearError } = useErrorHandler()
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -28,7 +30,7 @@ export function ForgotPasswordForm({
     e.preventDefault()
     const supabase = createClient()
     setIsLoading(true)
-    setError(null)
+    clearError()
 
     try {
       // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration
@@ -38,7 +40,7 @@ export function ForgotPasswordForm({
       if (error) throw error
       setSuccess(true)
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      handleError(error, "An error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -85,7 +87,7 @@ export function ForgotPasswordForm({
                     onChange={e => setEmail(e.target.value)}
                   />
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                <ErrorDisplay error={error} onClear={clearError} />
                 <Button
                   type="submit"
                   className="w-full"

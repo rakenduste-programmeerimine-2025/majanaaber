@@ -4,7 +4,7 @@ interface UseErrorHandlerReturn {
   error: string | null
   setError: (error: string | null) => void
   clearError: () => void
-  handleError: (error: unknown, fallbackMessage?: string) => void
+  handleError: (error: unknown, fallbackMessage?: string, shouldLog?: boolean) => void
 }
 
 export function useErrorHandler(): UseErrorHandlerReturn {
@@ -14,8 +14,11 @@ export function useErrorHandler(): UseErrorHandlerReturn {
     setError(null)
   }, [])
 
-  const handleError = useCallback((error: unknown, fallbackMessage = "An error occurred") => {
-    console.error("Error:", error)
+  const handleError = useCallback((error: unknown, fallbackMessage = "An error occurred", shouldLog = true) => {
+    // Only log to console if it's an actual Error object or if explicitly requested
+    if (shouldLog && (error instanceof Error || (typeof error !== "string"))) {
+      console.error("Error:", error)
+    }
     
     let errorMessage: string
     if (error instanceof Error) {

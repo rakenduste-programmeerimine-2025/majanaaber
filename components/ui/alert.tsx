@@ -14,19 +14,23 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         className={cn(
           "relative flex w-full rounded-lg border p-4 gap-3 items-start",
           {
-            "border-border bg-background text-foreground": variant === "default",
-            "border-red-200 bg-red-50 text-red-900 dark:border-red-800/50 dark:bg-red-950/50 dark:text-red-200": variant === "destructive",
-            "border-yellow-200 bg-yellow-50 text-yellow-900 dark:border-yellow-800/50 dark:bg-yellow-950/50 dark:text-yellow-200": variant === "warning",
-            "border-green-200 bg-green-50 text-green-900 dark:border-green-800/50 dark:bg-green-950/50 dark:text-green-200": variant === "success",
+            "border-border bg-background text-foreground":
+              variant === "default",
+            "border-red-200 bg-red-50 text-red-900 dark:border-red-800/50 dark:bg-red-950/50 dark:text-red-200":
+              variant === "destructive",
+            "border-yellow-200 bg-yellow-50 text-yellow-900 dark:border-yellow-800/50 dark:bg-yellow-950/50 dark:text-yellow-200":
+              variant === "warning",
+            "border-green-200 bg-green-50 text-green-900 dark:border-green-800/50 dark:bg-green-950/50 dark:text-green-200":
+              variant === "success",
           },
-          className
+          className,
         )}
         {...props}
       >
         {children}
       </div>
     )
-  }
+  },
 )
 Alert.displayName = "Alert"
 
