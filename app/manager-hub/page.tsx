@@ -379,7 +379,7 @@ export default function ManagerHubPage() {
                             asChild
                           >
                             <Link
-                              href={`/resident?building=${apartment.building_id}`}
+                              href={`/residence?building=${apartment.building_id}`}
                             >
                               Select
                             </Link>
@@ -492,7 +492,7 @@ export default function ManagerHubPage() {
                             className="flex-1"
                             asChild
                           >
-                            <Link href={`/manager?building=${building.id}`}>
+                            <Link href={`/management?building=${building.id}`}>
                               Manage
                             </Link>
                           </Button>
