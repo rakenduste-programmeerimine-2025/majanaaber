@@ -433,13 +433,17 @@ export function PeerChatBox({
                   )}
 
                   <div
-                    className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group ${
+                    className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group overflow-hidden ${
                       message.is_deleted
                         ? "bg-muted text-muted-foreground"
                         : isOwnMessage
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary text-secondary-foreground"
                     }`}
+                    style={{
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                    }}
                   >
                     {message.is_deleted ? (
                       <>
@@ -664,7 +668,7 @@ export function PeerChatBox({
           {showScrollButton && (
             <button
               onClick={scrollToBottom}
-              className="absolute bottom-4 right-4 bg-blue-600 text-white rounded-full p-3 shadow-lg hover:bg-blue-700 transition-colors"
+              className="absolute bottom-4 right-4 bg-primary text-primary-foreground rounded-full p-3 shadow-lg hover:opacity-90 transition-colors"
             >
               ↓
             </button>

@@ -687,54 +687,101 @@ export default function ManagerDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex justify-center items-stretch gap-10 px-6 mt-8 mb-8">
-        {/* Left: Notices + Calendar */}
-        <section className="flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0">
-          {/* Notices */}
-          <div className="w-1/2 pr-6 border-r border-border flex flex-col">
-            <NoticeBoard
-              buildingId={buildingId}
-              isManager={true}
-            />
-          </div>
-
-          {/* Calendar */}
-          <div className="w-1/2 pl-6">
-            {buildingId ? (
-              <BuildingCalendar buildingId={buildingId} />
-            ) : (
-              <div className="p-4 text-sm text-muted-foreground">
-                No building selected
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Right: Chat */}
-        <ChatBox
-          buildingName={building.full_address}
-          messages={messages}
-          currentUserId={currentUserId}
-          onSendMessage={sendMessage}
-          onDeleteMessage={deleteMessage}
-          onEditMessage={editMessage}
-          isSending={isSending}
-          typingUsers={typingUsers}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-          onAddReaction={addReaction}
-          onRemoveReaction={removeReaction}
-          onMarkAsRead={markMessageAsRead}
-          headerAction={
-            <Link
-              href={`/manager/messages?building=${buildingId}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Direct Messages
-            </Link>
+      <style>{`
+        @media (max-width: 1022px) {
+          .dashboard-container {
+            flex-direction: column;
+            gap: 1.5rem;
           }
-        />
+          .dashboard-section {
+            width: 100% !important;
+            height: 500px !important;
+          }
+          .chatbox-container {
+            width: 100% !important;
+            height: 500px !important;
+          }
+        }
+        @media (max-width: 699px) {
+          .notices-calendar-section {
+            flex-direction: column;
+            height: auto !important;
+          }
+          .notices-column {
+            width: 100% !important;
+            height: 500px !important;
+            border-right: none !important;
+            border-bottom: 1px solid var(--border);
+            padding-right: 0 !important;
+            padding-bottom: 1.5rem;
+          }
+          .calendar-column {
+            width: 100% !important;
+            padding-left: 0 !important;
+            padding-top: 1.5rem;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+          }
+          .calendar-column > div {
+            padding-left: 0 !important;
+          }
+        }
+      `}</style>
+      <main className="flex justify-center items-stretch gap-10 px-6 mt-8 mb-8">
+        <div
+          className="dashboard-container flex gap-10 items-stretch justify-center w-full"
+          style={{ maxWidth: "2000px" }}
+        >
+          {/* Left: Notices + Calendar */}
+          <section className="dashboard-section notices-calendar-section flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg">
+            {/* Notices */}
+            <div className="notices-column w-1/2 pr-6 border-r border-border flex flex-col overflow-y-auto">
+              <NoticeBoard
+                buildingId={buildingId}
+                isManager={true}
+              />
+            </div>
+
+            {/* Calendar */}
+            <div className="calendar-column w-1/2 pl-6">
+              {buildingId ? (
+                <BuildingCalendar buildingId={buildingId} />
+              ) : (
+                <div className="p-4 text-sm text-muted-foreground">
+                  No building selected
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Right: Chat */}
+          <ChatBox
+            buildingName={building.full_address}
+            messages={messages}
+            currentUserId={currentUserId}
+            onSendMessage={sendMessage}
+            onDeleteMessage={deleteMessage}
+            onEditMessage={editMessage}
+            isSending={isSending}
+            typingUsers={typingUsers}
+            onTypingStart={handleTypingStart}
+            onTypingStop={handleTypingStop}
+            onAddReaction={addReaction}
+            onRemoveReaction={removeReaction}
+            onMarkAsRead={markMessageAsRead}
+            headerAction={
+              <Link
+                href={`/manager/messages?building=${buildingId}`}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Direct Messages
+              </Link>
+            }
+            className="chatbox-container w-[30%]"
+          />
+        </div>
       </main>
 
       {/* Empty space at bottom */}
