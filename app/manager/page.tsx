@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { NoticeBoard } from "@/components/notice-board"
+import { NoticeBoard } from "@/components/notices"
 import { ChatBox } from "@/components/chat-box"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { BuildingCalendar } from "@/components/building-calendar"
+import Link from "next/link"
+import { MessageSquare } from "lucide-react"
 
 interface Building {
   id: string
@@ -43,6 +46,12 @@ interface EditingResident {
   residentRole: "resident" | "apartment_owner"
 }
 
+interface Notice {
+  id: string
+  title: string
+  event_date: string | null
+}
+
 export default function ManagerDashboard() {
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
@@ -59,6 +68,8 @@ export default function ManagerDashboard() {
   })
   const [editingResident, setEditingResident] =
     useState<EditingResident | null>(null)
+
+  const [notices, setNotices] = useState<Notice[]>([])
   const searchParams = useSearchParams()
   const buildingId = searchParams.get("building")
 
@@ -78,11 +89,6 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     const loadBuilding = async () => {
-      if (!buildingId) {
-        setLoading(false)
-        return
-      }
-
       try {
         const supabase = createClient()
 
@@ -96,6 +102,26 @@ export default function ManagerDashboard() {
         }
 
         setCurrentUserId(user.id)
+
+        // If no building ID is provided, try to find the manager's building
+        if (!buildingId) {
+          const { data: managerBuilding, error: buildingError } = await supabase
+            .from("buildings")
+            .select("id, full_address, manager_id")
+            .eq("manager_id", user.id)
+            .limit(1)
+            .single()
+
+          if (buildingError || !managerBuilding) {
+            throw new Error(
+              "No building found. Please create a building first.",
+            )
+          }
+
+          // Redirect to the same page with building ID
+          window.location.href = `/manager?building=${managerBuilding.id}`
+          return
+        }
 
         // Fetch building and verify ownership
         const { data, error } = await supabase
@@ -123,6 +149,26 @@ export default function ManagerDashboard() {
     loadBuilding()
   }, [buildingId])
 
+  useEffect(() => {
+    const loadNotices = async () => {
+      if (!buildingId) return
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("notices")
+        .select("id, title, event_date")
+        .eq("building_id", buildingId)
+        .order("event_date", { ascending: true })
+
+      if (error) {
+        console.error("Error loading notices:", error)
+        return
+      }
+
+      setNotices(data || [])
+    }
+
+    loadNotices()
+  }, [buildingId])
   const loadResidents = async () => {
     if (!buildingId) return
 
@@ -333,18 +379,17 @@ export default function ManagerDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-lg mb-2">Unable to load building</p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             You may not have permission to manage this building.
           </p>
         </div>
       </div>
     )
   }
-
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-background">
       {/* Building Header */}
-      <div className="bg-white border-b border-gray-300 px-6 py-4 mt-[10vh]">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="container mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold">{building.full_address}</h1>
           <Button
@@ -359,13 +404,13 @@ export default function ManagerDashboard() {
       {/* Residents Overlay */}
       {showResidentsOverlay && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-[600px] max-h-[80vh] flex flex-col">
+          <div className="bg-background rounded-lg shadow-xl w-[600px] max-h-[80vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-2xl font-bold">Residents</h2>
               <button
                 onClick={() => setShowResidentsOverlay(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-muted-foreground hover:text-foreground text-2xl"
               >
                 ×
               </button>
@@ -392,7 +437,7 @@ export default function ManagerDashboard() {
                     {searchResults.map(profile => (
                       <div
                         key={profile.id}
-                        className="flex items-center justify-between p-3 hover:bg-gray-50 border-b last:border-b-0 cursor-pointer"
+                        className="flex items-center justify-between p-3 hover:bg-muted border-b last:border-b-0 cursor-pointer"
                         onClick={() =>
                           setResidentForm(prev => ({
                             ...prev,
@@ -404,11 +449,11 @@ export default function ManagerDashboard() {
                           <p className="font-medium">
                             {profile.first_name} {profile.last_name}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             {profile.email}
                           </p>
                         </div>
-                        <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        <div className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
                           {residentForm.profileId === profile.id
                             ? "Selected"
                             : "Select"}
@@ -419,12 +464,14 @@ export default function ManagerDashboard() {
                 )}
 
                 {searchQuery && !isSearching && searchResults.length === 0 && (
-                  <p className="text-sm text-gray-500 mt-2">No users found</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    No users found
+                  </p>
                 )}
 
                 {/* Resident Form */}
                 {residentForm.profileId && (
-                  <div className="border rounded-md p-4 bg-blue-50 mb-4">
+                  <div className="border rounded-md p-4 bg-muted/30 mb-4">
                     <h4 className="font-semibold mb-3">Add Resident Details</h4>
 
                     <div className="mb-3">
@@ -497,7 +544,7 @@ export default function ManagerDashboard() {
                   Current Residents
                 </h3>
                 {residents.length === 0 ? (
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     No residents added yet. Search and add residents above.
                   </p>
                 ) : (
@@ -506,7 +553,7 @@ export default function ManagerDashboard() {
                       <div key={resident.id}>
                         {editingResident?.id === resident.id ? (
                           /* Edit Form */
-                          <div className="border rounded-md p-4 bg-yellow-50">
+                          <div className="border rounded-md p-4 bg-muted/50">
                             <h4 className="font-semibold mb-3">
                               Edit Resident: {resident.profile.first_name}{" "}
                               {resident.profile.last_name}
@@ -586,16 +633,16 @@ export default function ManagerDashboard() {
                                 {resident.profile.first_name}{" "}
                                 {resident.profile.last_name}
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 {resident.profile.email}
                               </p>
                               <div className="flex gap-2 mt-1">
                                 {resident.apartment_number && (
-                                  <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                  <span className="text-xs bg-muted px-2 py-1 rounded">
                                     Apt: {resident.apartment_number}
                                   </span>
                                 )}
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
                                   {resident.resident_role === "apartment_owner"
                                     ? "Apt. owner"
                                     : "Resident"}
@@ -640,53 +687,57 @@ export default function ManagerDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex justify-center items-start gap-10 px-6 mt-8">
-        {/* Left: Notices + Calendar */}
-        <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
-          {/* Notices */}
-          <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
-            <NoticeBoard
-              buildingId={buildingId}
-              isManager={true}
-            />
-          </div>
-
-          {/* Calendar */}
-          <div className="w-1/2 pl-6 flex flex-col items-center">
-            <div className="flex items-center justify-between w-full mb-3">
-              <button>{"<"}</button>
-              <h3 className="font-semibold">November 2025</h3>
-              <button>{">"}</button>
+      <main className="flex justify-center items-stretch gap-10 px-6 mt-8 mb-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-stretch justify-center w-full max-w-[2000px]">
+          {/* Left: Notices + Calendar */}
+          <section className="flex flex-col md:flex-row bg-card p-6 shadow-lg w-full lg:w-[60%] h-auto md:h-[500px] lg:h-[70vh] border border-border flex-shrink-0 rounded-lg">
+            {/* Notices */}
+            <div className="w-full md:w-1/2 h-[500px] md:h-auto pb-6 md:pb-0 md:pr-6 border-b md:border-b-0 md:border-r border-border flex flex-col overflow-y-auto">
+              <NoticeBoard
+                buildingId={buildingId}
+                isManager={true}
+              />
             </div>
-            <div className="grid grid-cols-7 gap-2 w-full">
-              {[...Array(30)].map((_, i) => (
-                <button
-                  key={i}
-                  className="p-2 bg-gray-100 rounded hover:bg-blue-100"
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* Right: Chat */}
-        <ChatBox
-          buildingName={building.full_address}
-          messages={messages}
-          currentUserId={currentUserId}
-          onSendMessage={sendMessage}
-          onDeleteMessage={deleteMessage}
-          onEditMessage={editMessage}
-          isSending={isSending}
-          typingUsers={typingUsers}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-          onAddReaction={addReaction}
-          onRemoveReaction={removeReaction}
-          onMarkAsRead={markMessageAsRead}
-        />
+            {/* Calendar */}
+            <div className="w-full md:w-1/2 pt-6 md:pt-0 md:pl-6 flex justify-center items-center md:items-start">
+              {buildingId ? (
+                <BuildingCalendar buildingId={buildingId} />
+              ) : (
+                <div className="p-4 text-sm text-muted-foreground">
+                  No building selected
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Right: Chat */}
+          <ChatBox
+            buildingName={building.full_address}
+            messages={messages}
+            currentUserId={currentUserId}
+            onSendMessage={sendMessage}
+            onDeleteMessage={deleteMessage}
+            onEditMessage={editMessage}
+            isSending={isSending}
+            typingUsers={typingUsers}
+            onTypingStart={handleTypingStart}
+            onTypingStop={handleTypingStop}
+            onAddReaction={addReaction}
+            onRemoveReaction={removeReaction}
+            onMarkAsRead={markMessageAsRead}
+            headerAction={
+              <Link
+                href={`/manager/messages?building=${buildingId}`}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Direct Messages
+              </Link>
+            }
+            className="w-full lg:w-[30%] h-[500px] lg:h-[70vh]"
+          />
+        </div>
       </main>
 
       {/* Empty space at bottom */}

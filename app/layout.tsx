@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "Next.js and Supabase Starter Kit",
   description: "The fastest way to build apps with Next.js and Supabase",
+  icons: {
+    icon: "/favicon.ico?v=2",
+  },
 }
 
 const geistSans = Geist({
@@ -34,7 +37,7 @@ export default function RootLayout({
         {/* Estonian ADS (Address Data System) component */}
         <Script
           src="https://aks.maaruum.ee/inaks-ui/inaadress/js/inaadress.min.js"
-          strategy="beforeInteractive"
+          strategy="lazyOnload"
         />
       </head>
       <body className={`${geistSans.className} antialiased`}>

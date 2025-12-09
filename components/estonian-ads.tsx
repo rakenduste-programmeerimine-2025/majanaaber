@@ -39,6 +39,7 @@ export function EstonianAds({
 }: EstonianAdsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const instanceRef = useRef<any>(null)
+  const observerRef = useRef<MutationObserver | null>(null)
   const callbackRef = useRef<
     ((address: EstonianAddressData) => void) | undefined
   >(onAddressSelect)
@@ -69,16 +70,37 @@ export function EstonianAds({
       return
     }
 
-    // Wait for script to load
+    // Wait for script to load with a timeout
+    let timeoutId: NodeJS.Timeout | null = null
     const interval = setInterval(() => {
       if (checkScript()) {
         clearInterval(interval)
+        if (timeoutId) clearTimeout(timeoutId)
       }
     }, 100)
 
+    // If script doesn't load within 5 seconds, show error
+    timeoutId = setTimeout(() => {
+      clearInterval(interval)
+      console.warn(
+        "Estonian address search script failed to load after 5 seconds",
+      )
+      setError(
+        "Estonian address search unavailable. Please use manual address entry.",
+      )
+      if (onError) {
+        onError(
+          "Failed to reach address search service, please enter the address manually",
+        )
+      }
+    }, 5000)
+
     // Cleanup
-    return () => clearInterval(interval)
-  }, [])
+    return () => {
+      clearInterval(interval)
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }, [onError])
 
   useEffect(() => {
     if (!isLoaded || !containerRef.current || instanceRef.current) return
@@ -89,111 +111,142 @@ export function EstonianAds({
         containerRef.current.innerHTML = ""
       }
 
-      // Initialize InAadress with callback reference
-      const handleAddressSelect = (data: any) => {
-        if (callbackRef.current && data) {
-          // Map the InAadress response to our interface
-          const addressData: EstonianAddressData = {
-            street_name: data.tanav || data.liikluspind,
-            house_number: data.nr,
-            city: data.vald || data.linn,
-            county: data.maakond,
-            postal_code: data.zip,
-            full_address: data.address || data.tanav_nr,
-            ads_code: data.aadress_id?.toString(),
-          }
-          callbackRef.current(addressData)
-        }
-      }
-
+      // Initialize InAadress
       const config = {
         container: uniqueId,
         mode: mode,
         ihist: "1993", // Historical data from 1993
         appartment: 0, // Don't show apartment level
         lang: language,
-        cb: handleAddressSelect,
       }
 
       instanceRef.current = new window.InAadress(config)
 
-      // Set up event listener to catch address selections from dropdown
-      setTimeout(() => {
-        const container = document.querySelector(`#${uniqueId}`)
-        if (container) {
-          // Listen for click events on dropdown items
-          container.addEventListener("click", e => {
-            const target = e.target as HTMLElement
+      // Use MutationObserver to detect when dropdown items appear
+      // Note: The InAadress library doesn't provide reliable official callbacks,
+      // so we monitor DOM changes to detect when results are available.
+      // This approach is more resilient than polling and reacts to real changes.
+      const container = document.querySelector(`#${uniqueId}`)
+      if (container) {
+        let clickListenerAdded = false
 
-            // Check if it's a dropdown item (span with title containing address)
-            if (
-              target.tagName === "SPAN" &&
-              target.title &&
-              target.id.startsWith("in_teh_")
-            ) {
-              const fullAddress = target.title
-              const parts = fullAddress.split(", ")
+        observerRef.current = new MutationObserver(() => {
+          // Add click listener once when dropdown items first appear
+          if (
+            !clickListenerAdded &&
+            container.querySelector('[id^="in_teh_"]')
+          ) {
+            clickListenerAdded = true
 
-              // Validate address specificity
-              // Reject if first part is just a village or municipality without specific address
-              const firstPart = parts[0] || ""
-              const isJustVillage =
-                firstPart.includes("küla") &&
-                !firstPart.match(/^[^,]+(?=,\s*\w+\s+küla)/)
-              const isJustMunicipality =
-                firstPart.includes("vald") || firstPart.includes("linn")
+            container.addEventListener("click", (e: Event) => {
+              const target = e.target as HTMLElement
 
-              // Check if address has sufficient detail:
-              // - Urban: must have street name + number (e.g., "Sipelga tn 2")
-              // - Rural: must have farm/building name before küla (e.g., "Andrese, Orgita küla")
-              const hasStreetNumber = /\d+/.test(firstPart)
-              const isFarmAddress =
-                parts.length >= 2 &&
-                parts[1]?.includes("küla") &&
-                !isJustVillage
+              // Try to find the span with the address data
+              let itemElement = target
 
-              if (
-                isJustVillage ||
-                isJustMunicipality ||
-                (!hasStreetNumber && !isFarmAddress)
-              ) {
-                console.warn("🎯 Address too general, rejecting:", fullAddress)
-                if (onError) {
-                  onError("Address too general, please specify building")
+              // If we clicked on an LI, find the SPAN child inside it
+              if (target.tagName === "LI") {
+                const span = target.querySelector('[id^="in_teh_"]')
+                if (span) {
+                  itemElement = span as HTMLElement
                 }
-                return
+              }
+              // If we didn't click on the span directly, look for parent span
+              else if (!target.id.startsWith("in_teh_")) {
+                const parent = target.closest('[id^="in_teh_"]') as HTMLElement
+                if (parent) {
+                  itemElement = parent
+                }
               }
 
-              let streetPart = ""
-              let city = ""
-              let county = ""
+              // Now we should have the SPAN element
+              if (
+                itemElement.tagName === "SPAN" &&
+                itemElement.id.startsWith("in_teh_")
+              ) {
+                const title =
+                  itemElement.title || itemElement.getAttribute("title")
 
-              if (parts.length >= 3) {
-                streetPart = parts[0] || ""
-                county = parts[parts.length - 1] || ""
-                city = parts.slice(1, parts.length - 1).join(", ")
+                if (!title) {
+                  return
+                }
+
+                // Parse the address from the title
+                const fullAddress = title || ""
+
+                // Extract address components from the full address string
+                // Format: "Street number, District, City, County"
+                const parts = fullAddress.split(", ")
+                const firstPart = parts[0] || ""
+
+                // Validate address specificity - reject village/municipality only selections
+                const isJustVillage =
+                  firstPart.includes("küla") &&
+                  !firstPart.match(/^[^,]+(?=,\s*\w+\s+küla)/)
+                const isJustMunicipality =
+                  firstPart.includes("vald") || firstPart.includes("linn")
+
+                // Check if address has sufficient detail:
+                // - Urban: must have street name + number (e.g., "Sipelga tn 2")
+                // - Rural: must have farm/building name before küla (e.g., "Andrese, Orgita küla")
+                const hasStreetNumber = /\d+/.test(firstPart)
+                const isFarmAddress =
+                  parts.length >= 2 &&
+                  parts[1]?.includes("küla") &&
+                  !isJustVillage
+
+                if (
+                  isJustVillage ||
+                  isJustMunicipality ||
+                  (!hasStreetNumber && !isFarmAddress)
+                ) {
+                  if (onError) {
+                    onError("Address too general, please specify building")
+                  }
+                  return
+                }
+
+                let streetPart = ""
+                let city = ""
+                let county = ""
+
+                if (parts.length >= 3) {
+                  streetPart = parts[0] || ""
+                  county = parts[parts.length - 1] || ""
+                  city = parts.slice(1, parts.length - 1).join(", ")
+                }
+
+                // Extract street name and house number from street part
+                const streetMatch = streetPart.match(/^(.+?)\s+(\d+.*)$/)
+                const streetName = streetMatch ? streetMatch[1] : streetPart
+                const houseNumber = streetMatch ? streetMatch[2] : ""
+
+                const addressData: EstonianAddressData = {
+                  street_name: streetName,
+                  house_number: houseNumber,
+                  city: city,
+                  county: county,
+                  full_address: fullAddress,
+                  ads_code: itemElement.id.replace("in_teh_", ""),
+                }
+
+                if (callbackRef.current) {
+                  callbackRef.current(addressData)
+                }
               }
+            })
+          }
+        })
 
-              const streetMatch = streetPart.match(/^(.+?)\s+(\d+.*)$/)
-              const streetName = streetMatch ? streetMatch[1] : streetPart
-              const houseNumber = streetMatch ? streetMatch[2] : ""
-
-              const addressData: EstonianAddressData = {
-                street_name: streetName,
-                house_number: houseNumber,
-                city: city,
-                county: county,
-                full_address: fullAddress,
-                ads_code: target.id.replace("in_teh_", ""),
-              }
-
-              if (callbackRef.current) {
-                callbackRef.current(addressData)
-              }
-            }
-          })
-        }
-      }, 1000)
+        // Watch for DOM changes in the container
+        observerRef.current.observe(container, {
+          childList: true,
+          subtree: true,
+          characterData: false,
+        })
+      } else {
+        console.warn("Container not found:", uniqueId)
+      }
 
       // Add custom CSS to ensure dropdown is properly positioned
       const style = document.createElement("style")
@@ -225,29 +278,15 @@ export function EstonianAds({
     }
   }, [isLoaded, uniqueId, mode, language])
 
-  // Update callback when onAddressSelect changes
-  useEffect(() => {
-    if (instanceRef.current) {
-      instanceRef.current.cb = (data: any) => {
-        if (callbackRef.current && data) {
-          const addressData: EstonianAddressData = {
-            street_name: data.tanav || data.liikluspind,
-            house_number: data.nr,
-            city: data.vald || data.linn,
-            county: data.maakond,
-            postal_code: data.zip,
-            full_address: data.address || data.tanav_nr,
-            ads_code: data.aadress_id?.toString(),
-          }
-          callbackRef.current(addressData)
-        }
-      }
-    }
-  }, [onAddressSelect])
-
   // Cleanup effect
   useEffect(() => {
     return () => {
+      // Clean up observer
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
+      }
+      // Clean up InAadress instance
       if (instanceRef.current) {
         try {
           instanceRef.current.destroy?.()
@@ -261,8 +300,8 @@ export function EstonianAds({
 
   if (error) {
     return (
-      <div className="p-4 border border-red-300 rounded-md bg-red-50 dark:bg-red-900/20">
-        <p className="text-red-700 dark:text-red-400">{error}</p>
+      <div className="p-4 border border-destructive/20 rounded-md bg-destructive/10">
+        <p className="text-destructive">{error}</p>
       </div>
     )
   }
@@ -271,9 +310,11 @@ export function EstonianAds({
     return (
       <div
         style={{ width, height }}
-        className="flex items-center justify-center border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900"
+        className="flex items-center justify-center border border-border rounded-md bg-muted/20"
       >
-        <p className="text-gray-500">Loading Estonian address search...</p>
+        <p className="text-muted-foreground">
+          Loading Estonian address search...
+        </p>
       </div>
     )
   }
@@ -284,7 +325,7 @@ export function EstonianAds({
         ref={containerRef}
         id={uniqueId}
         style={{ width, height }}
-        className="border border-gray-300 dark:border-gray-700 rounded-md relative z-10"
+        className="relative z-10 overflow-visible"
       />
     </div>
   )

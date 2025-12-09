@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Card,
@@ -6,49 +6,49 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { resendVerificationEmail } from "@/app/actions/auth";
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { useSearchParams } from "next/navigation"
+import Link from "next/link"
+import { resendVerificationEmail } from "@/app/actions/auth"
 
 export default function Page() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isRateLimited, setIsRateLimited] = useState(false);
-  const searchParams = useSearchParams();
-  const email = searchParams.get("email");
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isRateLimited, setIsRateLimited] = useState(false)
+  const searchParams = useSearchParams()
+  const email = searchParams.get("email")
 
   const handleResendEmail = async () => {
     if (!email) {
-      setError("Email not found. Please sign up again.");
-      return;
+      setError("Email not found. Please sign up again.")
+      return
     }
 
-    setIsLoading(true);
-    setError(null);
-    setMessage(null);
-    setIsRateLimited(false);
+    setIsLoading(true)
+    setError(null)
+    setMessage(null)
+    setIsRateLimited(false)
 
-    const result = await resendVerificationEmail(email);
+    const result = await resendVerificationEmail(email)
 
     if (result.success) {
       setMessage(
         result.remainingAttempts !== undefined && result.remainingAttempts > 0
           ? `Verification email sent! You have ${result.remainingAttempts} resend${result.remainingAttempts !== 1 ? "s" : ""} remaining.`
           : "Verification email sent! Please check your inbox."
-      );
+      )
     } else {
-      setError(result.error || "Failed to send verification email");
+      setError(result.error || "Failed to send verification email")
       if (result.rateLimited) {
-        setIsRateLimited(true);
+        setIsRateLimited(true)
       }
     }
 
-    setIsLoading(false);
-  };
+    setIsLoading(false)
+  }
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
@@ -69,8 +69,8 @@ export default function Page() {
                 </p>
 
                 {message && (
-                  <div className="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                    <p className="text-sm text-green-800 dark:text-green-300">
+                  <div className="p-3 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                    <p className="text-sm text-emerald-800 dark:text-emerald-300">
                       {message}
                     </p>
                   </div>
@@ -81,14 +81,14 @@ export default function Page() {
                     className={`p-3 rounded-md ${
                       isRateLimited
                         ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
-                        : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                        : "bg-destructive/10 border border-destructive/20"
                     }`}
                   >
                     <p
                       className={`text-sm ${
                         isRateLimited
                           ? "text-amber-800 dark:text-amber-300"
-                          : "text-red-800 dark:text-red-300"
+                          : "text-destructive"
                       }`}
                     >
                       {error}
@@ -122,5 +122,5 @@ export default function Page() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { changeBuildingManager } from "@/app/actions/auth"
 import { AddBuildingForm } from "@/components/add-building-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -37,6 +38,14 @@ export default function ManagerHubPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [buildingSearchQuery, setBuildingSearchQuery] = useState("")
   const [apartmentSearchQuery, setApartmentSearchQuery] = useState("")
+  const [changeManagerBuildingId, setChangeManagerBuildingId] = useState<
+    string | null
+  >(null)
+  const [allUsers, setAllUsers] = useState<
+    Array<{ id: string; first_name: string; last_name: string; email: string }>
+  >([])
+  const [searchUserQuery, setSearchUserQuery] = useState("")
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false)
 
   const loadData = async () => {
     try {
@@ -162,6 +171,75 @@ export default function ManagerHubPage() {
     }
   }
 
+  const loadUsersForManagerChange = async () => {
+    try {
+      setIsSearchingUsers(true)
+      const supabase = createClient()
+
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error("User not authenticated")
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .neq("id", user.id)
+        .limit(100)
+
+      if (error) throw error
+
+      setAllUsers(data || [])
+    } catch (err: any) {
+      console.error("Error loading users:", err)
+      alert("Failed to load users: " + err.message)
+    } finally {
+      setIsSearchingUsers(false)
+    }
+  }
+
+  const handleChangeManager = async (
+    buildingId: string,
+    newManagerId: string,
+  ) => {
+    if (
+      !confirm(
+        "Are you sure you want to transfer this building to the selected manager?",
+      )
+    ) {
+      return
+    }
+
+    try {
+      const result = await changeBuildingManager(buildingId, newManagerId)
+
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+
+      setChangeManagerBuildingId(null)
+      setSearchUserQuery("")
+
+      // Hard refresh to ensure middleware runs and new user is redirected to appropriate dashboard
+      window.location.reload()
+    } catch (err: any) {
+      alert("Failed to change manager: " + err.message)
+    }
+  }
+
+  const filteredUsers = allUsers.filter(user => {
+    const query = searchUserQuery.toLowerCase()
+    return (
+      user.first_name?.toLowerCase().includes(query) ||
+      user.last_name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query)
+    )
+  })
+
   const filteredBuildings = buildings.filter(building => {
     const query = buildingSearchQuery.toLowerCase()
     return (
@@ -188,17 +266,19 @@ export default function ManagerHubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen bg-background px-4 py-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-gray-600">Manage your apartments and buildings</p>
+          <p className="text-muted-foreground">
+            Manage your apartments and buildings
+          </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-700">{error}</p>
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-destructive">{error}</p>
           </div>
         )}
 
@@ -213,7 +293,7 @@ export default function ManagerHubPage() {
 
             {apartments.length > 0 && (
               <div className="relative w-full mb-6">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search apartments..."
@@ -227,7 +307,7 @@ export default function ManagerHubPage() {
             {apartments.length === 0 ? (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-muted-foreground">
                     You are not connected to any apartments yet.
                   </p>
                 </CardContent>
@@ -235,7 +315,7 @@ export default function ManagerHubPage() {
             ) : filteredApartments.length === 0 ? (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-muted-foreground\">
                     No apartments match your search.
                   </p>
                 </CardContent>
@@ -250,7 +330,9 @@ export default function ManagerHubPage() {
                     <CardContent className="pt-6">
                       <div className="space-y-3">
                         <div>
-                          <p className="text-sm text-gray-600">Building</p>
+                          <p className="text-sm text-muted-foreground">
+                            Building
+                          </p>
                           <p className="font-semibold text-lg">
                             {apartment.building.full_address}
                           </p>
@@ -258,7 +340,7 @@ export default function ManagerHubPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
                               Apartment
                             </p>
                             <p className="font-semibold text-lg">
@@ -266,7 +348,7 @@ export default function ManagerHubPage() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
                               Role
                             </p>
                             <Badge
@@ -285,10 +367,10 @@ export default function ManagerHubPage() {
 
                         <div className="flex items-end justify-between">
                           <div>
-                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
                               Location
                             </p>
-                            <p className="text-gray-700">
+                            <p className="text-foreground">
                               {apartment.building.city}
                             </p>
                           </div>
@@ -314,23 +396,23 @@ export default function ManagerHubPage() {
           {/* Right Column - Buildings */}
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold">My Buildings</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-semibold">My Buildings</h2>
+                {!showAddForm && (
+                  <Button
+                    onClick={() => setShowAddForm(true)}
+                    size="sm"
+                    className="h-9"
+                  >
+                    + Add New Building
+                  </Button>
+                )}
+              </div>
               <Badge variant="outline">{buildings.length}</Badge>
             </div>
 
-            {!showAddForm && (
-              <div className="mb-6">
-                <Button
-                  onClick={() => setShowAddForm(true)}
-                  className="w-full"
-                >
-                  + Add New Building
-                </Button>
-              </div>
-            )}
-
             {showAddForm && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="mb-6 p-4 bg-primary/10 rounded-lg border border-primary/20\">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold">Add New Building</h3>
                   <Button
@@ -347,7 +429,7 @@ export default function ManagerHubPage() {
 
             {buildings.length > 0 && !showAddForm && (
               <div className="relative w-full mb-6">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search buildings..."
@@ -361,7 +443,7 @@ export default function ManagerHubPage() {
             {buildings.length === 0 && !showAddForm ? (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-muted-foreground">
                     No buildings yet. Add your first building to get started!
                   </p>
                 </CardContent>
@@ -369,7 +451,7 @@ export default function ManagerHubPage() {
             ) : filteredBuildings.length === 0 && !showAddForm ? (
               <Card>
                 <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-muted-foreground">
                     No buildings match your search.
                   </p>
                 </CardContent>
@@ -387,14 +469,14 @@ export default function ManagerHubPage() {
                           <p className="font-semibold text-lg">
                             {building.full_address}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             {building.city}
                           </p>
                         </div>
 
                         {building.apartment_count !== null && (
                           <div>
-                            <p className="text-xs text-gray-600 uppercase tracking-wider">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
                               Apartments
                             </p>
                             <p className="font-semibold">
@@ -415,6 +497,16 @@ export default function ManagerHubPage() {
                             </Link>
                           </Button>
                           <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setChangeManagerBuildingId(building.id)
+                              loadUsersForManagerChange()
+                            }}
+                          >
+                            Change Manager
+                          </Button>
+                          <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => handleDeleteBuilding(building.id)}
@@ -430,6 +522,91 @@ export default function ManagerHubPage() {
             ) : null}
           </div>
         </div>
+
+        {/* Change Manager Overlay */}
+        {changeManagerBuildingId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md mx-4">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">
+                      Select New Manager
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setChangeManagerBuildingId(null)
+                        setSearchUserQuery("")
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={searchUserQuery}
+                      onChange={e => setSearchUserQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {isSearchingUsers ? (
+                      <p className="text-center text-muted-foreground\">
+                        Loading users...
+                      </p>
+                    ) : filteredUsers.length === 0 ? (
+                      <p className="text-center text-muted-foreground">
+                        No users found
+                      </p>
+                    ) : (
+                      filteredUsers.map(user => (
+                        <div
+                          key={user.id}
+                          className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/30 cursor-pointer\"
+                          onClick={() =>
+                            handleChangeManager(
+                              changeManagerBuildingId,
+                              user.id,
+                            )
+                          }
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">
+                              {user.first_name} {user.last_name}
+                            </p>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {user.email}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="ml-2 flex-shrink-0"
+                            onClick={e => {
+                              e.stopPropagation()
+                              handleChangeManager(
+                                changeManagerBuildingId,
+                                user.id,
+                              )
+                            }}
+                          >
+                            Select
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )

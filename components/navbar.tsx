@@ -14,13 +14,13 @@ interface NavBarProps {
 
 export function NavBar({ links }: NavBarProps) {
   return (
-    <nav className="bg-gray-50 border-b border-b-foreground/10">
+    <nav className="bg-card dark:bg-card border-b border-b-foreground/10">
       <div className="max-w-7xl mx-auto flex gap-5 p-3 px-5">
         {links.map(({ label, href, disabled }) => (
           <Link
             key={label}
             href={disabled ? "#" : href}
-            className={`font-medium hover:text-blue-600 ${
+            className={`font-medium hover:text-primary ${
               disabled ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >

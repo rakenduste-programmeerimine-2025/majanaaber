@@ -44,13 +44,25 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
   }
 
   const handleAddressSelect = (address: EstonianAddressData) => {
+    console.log("Address selected:", address)
     setSelectedAddress(address)
     setError(null)
   }
 
   const handleAddressError = (errorMessage: string) => {
+    console.log("Address error:", errorMessage)
     setError(errorMessage)
     setSelectedAddress(null)
+
+    // If it's a load failure, switch to manual entry automatically
+    if (errorMessage.includes("Failed to reach")) {
+      setUseManualEntry(true)
+    }
+  }
+
+  const handleClearSelection = () => {
+    setSelectedAddress(null)
+    setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,8 +83,17 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
 
       if (useManualEntry) {
         // Validate required fields for manual entry
-        if (!formData.city || !formData.street_name) {
-          throw new Error("Please fill in all required fields (Street, City)")
+        // For rural addresses: need street_name (farm/location name) and county
+        // For urban addresses: need city, street_name, and house_number
+        const hasUrbanAddress =
+          formData.city && formData.street_name && formData.house_number
+        const hasRuralAddress =
+          formData.street_name && formData.county && !formData.city
+
+        if (!hasUrbanAddress && !hasRuralAddress) {
+          throw new Error(
+            "Please fill in required fields: For urban addresses: Street, House Number, and City. For rural addresses: Location name and County",
+          )
         }
 
         buildingData = {
@@ -81,9 +102,6 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
           city: formData.city,
           county: formData.county,
           postal_code: formData.postal_code,
-          apartment_count: formData.apartment_count
-            ? parseInt(formData.apartment_count)
-            : null,
           full_address:
             `${formData.street_name} ${formData.house_number}, ${formData.city}`.trim(),
           manager_id: user?.id,
@@ -174,10 +192,10 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
           </div>
 
           {/* ADS Component */}
-          {!useManualEntry && (
-            <div className="relative z-20">
+          {!useManualEntry && !selectedAddress && (
+            <div className="relative z-20 pb-12">
               <Label>Search Address</Label>
-              <div className="mt-2 mb-8">
+              <div className="mt-2">
                 <EstonianAds
                   onAddressSelect={handleAddressSelect}
                   onError={handleAddressError}
@@ -186,21 +204,36 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
                   language="et"
                 />
               </div>
-              {selectedAddress && (
-                <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+            </div>
+          )}
+
+          {/* Selected Address Display */}
+          {!useManualEntry && selectedAddress && (
+            <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md">
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
                     Selected Address:
                   </p>
-                  <p className="text-sm text-green-700 dark:text-green-300">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
                     {selectedAddress.full_address}
                   </p>
                   {selectedAddress.postal_code && (
-                    <p className="text-xs text-green-600 dark:text-green-400">
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
                       Postal Code: {selectedAddress.postal_code}
                     </p>
                   )}
                 </div>
-              )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearSelection}
+                  className="flex-shrink-0"
+                >
+                  Change
+                </Button>
+              </div>
             </div>
           )}
 
@@ -214,8 +247,8 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
 
           {/* Error Message */}
           {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 

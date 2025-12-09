@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
   checkLoginRateLimit,
   checkStrictRateLimit,
@@ -219,6 +220,83 @@ export async function resendVerificationEmail(
       success: false,
       error: error instanceof Error ? error.message : "An error occurred",
       remainingAttempts: rateLimit.remaining,
+    };
+  }
+}
+
+export async function changeBuildingManager(
+  buildingId: string,
+  newManagerId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "User not authenticated",
+      };
+    }
+
+    // Verify current user is the current manager of the building
+    const { data: building, error: buildingError } = await supabase
+      .from("buildings")
+      .select("manager_id")
+      .eq("id", buildingId)
+      .single();
+
+    if (buildingError || !building) {
+      return {
+        success: false,
+        error: "Building not found",
+      };
+    }
+
+    if (building.manager_id !== user.id) {
+      return {
+        success: false,
+        error: "You are not the manager of this building",
+      };
+    }
+
+    // Update building manager_id
+    const { error: updateBuildingError } = await supabase
+      .from("buildings")
+      .update({ manager_id: newManagerId })
+      .eq("id", buildingId);
+
+    if (updateBuildingError) {
+      return {
+        success: false,
+        error: `Failed to update building: ${updateBuildingError.message}`,
+      };
+    }
+
+    // Update new manager's role to building_manager using service_role to bypass RLS
+    const serviceRoleClient = await createServiceRoleClient();
+    const { error: updateRoleError } = await serviceRoleClient
+      .from("profiles")
+      .update({ role: "building_manager" })
+      .eq("id", newManagerId);
+
+    if (updateRoleError) {
+      return {
+        success: false,
+        error: `Failed to update role: ${updateRoleError.message}`,
+      };
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "An error occurred",
     };
   }
 }
