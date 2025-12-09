@@ -9,7 +9,7 @@ import { Notice, Priority, Category, NoticeAttachment } from "./types"
 import { MAX_FILES_PER_NOTICE } from "./config"
 import { NoticeFilters } from "./notice-filters"
 import { NoticeForm } from "./notice-form"
-import { NoticeCard } from "./notice-card"
+import { NoticeSection } from "./notice-section"
 import { useNoticeReadReceipts } from "@/hooks/use-notice-read-receipts"
 
 interface NoticeBoardProps {
@@ -47,16 +47,8 @@ export function NoticeBoard({
   const [filterCategory, setFilterCategory] = useState<Category | "all">("all")
   const [showArchived, setShowArchived] = useState(false)
 
-  // Filter notices based on search, category, expiration, and archive status
-  const filteredNotices = notices.filter(notice => {
-    if (!showArchived && notice.is_archived) return false
-    if (showArchived && !notice.is_archived) return false
-    // Check expiration - compare at end of day so same-day notices still show
-    if (!showArchived && notice.expires_at) {
-      const expiryDate = new Date(notice.expires_at)
-      expiryDate.setHours(23, 59, 59, 999) // End of expiry day
-      if (expiryDate < new Date()) return false
-    }
+  // Helper to check if notice matches search and category filters
+  const matchesFilters = (notice: Notice) => {
     const matchesSearch =
       searchQuery === "" ||
       notice.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -64,7 +56,45 @@ export function NoticeBoard({
     const matchesCategory =
       filterCategory === "all" || notice.category === filterCategory
     return matchesSearch && matchesCategory
-  })
+  }
+
+  // Helper to check if a notice is expired
+  const isExpired = (notice: Notice) => {
+    if (!notice.expires_at) return false
+    const expiryDate = new Date(notice.expires_at)
+    expiryDate.setHours(23, 59, 59, 999) // End of expiry day
+    return expiryDate < new Date()
+  }
+
+  // Split notices into upcoming and previous
+  const upcomingNotices = notices
+    .filter(notice => {
+      if (notice.is_archived) return false
+      if (isExpired(notice)) return false
+      return matchesFilters(notice)
+    })
+    .sort((a, b) => {
+      // Pinned first, then by created_at descending
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+
+  const previousNotices = notices
+    .filter(notice => {
+      if (notice.is_archived) return false
+      if (!isExpired(notice)) return false
+      return matchesFilters(notice)
+    })
+    .sort((a, b) => {
+      // Sort by expires_at descending (most recently expired first)
+      const aDate = a.expires_at ? new Date(a.expires_at) : new Date(a.created_at)
+      const bDate = b.expires_at ? new Date(b.expires_at) : new Date(b.created_at)
+      return bDate.getTime() - aDate.getTime()
+    })
+
+  const archivedNotices = notices
+    .filter(notice => notice.is_archived && matchesFilters(notice))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const loadNotices = async () => {
     try {
@@ -106,7 +136,9 @@ export function NoticeBoard({
     if (!isManager && notices.length > 0) {
       // Mark all visible non-archived notices as read
       const visibleNotices = notices.filter(
-        n => !n.is_archived && (!n.expires_at || new Date(n.expires_at) > new Date())
+        n =>
+          !n.is_archived &&
+          (!n.expires_at || new Date(n.expires_at) > new Date()),
       )
       visibleNotices.forEach(notice => {
         markAsRead(notice.id)
@@ -193,13 +225,15 @@ export function NoticeBoard({
         continue
       }
 
-      const { error: dbError } = await supabase.from("notice_attachments").insert({
-        notice_id: noticeId,
-        file_name: file.name,
-        file_path: fileName,
-        file_type: file.type,
-        file_size: file.size,
-      })
+      const { error: dbError } = await supabase
+        .from("notice_attachments")
+        .insert({
+          notice_id: noticeId,
+          file_name: file.name,
+          file_path: fileName,
+          file_type: file.type,
+          file_size: file.size,
+        })
 
       if (dbError) console.error("Error creating attachment record:", dbError)
     }
@@ -258,7 +292,10 @@ export function NoticeBoard({
                 .remove([attachment.file_path])
             }
           }
-          await supabase.from("notice_attachments").delete().in("id", removedIds)
+          await supabase
+            .from("notice_attachments")
+            .delete()
+            .in("id", removedIds)
         }
 
         if (selectedFiles.length > 0) {
@@ -333,7 +370,10 @@ export function NoticeBoard({
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("notices").delete().eq("id", noticeId)
+      const { error } = await supabase
+        .from("notices")
+        .delete()
+        .eq("id", noticeId)
       if (error) throw error
       loadNotices()
     } catch (err: any) {
@@ -378,34 +418,42 @@ export function NoticeBoard({
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="text-sm text-gray-500">Loading notices...</p>
+        <p className="text-sm text-muted-foreground">Loading notices...</p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center mb-4 flex-shrink-0">
+      <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center items-start gap-4 xl:gap-0 mb-4 flex-shrink-0">
         <h3 className="font-semibold text-lg">
           {showArchived ? "Archived Notices" : "Notices"}
         </h3>
-        <div className="flex gap-2">
-          {isManager && (
-            <Button
-              size="sm"
-              variant={showArchived ? "default" : "outline"}
-              onClick={() => setShowArchived(!showArchived)}
-            >
-              <Archive className="h-4 w-4 mr-1" />
-              {showArchived ? "View Active" : "View Archive"}
-            </Button>
-          )}
-          {isManager && !showAddForm && !showArchived && (
-            <Button size="sm" onClick={() => setShowAddForm(true)}>
-              + Add Notice
-            </Button>
-          )}
-        </div>
+        {!showAddForm && (
+          <div className="flex flex-col xl:flex-row gap-2 w-full xl:w-auto">
+            {isManager && (
+              <Button
+                size="sm"
+                variant={showArchived ? "default" : "outline"}
+                onClick={() => setShowArchived(!showArchived)}
+                className="w-full xl:w-auto"
+              >
+                <Archive className="h-4 w-4 mr-1" />
+                {showArchived ? "View Active" : "View Archive"}
+              </Button>
+            )}
+            {isManager && (
+              <Button
+                size="sm"
+                onClick={() => setShowAddForm(true)}
+                disabled={showArchived}
+                className="w-full xl:w-auto"
+              >
+                + Add Notice
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-shrink-0">
@@ -418,8 +466,8 @@ export function NoticeBoard({
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex-shrink-0">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md flex-shrink-0">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
@@ -461,22 +509,21 @@ export function NoticeBoard({
           />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-          {filteredNotices.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-sm text-gray-500">
-                  {notices.length === 0
-                    ? "No notices yet."
-                    : "No notices match your search."}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredNotices.map(notice => (
-              <NoticeCard
-                key={notice.id}
-                notice={notice}
+        <div className="flex-1 overflow-y-auto space-y-6 min-h-0">
+          {showArchived ? (
+            // Archived view
+            archivedNotices.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-sm text-muted-foreground">
+                    No archived notices.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <NoticeSection
+                title="Archived"
+                notices={archivedNotices}
                 isManager={isManager}
                 totalResidents={totalResidents}
                 onEdit={handleEdit}
@@ -484,7 +531,45 @@ export function NoticeBoard({
                 onTogglePin={handleTogglePin}
                 onToggleArchive={handleToggleArchive}
               />
-            ))
+            )
+          ) : (
+            // Active view with Upcoming and Previous sections
+            <>
+              {upcomingNotices.length === 0 && previousNotices.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-center text-sm text-muted-foreground">
+                      {notices.length === 0
+                        ? "No notices yet."
+                        : "No notices match your search."}
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <NoticeSection
+                    title="Active"
+                    notices={upcomingNotices}
+                    isManager={isManager}
+                    totalResidents={totalResidents}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onTogglePin={handleTogglePin}
+                    onToggleArchive={handleToggleArchive}
+                  />
+                  <NoticeSection
+                    title="Expired"
+                    notices={previousNotices}
+                    isManager={isManager}
+                    totalResidents={totalResidents}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onTogglePin={handleTogglePin}
+                    onToggleArchive={handleToggleArchive}
+                  />
+                </>
+              )}
+            </>
           )}
         </div>
       )}

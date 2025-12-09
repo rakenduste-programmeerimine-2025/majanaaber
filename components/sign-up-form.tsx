@@ -12,11 +12,20 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { PasswordStrengthInput } from "@/components/password-strength-input"
 import { checkPasswordStrength } from "@/lib/password-strength"
+import { ErrorDisplay } from "@/components/ui/error-display"
+import { useErrorHandler } from "@/hooks/use-error-handler"
 
 export function SignUpForm({
   className,
@@ -31,7 +40,7 @@ export function SignUpForm({
   const [phoneNumber, setPhoneNumber] = useState("")
   const [password, setPassword] = useState("")
   const [repeatPassword, setRepeatPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const { error, handleError, clearError } = useErrorHandler()
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -39,17 +48,17 @@ export function SignUpForm({
     e.preventDefault()
     const supabase = createClient()
     setIsLoading(true)
-    setError(null)
+    clearError()
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match")
+      handleError("Passwords do not match", undefined, false)
       setIsLoading(false)
       return
     }
 
     const { score } = checkPasswordStrength(password)
     if (score < 4) {
-      setError("Password must meet all requirements.")
+      handleError("Password must meet all requirements.", undefined, false)
       setIsLoading(false)
       return
     }
@@ -85,7 +94,7 @@ export function SignUpForm({
       router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`)
     } catch (error: unknown) {
       console.error("Sign-up error:", error)
-      setError(error instanceof Error ? error.message : "An error occurred")
+      handleError(error, "An error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -106,17 +115,25 @@ export function SignUpForm({
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="role">I am a</Label>
-                <select
-                  id="role"
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                <Select
                   value={role}
-                  onChange={e => setRole(e.target.value as typeof role)}
-                  required
+                  onValueChange={value => setRole(value as typeof role)}
                 >
-                  <option value="resident">Resident (Renter/Tenant)</option>
-                  <option value="apartment_owner">Apartment Owner</option>
-                  <option value="building_manager">Building Manager</option>
-                </select>
+                  <SelectTrigger id="role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="resident">
+                      Resident (Renter/Tenant)
+                    </SelectItem>
+                    <SelectItem value="apartment_owner">
+                      Apartment Owner
+                    </SelectItem>
+                    <SelectItem value="building_manager">
+                      Building Manager
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="firstName">First Name</Label>
@@ -180,7 +197,10 @@ export function SignUpForm({
                   onChange={e => setRepeatPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              <ErrorDisplay
+                error={error}
+                onClear={clearError}
+              />
               <Button
                 type="submit"
                 className="w-full"

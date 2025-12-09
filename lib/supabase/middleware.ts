@@ -79,25 +79,45 @@ export async function updateSession(request: NextRequest) {
 
     if (pathname.startsWith("/admin") && userRole !== "building_manager") {
       const url = request.nextUrl.clone();
-      url.pathname = "/resident-hub";
+      url.pathname = "/resident";
       return NextResponse.redirect(url);
     }
 
     if (
-      pathname.startsWith("/manager-hub") &&
+      pathname.startsWith("/manager") &&
       userRole !== "building_manager"
     ) {
       const url = request.nextUrl.clone();
-      url.pathname = "/resident-hub";
+      url.pathname = "/resident";
       return NextResponse.redirect(url);
     }
 
     if (
-      pathname.startsWith("/resident-hub") &&
+      pathname.startsWith("/resident") &&
       (userRole === "building_manager")
     ) {
       const url = request.nextUrl.clone();
-      url.pathname = "/manager-hub";
+      url.pathname = "/manager";
+      return NextResponse.redirect(url);
+    }
+
+    // Protect /management routes - only building managers can access
+    if (
+      pathname.startsWith("/management") &&
+      userRole !== "building_manager"
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/resident";
+      return NextResponse.redirect(url);
+    }
+
+    // Protect /residence routes - only residents can access
+    if (
+      pathname.startsWith("/residence") &&
+      userRole === "building_manager"
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/manager";
       return NextResponse.redirect(url);
     }
   }

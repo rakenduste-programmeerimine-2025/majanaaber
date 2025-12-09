@@ -114,6 +114,10 @@ export const RATE_LIMITS = {
     limit: 3,
     windowMs: 60 * 60 * 1000,
   },
+  EMAIL_RESEND: {
+    limit: 3,
+    windowMs: 15 * 60 * 1000, // 3 requests per 15 minutes
+  },
 } as const;
 
 /**
@@ -150,6 +154,19 @@ export async function blockIP(ip: string, durationMs: number): Promise<void> {
  */
 export async function resetRateLimit(ip: string): Promise<void> {
   return rateLimiter.reset(ip);
+}
+
+/**
+ * Check rate limit for email resend requests
+ */
+export async function checkEmailResendRateLimit(
+  identifier: string
+): Promise<RateLimitResult> {
+  return rateLimiter.check(
+    `email_resend:${identifier}`,
+    RATE_LIMITS.EMAIL_RESEND.limit,
+    RATE_LIMITS.EMAIL_RESEND.windowMs
+  );
 }
 
 /**

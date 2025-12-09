@@ -29,7 +29,7 @@ INSERT INTO auth.users (
   '$2a$06$ozTEg4IawObrJCjXBz.o/udeVQ3ujNETRD5gJOnyZA/sXzPT5Hb9K',
   now(),
   '{"provider":"email","providers":["email"]}',
-  '{"first_name":"John","last_name":"Manager","role":"building_manager"}',
+  '{"first_name":"John","last_name":"Manager","phone_number":"+3725551001","role":"building_manager"}',
   now(),
   now(),
   'authenticated',
@@ -66,7 +66,7 @@ INSERT INTO auth.users (
   '$2a$06$ozTEg4IawObrJCjXBz.o/udeVQ3ujNETRD5gJOnyZA/sXzPT5Hb9K',
   now(),
   '{"provider":"email","providers":["email"]}',
-  '{"first_name":"Alice","last_name":"Smith","role":"resident"}',
+  '{"first_name":"Alice","last_name":"Smith","phone_number":"+3725551002","role":"resident"}',
   now(),
   now(),
   'authenticated',
@@ -103,7 +103,7 @@ INSERT INTO auth.users (
   '$2a$06$ozTEg4IawObrJCjXBz.o/udeVQ3ujNETRD5gJOnyZA/sXzPT5Hb9K',
   now(),
   '{"provider":"email","providers":["email"]}',
-  '{"first_name":"Bob","last_name":"Johnson","role":"resident"}',
+  '{"first_name":"Bob","last_name":"Johnson","phone_number":"+3725551003","role":"resident"}',
   now(),
   now(),
   'authenticated',
@@ -139,4 +139,4 @@ VALUES (
 INSERT INTO building_residents (building_id, profile_id, apartment_number, resident_role, is_approved)
 VALUES
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '101', 'resident', true),
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', '102', 'resident', true);
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', '102', 'apartment_owner', true);

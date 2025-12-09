@@ -300,8 +300,8 @@ export function EstonianAds({
 
   if (error) {
     return (
-      <div className="p-4 border border-red-300 rounded-md bg-red-50 dark:bg-red-900/20">
-        <p className="text-red-700 dark:text-red-400">{error}</p>
+      <div className="p-4 border border-destructive/20 rounded-md bg-destructive/10">
+        <p className="text-destructive">{error}</p>
       </div>
     )
   }
@@ -310,9 +310,11 @@ export function EstonianAds({
     return (
       <div
         style={{ width, height }}
-        className="flex items-center justify-center border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900"
+        className="flex items-center justify-center border border-border rounded-md bg-muted/20"
       >
-        <p className="text-gray-500">Loading Estonian address search...</p>
+        <p className="text-muted-foreground">
+          Loading Estonian address search...
+        </p>
       </div>
     )
   }
@@ -323,7 +325,7 @@ export function EstonianAds({
         ref={containerRef}
         id={uniqueId}
         style={{ width, height }}
-        className="border border-gray-300 dark:border-gray-700 rounded-md relative z-10"
+        className="relative z-10 overflow-visible"
       />
     </div>
   )

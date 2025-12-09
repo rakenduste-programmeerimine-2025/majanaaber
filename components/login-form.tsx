@@ -15,6 +15,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { loginWithRateLimit } from "@/app/actions/auth"
+import { ErrorDisplay } from "@/components/ui/error-display"
+import { useErrorHandler } from "@/hooks/use-error-handler"
 
 export function LoginForm({
   className,
@@ -22,7 +24,7 @@ export function LoginForm({
 }: React.ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const { error, handleError, clearError } = useErrorHandler()
   const [isLockoutError, setIsLockoutError] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -30,14 +32,14 @@ export function LoginForm({
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setError(null)
+    clearError()
     setIsLockoutError(false)
 
     try {
       const result = await loginWithRateLimit(email, password)
 
       if (!result.success) {
-        setError(result.error || "An error occurred")
+        handleError(result.error || "An error occurred")
         if (result.isLockoutError || result.rateLimited) {
           setIsLockoutError(true)
         }
@@ -52,7 +54,7 @@ export function LoginForm({
         router.push(result.redirectTo)
       }
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      handleError(error, "An error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -102,17 +104,10 @@ export function LoginForm({
                   onChange={e => setPassword(e.target.value)}
                 />
               </div>
-              {error && (
-                <div
-                  className={`p-3 rounded-md text-sm ${
-                    isLockoutError
-                      ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
-                      : "text-red-500"
-                  }`}
-                >
-                  {error}
-                </div>
-              )}
+              <ErrorDisplay
+                error={error}
+                onClear={clearError}
+              />
               <Button
                 type="submit"
                 className="w-full"

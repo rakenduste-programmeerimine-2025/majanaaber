@@ -1,102 +1,113 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import type { Building } from "@/lib/types/chat"
-import { useBuildingMessages } from "@/hooks/use-building-messages"
-import { ChatBox } from "@/components/chat-box"
-import { NoticeBoard } from "@/components/notices"
-import { BuildingCalendar } from "@/components/building-calendar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { MessageSquare } from "lucide-react"
+import { Search } from "lucide-react"
 
-interface ResidentBuilding extends Building {
-  full_address: string
+interface Apartment {
+  id: string
+  building_id: string
+  apartment_number: string
+  resident_role: string
+  building: {
+    full_address: string
+    city: string
+  }
 }
 
-export default function ResidentDashboard() {
-  const [building, setBuilding] = useState<ResidentBuilding | null>(null)
+export default function ResidentHubPage() {
+  const [apartments, setApartments] = useState<Apartment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const supabase = createClient()
+  const [apartmentSearchQuery, setApartmentSearchQuery] = useState("")
 
-  const {
-    messages,
-    sendMessage,
-    deleteMessage,
-    editMessage,
-    isSending,
-    typingUsers,
-    handleTypingStart,
-    handleTypingStop,
-    addReaction,
-    removeReaction,
-    markMessageAsRead,
-  } = useBuildingMessages(building?.id ?? null)
+  const loadData = async () => {
+    try {
+      const supabase = createClient()
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error("User not authenticated")
+      }
+
+      // Load apartments where user is a resident
+      const { data: apartmentsData, error: apartmentsError } = await supabase
+        .from("building_residents")
+        .select(
+          `
+          id,
+          building_id,
+          apartment_number,
+          resident_role,
+          building:buildings(full_address, city)
+        `,
+        )
+        .eq("profile_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (apartmentsError) {
+        throw apartmentsError
+      }
+
+      // Map the data to match our Apartment interface
+      const mappedApartments = (apartmentsData || []).map(item => ({
+        ...item,
+        building: Array.isArray(item.building)
+          ? item.building[0]
+          : item.building,
+      }))
+      setApartments(mappedApartments as Apartment[])
+    } catch (err: any) {
+      setError(err.message || "Failed to load data")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const loadBuilding = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (!user) {
-          setError("You must be logged in")
-          setLoading(false)
-          return
-        }
+    loadData()
 
-        setCurrentUserId(user.id)
-        let userBuilding = null
+    const supabase = createClient()
 
-        const { data: managerBuilding } = await supabase
-          .from("buildings")
-          .select("id, full_address")
-          .eq("manager_id", user.id)
-          .limit(1)
-          .single()
+    // Subscribe to building_residents changes
+    const apartmentsSubscription = supabase
+      .channel("building_residents_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "building_residents",
+        },
+        () => {
+          loadData()
+        },
+      )
+      .subscribe()
 
-        if (managerBuilding) {
-          userBuilding = managerBuilding
-        } else {
-          const { data: residentData, error: residentError } = await supabase
-            .from("building_residents")
-            .select("building_id, buildings(id, full_address)")
-            .eq("profile_id", user.id)
-            .eq("is_approved", true)
-            .limit(1)
-            .single()
-
-          if (residentError || !residentData) {
-            setError("You are not assigned to any building yet")
-            setLoading(false)
-            return
-          }
-
-          userBuilding = residentData.buildings as any
-        }
-
-        if (!userBuilding) {
-          setError("You are not assigned to any building yet")
-          setLoading(false)
-          return
-        }
-
-        setBuilding({
-          id: userBuilding.id,
-          full_address: userBuilding.full_address,
-        })
-      } catch (err: any) {
-        console.error("Error loading building:", err)
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
+    // Cleanup subscriptions on unmount
+    return () => {
+      apartmentsSubscription.unsubscribe()
     }
-
-    loadBuilding()
   }, [])
+
+  // Filter data based on search queries
+  const filteredApartments = apartments.filter(apartment => {
+    const query = apartmentSearchQuery.toLowerCase()
+    return (
+      apartment.apartment_number.toLowerCase().includes(query) ||
+      apartment.building.full_address.toLowerCase().includes(query) ||
+      apartment.building.city.toLowerCase().includes(query)
+    )
+  })
 
   if (loading) {
     return (
@@ -106,82 +117,126 @@ export default function ResidentDashboard() {
     )
   }
 
-  if (error || !building) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl font-bold mb-4">No Building Found</h2>
-          <p className="text-gray-600 mb-6">
-            {error ||
-              "You need to create a building or be assigned to one to access the chat."}
-          </p>
-          <div className="space-y-3">
-            <a
-              href="/resident-hub"
-              className="inline-block bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 transition"
-            >
-              Go to My Apartments
-            </a>
-            <p className="text-sm text-gray-500">
-              Create a building or ask your building manager to add you as a
-              resident.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Building Header */}
-      <div className="bg-white border-b border-gray-300 px-6 py-4 mt-[10vh]">
-        <div className="container mx-auto">
-          <h1 className="text-2xl font-bold">{building.full_address}</h1>
+    <div className="min-h-screen bg-background px-4 py-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">My Apartments</h1>
+          <p className="text-muted-foreground">
+            View and access your apartments
+          </p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-destructive">{error}</p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-6">
+          <Badge variant="outline">{apartments.length} apartments</Badge>
+        </div>
+
+        {apartments.length > 0 && (
+          <div className="relative w-full mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search apartments..."
+              value={apartmentSearchQuery}
+              onChange={e => setApartmentSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        )}
+
+        {apartments.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">
+                You are not connected to any apartments yet.
+              </p>
+            </CardContent>
+          </Card>
+        ) : filteredApartments.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">
+                No apartments match your search.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {filteredApartments.map(apartment => (
+              <Card
+                key={apartment.id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Building</p>
+                      <p className="font-semibold text-lg">
+                        {apartment.building.full_address}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                          Apartment
+                        </p>
+                        <p className="font-semibold text-lg">
+                          {apartment.apartment_number}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                          Role
+                        </p>
+                        <Badge
+                          variant={
+                            apartment.resident_role === "apartment_owner"
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {apartment.resident_role === "apartment_owner"
+                            ? "Apt. Owner"
+                            : "Resident"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                          Location
+                        </p>
+                        <p className="text-foreground">
+                          {apartment.building.city}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        asChild
+                      >
+                        <Link
+                          href={`/residence?building=${apartment.building_id}`}
+                        >
+                          Select
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Main Content */}
-      <main className="flex justify-center items-start gap-10 px-6 mt-8">
-        <section className="flex bg-white p-6 shadow-lg w-[60%] h-[70vh] border border-gray-300">
-          {/* Notices */}
-          <div className="w-1/2 pr-6 border-r border-gray-300 flex flex-col">
-            <NoticeBoard buildingId={building.id} />
-          </div>
-
-          {/* Calendar */}
-          <div className="w-1/2 pl-6 flex flex-col items-center">
-          <BuildingCalendar buildingId={building.id} />
-          </div>
-        </section>
-
-        <ChatBox
-          buildingName={building.full_address}
-          messages={messages}
-          currentUserId={currentUserId}
-          onSendMessage={sendMessage}
-          onDeleteMessage={deleteMessage}
-          onEditMessage={editMessage}
-          isSending={isSending}
-          typingUsers={typingUsers}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-          onAddReaction={addReaction}
-          onRemoveReaction={removeReaction}
-          onMarkAsRead={markMessageAsRead}
-          headerAction={
-            <Link
-              href={`/resident/messages?building=${building.id}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Direct Messages
-            </Link>
-          }
-        />
-      </main>
-
-      <div className="h-[10vh]" />
     </div>
   )
 }

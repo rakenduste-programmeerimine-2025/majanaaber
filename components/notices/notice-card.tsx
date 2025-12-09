@@ -154,7 +154,7 @@ export function NoticeCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => onDelete(notice.id)}
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                 title="Delete notice permanently"
               >
                 <Trash2 className="h-3 w-3" />
@@ -164,7 +164,7 @@ export function NoticeCard({
         </div>
       </CardHeader>
       <CardContent className="pb-3">
-        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+        <p className="text-sm text-foreground whitespace-pre-wrap">
           {notice.content}
         </p>
 
@@ -172,7 +172,10 @@ export function NoticeCard({
         {notice.attachments && notice.attachments.length > 0 && (
           <div className="mt-3 space-y-2">
             {notice.attachments.map(attachment => (
-              <AttachmentDisplay key={attachment.id} attachment={attachment} />
+              <AttachmentDisplay
+                key={attachment.id}
+                attachment={attachment}
+              />
             ))}
           </div>
         )}
@@ -185,17 +188,17 @@ export function NoticeCard({
               href={notice.attachment_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 mt-3 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+              className="flex items-center gap-2 mt-3 p-2 rounded-md bg-muted/20 hover:bg-muted/30 transition-colors text-sm"
             >
               {notice.attachment_type?.startsWith("image/") ? (
-                <ImageIcon className="h-4 w-4 text-blue-600" />
+                <ImageIcon className="h-4 w-4 text-primary" />
               ) : (
-                <FileText className="h-4 w-4 text-red-600" />
+                <FileText className="h-4 w-4 text-destructive" />
               )}
-              <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+              <span className="text-foreground truncate flex-1">
                 {notice.attachment_name}
               </span>
-              <span className="text-xs text-gray-500">View</span>
+              <span className="text-xs text-muted-foreground">View</span>
             </a>
           )}
 
@@ -204,7 +207,7 @@ export function NoticeCard({
           <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setShowReaders(!showReaders)}
-              className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <Eye className="h-3.5 w-3.5" />
               <span>
@@ -221,14 +224,14 @@ export function NoticeCard({
                 {readReceipts.map(receipt => (
                   <div
                     key={receipt.id}
-                    className="text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between"
+                    className="text-xs text-muted-foreground flex items-center justify-between"
                   >
                     <span>
                       {receipt.reader
                         ? `${receipt.reader.first_name} ${receipt.reader.last_name}`
                         : "Unknown"}
                     </span>
-                    <span className="text-gray-500">
+                    <span className="text-muted-foreground">
                       {new Date(receipt.read_at).toLocaleString("en-US", {
                         month: "short",
                         day: "numeric",
