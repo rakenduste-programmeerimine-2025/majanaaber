@@ -4,7 +4,7 @@
 -- =====================================================
 
 -- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "pg_net";
+-- pg_net extension is pre-installed in Supabase
 
 -- =====================================================
 -- 1. CORE TABLES
@@ -636,7 +636,7 @@ CREATE POLICY "Managers can update their buildings"
   ON public.buildings
   FOR UPDATE
   USING (manager_id = auth.uid())
-  WITH CHECK (manager_id = auth.uid());
+  WITH CHECK (true); -- Allow changing manager_id to transfer ownership
 
 -- =====================================================
 -- BUILDING RESIDENTS POLICIES
