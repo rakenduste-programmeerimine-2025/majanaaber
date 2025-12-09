@@ -687,56 +687,12 @@ export default function ManagerDashboard() {
       )}
 
       {/* Main Content */}
-      <style>{`
-        @media (max-width: 1022px) {
-          .dashboard-container {
-            flex-direction: column;
-            gap: 1.5rem;
-          }
-          .dashboard-section {
-            width: 100% !important;
-            height: 500px !important;
-          }
-          .chatbox-container {
-            width: 100% !important;
-            height: 500px !important;
-          }
-        }
-        @media (max-width: 699px) {
-          .notices-calendar-section {
-            flex-direction: column;
-            height: auto !important;
-          }
-          .notices-column {
-            width: 100% !important;
-            height: 500px !important;
-            border-right: none !important;
-            border-bottom: 1px solid var(--border);
-            padding-right: 0 !important;
-            padding-bottom: 1.5rem;
-          }
-          .calendar-column {
-            width: 100% !important;
-            padding-left: 0 !important;
-            padding-top: 1.5rem;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-          }
-          .calendar-column > div {
-            padding-left: 0 !important;
-          }
-        }
-      `}</style>
       <main className="flex justify-center items-stretch gap-10 px-6 mt-8 mb-8">
-        <div
-          className="dashboard-container flex gap-10 items-stretch justify-center w-full"
-          style={{ maxWidth: "2000px" }}
-        >
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-stretch justify-center w-full max-w-[2000px]">
           {/* Left: Notices + Calendar */}
-          <section className="dashboard-section notices-calendar-section flex bg-card p-6 shadow-lg w-[60%] h-[70vh] border border-border flex-shrink-0 rounded-lg">
+          <section className="flex flex-col md:flex-row bg-card p-6 shadow-lg w-full lg:w-[60%] h-auto md:h-[500px] lg:h-[70vh] border border-border flex-shrink-0 rounded-lg">
             {/* Notices */}
-            <div className="notices-column w-1/2 pr-6 border-r border-border flex flex-col overflow-y-auto">
+            <div className="w-full md:w-1/2 h-[500px] md:h-auto pb-6 md:pb-0 md:pr-6 border-b md:border-b-0 md:border-r border-border flex flex-col overflow-y-auto">
               <NoticeBoard
                 buildingId={buildingId}
                 isManager={true}
@@ -744,7 +700,7 @@ export default function ManagerDashboard() {
             </div>
 
             {/* Calendar */}
-            <div className="calendar-column w-1/2 pl-6">
+            <div className="w-full md:w-1/2 pt-6 md:pt-0 md:pl-6 flex justify-center items-center md:items-start">
               {buildingId ? (
                 <BuildingCalendar buildingId={buildingId} />
               ) : (
@@ -779,7 +735,7 @@ export default function ManagerDashboard() {
                 Direct Messages
               </Link>
             }
-            className="chatbox-container w-[30%]"
+            className="w-full lg:w-[30%] h-[500px] lg:h-[70vh]"
           />
         </div>
       </main>
