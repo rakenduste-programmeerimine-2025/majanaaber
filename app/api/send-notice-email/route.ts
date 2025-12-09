@@ -185,7 +185,7 @@ export async function POST(request: Request) {
     const emailPromises = recipientsToEmail.map(async (recipient: any) => {
       try {
         await resend.emails.send({
-          from: "Building Notices <onboarding@resend.dev>",
+          from: process.env.EMAIL_FROM || "Building Notices <onboarding@resend.dev>",
           to: [recipient.profiles.email],
           subject: `New Notice: ${notice.title}`,
           html: emailHtml,
