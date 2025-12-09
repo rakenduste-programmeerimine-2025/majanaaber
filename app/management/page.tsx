@@ -174,7 +174,7 @@ export default function ManagerDashboard() {
 
     try {
       const supabase = createClient()
-      
+
       // First get building_residents data
       const { data: residentsData, error: residentsError } = await supabase
         .from("building_residents")
@@ -182,7 +182,7 @@ export default function ManagerDashboard() {
         .eq("building_id", buildingId)
 
       if (residentsError) throw residentsError
-      
+
       if (!residentsData || residentsData.length === 0) {
         setResidents([])
         return
@@ -200,9 +200,9 @@ export default function ManagerDashboard() {
       // Combine the data
       const mappedData = residentsData.map(resident => ({
         ...resident,
-        profile: profilesData?.find(p => p.id === resident.profile_id) || null
+        profile: profilesData?.find(p => p.id === resident.profile_id) || null,
       }))
-      
+
       setResidents(mappedData as Resident[])
     } catch (err: any) {
       console.error("Error loading residents:", err)

@@ -145,9 +145,9 @@ export default function ManagerMessagesPage() {
       .in("building_id", buildingIds)
       .eq("is_approved", true)
       .neq("profile_id", user.id)
-    
+
     if (!residentIds || residentIds.length === 0) return
-    
+
     const profileIds = residentIds.map(r => r.profile_id)
     const { data: profiles } = await supabase
       .from("profiles")
@@ -264,4 +264,3 @@ export default function ManagerMessagesPage() {
     </div>
   )
 }
-
