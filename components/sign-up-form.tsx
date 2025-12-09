@@ -24,6 +24,8 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { PasswordStrengthInput } from "@/components/password-strength-input"
 import { checkPasswordStrength } from "@/lib/password-strength"
+import { ErrorDisplay } from "@/components/ui/error-display"
+import { useErrorHandler } from "@/hooks/use-error-handler"
 
 export function SignUpForm({
   className,
@@ -38,7 +40,7 @@ export function SignUpForm({
   const [phoneNumber, setPhoneNumber] = useState("")
   const [password, setPassword] = useState("")
   const [repeatPassword, setRepeatPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const { error, handleError, clearError } = useErrorHandler()
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -46,17 +48,17 @@ export function SignUpForm({
     e.preventDefault()
     const supabase = createClient()
     setIsLoading(true)
-    setError(null)
+    clearError()
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match")
+      handleError("Passwords do not match", undefined, false)
       setIsLoading(false)
       return
     }
 
     const { score } = checkPasswordStrength(password)
     if (score < 4) {
-      setError("Password must meet all requirements.")
+      handleError("Password must meet all requirements.", undefined, false)
       setIsLoading(false)
       return
     }
@@ -92,7 +94,7 @@ export function SignUpForm({
       router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`)
     } catch (error: unknown) {
       console.error("Sign-up error:", error)
-      setError(error instanceof Error ? error.message : "An error occurred")
+      handleError(error, "An error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -195,7 +197,10 @@ export function SignUpForm({
                   onChange={e => setRepeatPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              <ErrorDisplay
+                error={error}
+                onClear={clearError}
+              />
               <Button
                 type="submit"
                 className="w-full"
