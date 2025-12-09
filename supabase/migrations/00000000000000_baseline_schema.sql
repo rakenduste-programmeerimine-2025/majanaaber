@@ -3,6 +3,9 @@
 -- Consolidated from 36+ migrations (2024-11-04 to 2024-12-03)
 -- =====================================================
 
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS "pg_net";
+
 -- =====================================================
 -- 1. CORE TABLES
 -- =====================================================
@@ -95,9 +98,10 @@ CREATE TABLE IF NOT EXISTS public.notices (
 CREATE TABLE IF NOT EXISTS public.notice_attachments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   notice_id UUID REFERENCES public.notices(id) ON DELETE CASCADE NOT NULL,
-  filename TEXT NOT NULL,
+  file_name TEXT NOT NULL,
   file_path TEXT NOT NULL,
   file_size INTEGER,
+  file_type TEXT,
   content_type TEXT,
   uploaded_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -177,8 +181,9 @@ CREATE TABLE IF NOT EXISTS public.message_read_receipts (
 CREATE TABLE IF NOT EXISTS public.message_attachments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   message_id UUID REFERENCES public.building_messages(id) ON DELETE CASCADE NOT NULL,
-  filename TEXT NOT NULL,
+  file_name TEXT NOT NULL,
   file_path TEXT NOT NULL,
+  file_type TEXT,
   file_size INTEGER,
   content_type TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -242,6 +247,17 @@ CREATE TABLE IF NOT EXISTS public.peer_message_read_receipts (
   
   -- Ensure unique read receipt per message per user
   CONSTRAINT unique_peer_message_read_receipt UNIQUE (message_id, user_id)
+);
+
+-- Peer message attachments
+CREATE TABLE IF NOT EXISTS public.peer_message_attachments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  message_id UUID REFERENCES public.peer_messages(id) ON DELETE CASCADE NOT NULL,
+  file_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size BIGINT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 -- =====================================================
@@ -327,6 +343,9 @@ CREATE INDEX IF NOT EXISTS idx_peer_message_reactions_user_id ON public.peer_mes
 -- Peer message read receipts indexes
 CREATE INDEX IF NOT EXISTS idx_peer_message_read_receipts_message_id ON public.peer_message_read_receipts(message_id);
 CREATE INDEX IF NOT EXISTS idx_peer_message_read_receipts_user_id ON public.peer_message_read_receipts(user_id);
+
+-- Peer message attachments indexes
+CREATE INDEX IF NOT EXISTS idx_peer_message_attachments_message_id ON public.peer_message_attachments(message_id);
 
 -- =====================================================
 -- 5. FUNCTIONS & TRIGGERS
@@ -556,6 +575,7 @@ ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.peer_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.peer_message_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.peer_message_read_receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.peer_message_attachments ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
 -- PROFILES POLICIES
