@@ -9,7 +9,7 @@ import { Notice, Priority, Category, NoticeAttachment } from "./types"
 import { MAX_FILES_PER_NOTICE } from "./config"
 import { NoticeFilters } from "./notice-filters"
 import { NoticeForm } from "./notice-form"
-import { NoticeCard } from "./notice-card"
+import { NoticeSection } from "./notice-section"
 import { useNoticeReadReceipts } from "@/hooks/use-notice-read-receipts"
 
 interface NoticeBoardProps {
@@ -47,16 +47,8 @@ export function NoticeBoard({
   const [filterCategory, setFilterCategory] = useState<Category | "all">("all")
   const [showArchived, setShowArchived] = useState(false)
 
-  // Filter notices based on search, category, expiration, and archive status
-  const filteredNotices = notices.filter(notice => {
-    if (!showArchived && notice.is_archived) return false
-    if (showArchived && !notice.is_archived) return false
-    // Check expiration - compare at end of day so same-day notices still show
-    if (!showArchived && notice.expires_at) {
-      const expiryDate = new Date(notice.expires_at)
-      expiryDate.setHours(23, 59, 59, 999) // End of expiry day
-      if (expiryDate < new Date()) return false
-    }
+  // Helper to check if notice matches search and category filters
+  const matchesFilters = (notice: Notice) => {
     const matchesSearch =
       searchQuery === "" ||
       notice.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -64,7 +56,45 @@ export function NoticeBoard({
     const matchesCategory =
       filterCategory === "all" || notice.category === filterCategory
     return matchesSearch && matchesCategory
-  })
+  }
+
+  // Helper to check if a notice is expired
+  const isExpired = (notice: Notice) => {
+    if (!notice.expires_at) return false
+    const expiryDate = new Date(notice.expires_at)
+    expiryDate.setHours(23, 59, 59, 999) // End of expiry day
+    return expiryDate < new Date()
+  }
+
+  // Split notices into upcoming and previous
+  const upcomingNotices = notices
+    .filter(notice => {
+      if (notice.is_archived) return false
+      if (isExpired(notice)) return false
+      return matchesFilters(notice)
+    })
+    .sort((a, b) => {
+      // Pinned first, then by created_at descending
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+
+  const previousNotices = notices
+    .filter(notice => {
+      if (notice.is_archived) return false
+      if (!isExpired(notice)) return false
+      return matchesFilters(notice)
+    })
+    .sort((a, b) => {
+      // Sort by expires_at descending (most recently expired first)
+      const aDate = a.expires_at ? new Date(a.expires_at) : new Date(a.created_at)
+      const bDate = b.expires_at ? new Date(b.expires_at) : new Date(b.created_at)
+      return bDate.getTime() - aDate.getTime()
+    })
+
+  const archivedNotices = notices
+    .filter(notice => notice.is_archived && matchesFilters(notice))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const loadNotices = async () => {
     try {
@@ -479,22 +509,21 @@ export function NoticeBoard({
           />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-          {filteredNotices.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-sm text-muted-foreground">
-                  {notices.length === 0
-                    ? "No notices yet."
-                    : "No notices match your search."}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredNotices.map(notice => (
-              <NoticeCard
-                key={notice.id}
-                notice={notice}
+        <div className="flex-1 overflow-y-auto space-y-6 min-h-0">
+          {showArchived ? (
+            // Archived view
+            archivedNotices.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-sm text-muted-foreground">
+                    No archived notices.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <NoticeSection
+                title="Archived"
+                notices={archivedNotices}
                 isManager={isManager}
                 totalResidents={totalResidents}
                 onEdit={handleEdit}
@@ -502,7 +531,45 @@ export function NoticeBoard({
                 onTogglePin={handleTogglePin}
                 onToggleArchive={handleToggleArchive}
               />
-            ))
+            )
+          ) : (
+            // Active view with Upcoming and Previous sections
+            <>
+              {upcomingNotices.length === 0 && previousNotices.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-center text-sm text-muted-foreground">
+                      {notices.length === 0
+                        ? "No notices yet."
+                        : "No notices match your search."}
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <NoticeSection
+                    title="Active"
+                    notices={upcomingNotices}
+                    isManager={isManager}
+                    totalResidents={totalResidents}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onTogglePin={handleTogglePin}
+                    onToggleArchive={handleToggleArchive}
+                  />
+                  <NoticeSection
+                    title="Expired"
+                    notices={previousNotices}
+                    isManager={isManager}
+                    totalResidents={totalResidents}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onTogglePin={handleTogglePin}
+                    onToggleArchive={handleToggleArchive}
+                  />
+                </>
+              )}
+            </>
           )}
         </div>
       )}

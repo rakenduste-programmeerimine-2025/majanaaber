@@ -67,3 +67,31 @@ export function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i]
 }
+
+export function formatDateHeader(dateString: string): string {
+  const date = new Date(dateString)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const isToday = date.toDateString() === today.toDateString()
+  const isYesterday = date.toDateString() === yesterday.toDateString()
+  const isTomorrow = date.toDateString() === tomorrow.toDateString()
+
+  if (isToday) return "Today"
+  if (isYesterday) return "Yesterday"
+  if (isTomorrow) return "Tomorrow"
+
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
+  })
+}
+
+export function getDateKey(dateString: string): string {
+  return new Date(dateString).toDateString()
+}
