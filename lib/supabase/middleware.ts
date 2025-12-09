@@ -79,25 +79,25 @@ export async function updateSession(request: NextRequest) {
 
     if (pathname.startsWith("/admin") && userRole !== "building_manager") {
       const url = request.nextUrl.clone();
-      url.pathname = "/resident";
+      url.pathname = "/residence";
       return NextResponse.redirect(url);
     }
 
     if (
-      pathname.startsWith("/manager") &&
+      pathname.startsWith("/management") &&
       userRole !== "building_manager"
     ) {
       const url = request.nextUrl.clone();
-      url.pathname = "/resident";
+      url.pathname = "/residence";
       return NextResponse.redirect(url);
     }
 
     if (
-      pathname.startsWith("/resident") &&
+      pathname.startsWith("/residence") &&
       (userRole === "building_manager")
     ) {
       const url = request.nextUrl.clone();
-      url.pathname = "/manager";
+      url.pathname = "/management";
       return NextResponse.redirect(url);
     }
   }

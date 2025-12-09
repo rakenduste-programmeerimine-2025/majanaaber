@@ -406,7 +406,15 @@ The caller must be authenticated and must be one of the two participants.';
 -- Profile creation function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  user_role TEXT;
 BEGIN
+  -- Extract role from metadata
+  user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'resident');
+  
+  -- Log for debugging (remove in production)
+  RAISE NOTICE 'Creating profile for user % with role %', NEW.id, user_role;
+  
   INSERT INTO public.profiles (id, first_name, last_name, phone_number, email, role)
   VALUES (
     NEW.id,
@@ -414,7 +422,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'phone_number', ''),
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'resident')
+    user_role
   );
   RETURN NEW;
 END;
