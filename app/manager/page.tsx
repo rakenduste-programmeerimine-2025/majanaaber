@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { Search } from "lucide-react"
+import { ErrorDisplay } from "@/components/ui/error-display"
+import { useErrorHandler } from "@/hooks/use-error-handler"
 
 interface Building {
   id: string
@@ -34,7 +36,7 @@ export default function ManagerHubPage() {
   const [buildings, setBuildings] = useState<Building[]>([])
   const [apartments, setApartments] = useState<Apartment[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { error, setError, clearError, handleError } = useErrorHandler()
   const [showAddForm, setShowAddForm] = useState(false)
   const [buildingSearchQuery, setBuildingSearchQuery] = useState("")
   const [apartmentSearchQuery, setApartmentSearchQuery] = useState("")
@@ -97,7 +99,7 @@ export default function ManagerHubPage() {
       }))
       setApartments(mappedApartments as Apartment[])
     } catch (err: any) {
-      setError(err.message || "Failed to load data")
+      handleError(err, "Failed to load data")
     } finally {
       setLoading(false)
     }
@@ -227,7 +229,7 @@ export default function ManagerHubPage() {
       // Hard refresh to ensure middleware runs and new user is redirected to appropriate dashboard
       window.location.reload()
     } catch (err: any) {
-      alert("Failed to change manager: " + err.message)
+      handleError(err, "Failed to change manager")
     }
   }
 
@@ -276,11 +278,7 @@ export default function ManagerHubPage() {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-            <p className="text-destructive">{error}</p>
-          </div>
-        )}
+        <ErrorDisplay error={error} onClear={clearError} className="mb-6" />
 
         {/* 2-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
