@@ -1,7 +1,6 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/card"
 import { useState } from "react"
 import Link from "next/link"
+import { resendVerificationEmail } from "@/app/actions/auth"
 
 export function VerifyEmailForm({
   email,
@@ -21,30 +21,30 @@ export function VerifyEmailForm({
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isRateLimited, setIsRateLimited] = useState(false)
 
   const handleResendEmail = async () => {
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
     setMessage(null)
+    setIsRateLimited(false)
 
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
-        },
-      })
+    const result = await resendVerificationEmail(email)
 
-      if (error) throw error
-
-      setMessage("Verification email sent! Please check your inbox.")
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
-    } finally {
-      setIsLoading(false)
+    if (result.success) {
+      setMessage(
+        result.remainingAttempts !== undefined && result.remainingAttempts > 0
+          ? `Verification email sent! You have ${result.remainingAttempts} resend${result.remainingAttempts !== 1 ? "s" : ""} remaining.`
+          : "Verification email sent! Please check your inbox."
+      )
+    } else {
+      setError(result.error || "Failed to send verification email")
+      if (result.rateLimited) {
+        setIsRateLimited(true)
+      }
     }
+
+    setIsLoading(false)
   }
 
   return (
@@ -79,15 +79,29 @@ export function VerifyEmailForm({
             )}
 
             {error && (
-              <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
-                <p className="text-sm text-destructive">{error}</p>
+              <div
+                className={`p-3 rounded-md ${
+                  isRateLimited
+                    ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                    : "bg-destructive/10 border border-destructive/20"
+                }`}
+              >
+                <p
+                  className={`text-sm ${
+                    isRateLimited
+                      ? "text-amber-800 dark:text-amber-300"
+                      : "text-destructive"
+                  }`}
+                >
+                  {error}
+                </p>
               </div>
             )}
 
             <Button
               type="button"
               onClick={handleResendEmail}
-              disabled={isLoading}
+              disabled={isLoading || isRateLimited}
               variant="outline"
               className="w-full"
             >
