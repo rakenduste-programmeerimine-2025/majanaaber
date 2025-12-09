@@ -103,8 +103,9 @@ export async function POST(request: Request) {
       )
     }
 
-    const authorName = notice.author
-      ? `${notice.author.first_name} ${notice.author.last_name}`
+    const author = Array.isArray(notice.author) ? notice.author[0] : notice.author
+    const authorName = author
+      ? `${author.first_name} ${author.last_name}`
       : "Building Manager"
 
     const priorityEmoji =

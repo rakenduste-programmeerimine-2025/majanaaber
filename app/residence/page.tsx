@@ -117,7 +117,7 @@ export default function ResidentDashboard() {
           </p>
           <div className="space-y-3">
             <a
-              href="/resident-hub"
+              href="/resident"
               className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded hover:opacity-90 transition"
             >
               Go to My Apartments
@@ -190,4 +190,3 @@ export default function ResidentDashboard() {
     </div>
   )
 }
-

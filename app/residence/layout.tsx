@@ -9,7 +9,7 @@ export default function ResidentLayout({
 }: {
   children: React.ReactNode
 }) {
-  const residentLinks = [{ label: "Home", href: "/resident-hub" }]
+  const residentLinks = [{ label: "Home", href: "/resident" }]
   return (
     <main className="min-h-screen flex flex-col">
       <nav className="w-full border-b border-b-foreground/10 bg-card">
