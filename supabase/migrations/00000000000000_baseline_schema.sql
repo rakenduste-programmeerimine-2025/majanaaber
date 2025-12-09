@@ -596,8 +596,10 @@ CREATE POLICY "Building managers can view all profiles"
     -- Users can always see their own profile
     auth.uid() = id
     OR
-    -- Building managers can see all profiles (check auth metadata)
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'building_manager'
+    -- Building managers can see all profiles (check if they manage any buildings)
+    EXISTS (
+      SELECT 1 FROM public.buildings WHERE manager_id = auth.uid()
+    )
   );
 
 -- Users can insert their own profile

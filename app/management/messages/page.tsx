@@ -139,36 +139,23 @@ export default function ManagerMessagesPage() {
     if (!managedBuildings || managedBuildings.length === 0) return
 
     const buildingIds = managedBuildings.map(b => b.id)
-
-    const { data: buildingResidents } = await supabase
+    const { data: residentIds } = await supabase
       .from("building_residents")
-      .select(
-        `
-        profile_id,
-        profiles!inner(id, first_name, last_name)
-      `,
-      )
+      .select("profile_id")
       .in("building_id", buildingIds)
       .eq("is_approved", true)
       .neq("profile_id", user.id)
+    
+    if (!residentIds || residentIds.length === 0) return
+    
+    const profileIds = residentIds.map(r => r.profile_id)
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name")
+      .in("id", profileIds)
 
-    if (buildingResidents) {
-      // Remove duplicates
-      const uniqueResidents = buildingResidents.reduce(
-        (acc: any[], br: any) => {
-          if (!acc.find(r => r.id === br.profiles.id)) {
-            acc.push({
-              id: br.profiles.id,
-              first_name: br.profiles.first_name,
-              last_name: br.profiles.last_name,
-            })
-          }
-          return acc
-        },
-        [],
-      )
-
-      setResidents(uniqueResidents)
+    if (profiles && profiles.length > 0) {
+      setResidents(profiles)
       setShowNewMessageModal(true)
     }
   }
