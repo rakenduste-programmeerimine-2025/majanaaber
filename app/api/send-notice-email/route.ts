@@ -3,6 +3,18 @@ import { NextResponse } from "next/server"
 
 const MOCK_EMAIL = true
 
+// HTML escape function to prevent XSS
+function escapeHtml(text: string): string {
+  const htmlEntities: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }
+  return text.replace(/[&<>"']/g, char => htmlEntities[char])
+}
+
 export async function POST(request: Request) {
   try {
     const { notice_id, building_id } = await request.json()
@@ -172,17 +184,17 @@ export async function POST(request: Request) {
           <div class="container">
             <div class="header">
               <h1>📢 New Notice Posted</h1>
-              <p>${building.full_address}</p>
+              <p>${escapeHtml(building.full_address)}</p>
             </div>
             <div class="content">
               <div class="notice-title">
-                ${priorityEmoji} ${notice.title}
-                <span class="priority priority-${notice.priority}">${notice.priority.toUpperCase()}</span>
+                ${priorityEmoji} ${escapeHtml(notice.title)}
+                <span class="priority priority-${escapeHtml(notice.priority)}">${escapeHtml(notice.priority.toUpperCase())}</span>
               </div>
-              <p><strong>Posted by:</strong> ${authorName}</p>
-              <p><strong>Category:</strong> ${notice.category}</p>
+              <p><strong>Posted by:</strong> ${escapeHtml(authorName)}</p>
+              <p><strong>Category:</strong> ${escapeHtml(notice.category || "general")}</p>
               <div class="notice-content">
-                <p>${notice.content.replace(/\n/g, "<br>")}</p>
+                <p>${escapeHtml(notice.content).replace(/\n/g, "<br>")}</p>
               </div>
             </div>
             <div class="footer">
