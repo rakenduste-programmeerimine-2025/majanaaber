@@ -407,13 +407,14 @@ The caller must be authenticated and must be one of the two participants.';
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, first_name, last_name, phone_number, email)
+  INSERT INTO public.profiles (id, first_name, last_name, phone_number, email, role)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'phone_number', ''),
-    NEW.email
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'role', 'resident')
   );
   RETURN NEW;
 END;
