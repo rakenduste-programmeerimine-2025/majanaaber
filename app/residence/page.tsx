@@ -50,16 +50,29 @@ export default function ResidentDashboard() {
         setCurrentUserId(user.id)
         let userBuilding = null
 
-        const { data: managerBuilding } = await supabase
-          .from("buildings")
-          .select("id, full_address")
-          .eq("manager_id", user.id)
-          .limit(1)
+        // First get user profile to check role
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
           .single()
 
-        if (managerBuilding) {
-          userBuilding = managerBuilding
-        } else {
+        // Only check for managed buildings if user is actually a building manager
+        if (profile?.role === 'building_manager') {
+          const { data: managerBuilding } = await supabase
+            .from("buildings")
+            .select("id, full_address")
+            .eq("manager_id", user.id)
+            .limit(1)
+            .single()
+
+          if (managerBuilding) {
+            userBuilding = managerBuilding
+          }
+        }
+        
+        // If no managed building found, check for resident building
+        if (!userBuilding) {
           const { data: residentData, error: residentError } = await supabase
             .from("building_residents")
             .select("building_id, buildings(id, full_address)")
