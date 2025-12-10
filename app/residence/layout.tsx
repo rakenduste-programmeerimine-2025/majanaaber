@@ -19,7 +19,7 @@ export default function ResidentLayout({
           </div>
           <div className="flex items-center gap-4">
             <Link
-              href="/resident-hub"
+              href="/resident"
               className="text-sm hover:underline"
             >
               Home

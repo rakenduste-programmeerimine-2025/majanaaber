@@ -16,11 +16,10 @@ export default function ManagerLayout({ children }: ManagerLayoutProps) {
             <BackButton />
             <span>Manager hub</span>
             <span className="text-muted-foreground">|</span>
-            <span>Building Management</span>
           </div>
           <div className="flex items-center gap-4">
             <Link
-              href="/manager-hub"
+              href="/manager"
               className="text-sm hover:underline"
             >
               Home
