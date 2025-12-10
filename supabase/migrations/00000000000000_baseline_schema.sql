@@ -918,6 +918,17 @@ CREATE POLICY "Users can send messages in their conversations"
     )
   );
 
+CREATE POLICY "Users can update their own messages"
+  ON public.peer_messages
+  FOR UPDATE
+  USING (sender_id = auth.uid())
+  WITH CHECK (sender_id = auth.uid());
+
+CREATE POLICY "Users can delete their own messages"
+  ON public.peer_messages
+  FOR DELETE
+  USING (sender_id = auth.uid());
+
 -- =====================================================
 -- ADDITIONAL POLICIES (Reactions, Read Receipts, etc.)
 -- =====================================================
@@ -959,6 +970,33 @@ CREATE POLICY "Users can manage their peer message read receipts"
   ON public.peer_message_read_receipts
   FOR ALL
   USING (user_id = auth.uid());
+
+-- Peer message reactions
+CREATE POLICY "Users can manage reactions on peer messages they have access to"
+  ON public.peer_message_reactions
+  FOR ALL
+  USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM public.peer_messages pm
+      JOIN public.conversations c ON pm.conversation_id = c.id
+      WHERE pm.id = peer_message_reactions.message_id
+      AND (c.participant1_id = auth.uid() OR c.participant2_id = auth.uid())
+    )
+  );
+
+-- Peer message attachments
+CREATE POLICY "Users can manage attachments in their conversations"
+  ON public.peer_message_attachments
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.peer_messages pm
+      JOIN public.conversations c ON pm.conversation_id = c.id
+      WHERE pm.id = peer_message_attachments.message_id
+      AND (c.participant1_id = auth.uid() OR c.participant2_id = auth.uid())
+    )
+  );
 
 -- Notification preferences
 CREATE POLICY "Users can manage their notification preferences"

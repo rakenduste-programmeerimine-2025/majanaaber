@@ -92,13 +92,17 @@ export function useConversations() {
             .eq("id", otherUserId)
             .single()
 
-          const { data: lastMessage } = await supabase
+          const { data: lastMessage, error: messageError } = await supabase
             .from("peer_messages")
             .select("content, created_at, sender_id")
             .eq("conversation_id", conv.id)
             .order("created_at", { ascending: false })
             .limit(1)
-            .single()
+            .maybeSingle()
+          
+          if (messageError) {
+            console.error(`Error fetching last message for conversation ${conv.id}:`, messageError)
+          }
 
           // Get all messages from other user in this conversation
           const { data: otherUserMessages } = await supabase
