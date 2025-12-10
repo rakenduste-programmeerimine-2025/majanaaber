@@ -532,7 +532,7 @@ export function ChatBox({
                                 {showMessageMenu === msg.id && (
                                   <div
                                     onClick={e => e.stopPropagation()}
-                                    className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? "-left-32" : "-right-32"} bg-card border border-border rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                                    className={`absolute top-0 ${isOwnMessage ? "-left-32" : "-right-32"} bg-card border border-border rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
                                   >
                                     <button
                                       onClick={() => {

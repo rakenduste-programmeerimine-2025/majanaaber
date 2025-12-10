@@ -43,6 +43,7 @@ interface ResidentForm {
 
 interface EditingResident {
   id: string
+  profileId: string
   apartmentNumber: string
   residentRole: "resident" | "apartment_owner"
 }
@@ -272,15 +273,27 @@ function ManagerDashboardContent() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("building_residents").insert({
-        building_id: buildingId,
-        profile_id: profileId,
-        apartment_number: residentForm.apartmentNumber,
-        resident_role: residentForm.residentRole,
-        is_approved: true,
-      })
+      const { error: residentError } = await supabase
+        .from("building_residents")
+        .insert({
+          building_id: buildingId,
+          profile_id: profileId,
+          apartment_number: residentForm.apartmentNumber,
+          resident_role: residentForm.residentRole,
+          is_approved: true,
+        })
 
-      if (error) throw error
+      if (residentError) throw residentError
+
+      // Also update the profile's role to match
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          role: residentForm.residentRole,
+        })
+        .eq("id", profileId)
+
+      if (profileError) throw profileError
 
       // Reload residents list
       await loadResidents()
@@ -342,7 +355,9 @@ function ManagerDashboardContent() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase
+
+      // Update building_residents role
+      const { error: residentError } = await supabase
         .from("building_residents")
         .update({
           apartment_number: editingResident.apartmentNumber,
@@ -350,7 +365,17 @@ function ManagerDashboardContent() {
         })
         .eq("id", editingResident.id)
 
-      if (error) throw error
+      if (residentError) throw residentError
+
+      // Also update the profile's role to match
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          role: editingResident.residentRole,
+        })
+        .eq("id", editingResident.profileId)
+
+      if (profileError) throw profileError
 
       // Reload residents list
       await loadResidents()
@@ -665,6 +690,7 @@ function ManagerDashboardContent() {
                                 onClick={() =>
                                   setEditingResident({
                                     id: resident.id,
+                                    profileId: resident.profile_id,
                                     apartmentNumber:
                                       resident.apartment_number || "",
                                     residentRole: resident.resident_role as
