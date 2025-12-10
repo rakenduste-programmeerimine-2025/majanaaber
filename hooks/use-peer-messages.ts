@@ -102,9 +102,15 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
                 }
               }
 
-              // Check if message already exists (avoid duplicates from optimistic update)
+              // Check if message already exists (from optimistic update)
               setMessages(prev => {
-                if (prev.some(m => m.id === data.id)) return prev
+                const existingIndex = prev.findIndex(m => m.id === data.id)
+                if (existingIndex !== -1) {
+                  // Update existing message with full data (including replied_message)
+                  const updated = [...prev]
+                  updated[existingIndex] = messageWithReply as unknown as PeerMessage
+                  return updated
+                }
                 return [...prev, messageWithReply as unknown as PeerMessage]
               })
             }
