@@ -952,12 +952,43 @@ CREATE POLICY "Building managers can delete notice attachments"
   );
 
 -- Storage policies for message attachments
-CREATE POLICY "Users can view their message attachments"
+CREATE POLICY "Users can view message attachments in their conversations"
   ON storage.objects
   FOR SELECT
   USING (
     bucket_id = 'message-attachments' AND
-    (auth.uid()::text = split_part(name, '/', 1))
+    (
+      -- Users can view their own uploaded attachments
+      (auth.uid()::text = split_part(name, '/', 1))
+      OR
+      -- Users can view attachments in peer conversations they participate in
+      EXISTS (
+        SELECT 1 FROM public.peer_message_attachments pma
+        JOIN public.peer_messages pm ON pm.id = pma.message_id
+        JOIN public.conversations c ON c.id = pm.conversation_id
+        WHERE pma.file_path = name
+        AND (c.participant1_id = auth.uid() OR c.participant2_id = auth.uid())
+      )
+      OR
+      -- Users can view attachments in building messages they have access to
+      EXISTS (
+        SELECT 1 FROM public.message_attachments ma
+        JOIN public.building_messages bm ON bm.id = ma.message_id
+        WHERE ma.file_path = name
+        AND (
+          -- Building managers can see all messages
+          (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+          OR
+          -- Residents can see messages for buildings they belong to
+          EXISTS (
+            SELECT 1 FROM public.building_residents br
+            WHERE br.building_id = bm.building_id
+            AND br.profile_id = auth.uid()
+            AND br.is_approved = true
+          )
+        )
+      )
+    )
   );
 
 CREATE POLICY "Users can upload their own message attachments"
