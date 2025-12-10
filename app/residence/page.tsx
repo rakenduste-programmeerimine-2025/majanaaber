@@ -58,7 +58,7 @@ export default function ResidentDashboard() {
           .single()
 
         // Only check for managed buildings if user is actually a building manager
-        if (profile?.role === 'building_manager') {
+        if (profile?.role === "building_manager") {
           const { data: managerBuilding } = await supabase
             .from("buildings")
             .select("id, full_address")
@@ -70,7 +70,7 @@ export default function ResidentDashboard() {
             userBuilding = managerBuilding
           }
         }
-        
+
         // If no managed building found, check for resident building
         if (!userBuilding) {
           const { data: residentData, error: residentError } = await supabase
