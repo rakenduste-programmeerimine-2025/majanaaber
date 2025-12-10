@@ -724,6 +724,14 @@ CREATE POLICY "Building managers can update notices"
     (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
   );
 
+-- Building managers can delete notices
+CREATE POLICY "Building managers can delete notices"
+  ON public.notices
+  FOR DELETE
+  USING (
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+  );
+
 -- =====================================================
 -- MESSAGING POLICIES
 -- =====================================================
