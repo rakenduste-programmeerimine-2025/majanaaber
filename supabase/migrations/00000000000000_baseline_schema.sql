@@ -585,17 +585,42 @@ CREATE POLICY "Users can read their own profile"
   FOR SELECT
   USING (auth.uid() = id);
 
--- Building managers can view all profiles to find residents
-CREATE POLICY "Building managers can view all profiles"
+-- Users can view profiles based on building relationships
+CREATE POLICY "Users can view profiles in building context"
   ON public.profiles
   FOR SELECT
   USING (
     -- Users can always see their own profile
     auth.uid() = id
     OR
-    -- Building managers can see all profiles (check if they manage any buildings)
+    -- Building managers can see all profiles (check via auth metadata)
+    (auth.jwt() ->> 'role')::text = 'building_manager'
+    OR
+    -- Building managers can see all profiles (fallback check via buildings table)
     EXISTS (
       SELECT 1 FROM public.buildings WHERE manager_id = auth.uid()
+    )
+    OR
+    -- Residents can see profiles of other people in their buildings
+    EXISTS (
+      SELECT 1 FROM public.building_residents br1
+      WHERE br1.profile_id = auth.uid()
+      AND br1.is_approved = true
+      AND EXISTS (
+        SELECT 1 FROM public.building_residents br2
+        WHERE br2.building_id = br1.building_id
+        AND br2.profile_id = profiles.id
+        AND br2.is_approved = true
+      )
+    )
+    OR
+    -- Users can see profiles of building managers for buildings they're in
+    EXISTS (
+      SELECT 1 FROM public.building_residents br
+      JOIN public.buildings b ON b.id = br.building_id
+      WHERE br.profile_id = auth.uid()
+      AND br.is_approved = true
+      AND b.manager_id = profiles.id
     )
   );
 
