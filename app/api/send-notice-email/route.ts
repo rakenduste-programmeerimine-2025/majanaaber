@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
-const MOCK_EMAIL = true
+// Set MOCK_EMAIL=true in env to disable actual email sending (for development)
+const MOCK_EMAIL = process.env.MOCK_EMAIL === "true"
 
 // HTML escape function to prevent XSS
 function escapeHtml(text: string): string {
