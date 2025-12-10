@@ -604,14 +604,11 @@ CREATE POLICY "Users can view profiles in building context"
     -- Residents can see profiles of other people in their buildings
     EXISTS (
       SELECT 1 FROM public.building_residents br1
+      JOIN public.building_residents br2 ON br1.building_id = br2.building_id
       WHERE br1.profile_id = auth.uid()
       AND br1.is_approved = true
-      AND EXISTS (
-        SELECT 1 FROM public.building_residents br2
-        WHERE br2.building_id = br1.building_id
-        AND br2.profile_id = profiles.id
-        AND br2.is_approved = true
-      )
+      AND br2.profile_id = profiles.id
+      AND br2.is_approved = true
     )
     OR
     -- Users can see profiles of building managers for buildings they're in
@@ -636,6 +633,69 @@ CREATE POLICY "Users can update their own profile"
   FOR UPDATE
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
+
+-- =====================================================
+-- BUILDING RESIDENTS POLICIES
+-- =====================================================
+
+-- Simple building residents policy to avoid recursion
+CREATE POLICY "Building managers and residents can view building residents"
+  ON public.building_residents
+  FOR SELECT
+  USING (
+    -- Building managers can see all building residents (via JWT role)
+    (auth.jwt() ->> 'role')::text = 'building_manager'
+    OR
+    -- Building managers can see all building residents (via buildings ownership)
+    EXISTS (
+      SELECT 1 FROM public.buildings WHERE manager_id = auth.uid()
+    )
+    OR
+    -- Users can always see their own building resident record
+    profile_id = auth.uid()
+  );
+
+-- Building managers can create building resident records
+CREATE POLICY "Building managers can create building residents"
+  ON public.building_residents
+  FOR INSERT
+  WITH CHECK (
+    (auth.jwt() ->> 'role')::text = 'building_manager'
+    OR
+    EXISTS (
+      SELECT 1 FROM public.buildings b
+      WHERE b.id = building_residents.building_id
+      AND b.manager_id = auth.uid()
+    )
+  );
+
+-- Building managers can update building resident records
+CREATE POLICY "Building managers can update building residents"
+  ON public.building_residents
+  FOR UPDATE
+  USING (
+    (auth.jwt() ->> 'role')::text = 'building_manager'
+    OR
+    EXISTS (
+      SELECT 1 FROM public.buildings b
+      WHERE b.id = building_residents.building_id
+      AND b.manager_id = auth.uid()
+    )
+  );
+
+-- Building managers can delete building resident records
+CREATE POLICY "Building managers can delete building residents"
+  ON public.building_residents
+  FOR DELETE
+  USING (
+    (auth.jwt() ->> 'role')::text = 'building_manager'
+    OR
+    EXISTS (
+      SELECT 1 FROM public.buildings b
+      WHERE b.id = building_residents.building_id
+      AND b.manager_id = auth.uid()
+    )
+  );
 
 -- =====================================================
 -- BUILDINGS POLICIES
