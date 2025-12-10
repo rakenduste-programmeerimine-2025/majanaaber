@@ -32,7 +32,6 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
     city: "",
     county: "",
     postal_code: "",
-    apartment_count: "",
   })
 
   const handleInputChange = (
@@ -144,7 +143,6 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
         city: "",
         county: "",
         postal_code: "",
-        apartment_count: "",
       })
 
       // Call success callback

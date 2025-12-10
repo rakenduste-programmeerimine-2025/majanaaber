@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import { useEffect, useState, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { changeBuildingManager } from "@/app/actions/auth"
 import { AddBuildingForm } from "@/components/add-building-form"
@@ -10,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { Search, Edit2, Trash2, User } from "lucide-react"
 import { ErrorDisplay } from "@/components/ui/error-display"
 import { useErrorHandler } from "@/hooks/use-error-handler"
 
@@ -18,7 +17,6 @@ interface Building {
   id: string
   full_address: string
   city: string
-  apartment_count: number | null
   created_at: string
 }
 
@@ -49,6 +47,16 @@ export default function ManagerHubPage() {
   >([])
   const [searchUserQuery, setSearchUserQuery] = useState("")
   const [isSearchingUsers, setIsSearchingUsers] = useState(false)
+  const [showAllApartments, setShowAllApartments] = useState(false)
+  const [showAllBuildings, setShowAllBuildings] = useState(false)
+  const [editBuildingId, setEditBuildingId] = useState<string | null>(null)
+  const [editBuildingData, setEditBuildingData] = useState<{
+    full_address: string
+    city: string
+  } | null>(null)
+
+  // Ref to store timeout for search debouncing
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const loadData = async () => {
     try {
@@ -64,7 +72,7 @@ export default function ManagerHubPage() {
 
       const { data: buildingsData, error: buildingsError } = await supabase
         .from("buildings")
-        .select("id, full_address, city, apartment_count, created_at")
+        .select("id, full_address, city, created_at")
         .eq("manager_id", user.id)
         .order("created_at", { ascending: false })
 
@@ -174,7 +182,52 @@ export default function ManagerHubPage() {
     }
   }
 
-  const loadUsersForManagerChange = async () => {
+  const handleEditBuilding = (building: Building) => {
+    setEditBuildingId(building.id)
+    setEditBuildingData({
+      full_address: building.full_address,
+      city: building.city,
+    })
+    // Clear any previous user search data
+    setAllUsers([])
+    setSearchUserQuery("")
+  }
+
+  const handleUpdateBuilding = async () => {
+    if (!editBuildingId || !editBuildingData) return
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("buildings")
+        .update({
+          full_address: editBuildingData.full_address,
+          city: editBuildingData.city,
+        })
+        .eq("id", editBuildingId)
+
+      if (error) {
+        throw error
+      }
+
+      setEditBuildingId(null)
+      setEditBuildingData(null)
+      loadData()
+    } catch (err: any) {
+      handleError(err, "Failed to update building")
+    }
+  }
+
+  const searchUsersForManagerChange = async (query: string) => {
+    if (!query.trim()) {
+      setAllUsers([])
+      return
+    }
+
+    if (query.length < 2) {
+      return // Don't search for very short queries
+    }
+
     try {
       setIsSearchingUsers(true)
       const supabase = createClient()
@@ -192,14 +245,16 @@ export default function ManagerHubPage() {
         .from("profiles")
         .select("id, first_name, last_name, email")
         .neq("id", user.id)
-        .limit(100)
+        .or(
+          `first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`,
+        )
+        .limit(10)
 
       if (error) throw error
 
       setAllUsers(data || [])
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error"
-      toast.error("Failed to load users: " + message)
+      handleError(err, "Failed to search users")
     } finally {
       setIsSearchingUsers(false)
     }
@@ -324,75 +379,163 @@ export default function ManagerHubPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
-                {filteredApartments.map(apartment => (
-                  <Card
-                    key={apartment.id}
-                    className="hover:shadow-md transition-shadow"
-                  >
-                    <CardContent className="pt-6">
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            Building
-                          </p>
-                          <p className="font-semibold text-lg">
-                            {apartment.building.full_address}
-                          </p>
-                        </div>
+              <>
+                {filteredApartments.length <= 4 ? (
+                  <div className="space-y-3">
+                    {filteredApartments.map(apartment => (
+                      <Card
+                        key={apartment.id}
+                        className="hover:shadow-md transition-shadow"
+                      >
+                        <CardContent className="pt-6">
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Building
+                              </p>
+                              <p className="font-semibold text-lg">
+                                {apartment.building.full_address}
+                              </p>
+                            </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                              Apartment
-                            </p>
-                            <p className="font-semibold text-lg">
-                              {apartment.apartment_number}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                              Role
-                            </p>
-                            <Badge
-                              variant={
-                                apartment.resident_role === "apartment_owner"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                            >
-                              {apartment.resident_role === "apartment_owner"
-                                ? "Apt. Owner"
-                                : "Resident"}
-                            </Badge>
-                          </div>
-                        </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                                  Apartment
+                                </p>
+                                <p className="font-semibold text-lg">
+                                  {apartment.apartment_number}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                                  Role
+                                </p>
+                                <Badge
+                                  variant={
+                                    apartment.resident_role ===
+                                    "apartment_owner"
+                                      ? "default"
+                                      : "secondary"
+                                  }
+                                >
+                                  {apartment.resident_role === "apartment_owner"
+                                    ? "Apt. Owner"
+                                    : "Resident"}
+                                </Badge>
+                              </div>
+                            </div>
 
-                        <div className="flex items-end justify-between">
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                              Location
-                            </p>
-                            <p className="text-foreground">
-                              {apartment.building.city}
-                            </p>
+                            <div className="flex items-end justify-between">
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                                  Location
+                                </p>
+                                <p className="text-foreground">
+                                  {apartment.building.city}
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                asChild
+                              >
+                                <Link
+                                  href={`/residence?building=${apartment.building_id}`}
+                                >
+                                  Select
+                                </Link>
+                              </Button>
+                            </div>
                           </div>
-                          <Button
-                            size="sm"
-                            asChild
-                          >
-                            <Link
-                              href={`/residence?building=${apartment.building_id}`}
-                            >
-                              Select
-                            </Link>
-                          </Button>
-                        </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(showAllApartments
+                        ? filteredApartments
+                        : filteredApartments.slice(0, 4)
+                      ).map(apartment => (
+                        <Card
+                          key={apartment.id}
+                          className="hover:shadow-md transition-shadow"
+                        >
+                          <CardContent className="pt-4 pb-4">
+                            <div className="space-y-2">
+                              <div>
+                                <p className="text-xs text-muted-foreground">
+                                  Building
+                                </p>
+                                <p className="font-semibold text-sm">
+                                  {apartment.building.full_address}
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Apt.
+                                  </p>
+                                  <p className="font-semibold">
+                                    {apartment.apartment_number}
+                                  </p>
+                                </div>
+                                <div>
+                                  <Badge
+                                    variant={
+                                      apartment.resident_role ===
+                                      "apartment_owner"
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {apartment.resident_role ===
+                                    "apartment_owner"
+                                      ? "Owner"
+                                      : "Resident"}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">
+                                  {apartment.building.city}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  asChild
+                                >
+                                  <Link
+                                    href={`/residence?building=${apartment.building_id}`}
+                                  >
+                                    Select
+                                  </Link>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    {filteredApartments.length > 4 && (
+                      <div className="flex justify-center mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setShowAllApartments(!showAllApartments)
+                          }
+                        >
+                          {showAllApartments
+                            ? "Show Less"
+                            : `Show All (${filteredApartments.length})`}
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
           </div>
 
@@ -460,68 +603,114 @@ export default function ManagerHubPage() {
                 </CardContent>
               </Card>
             ) : !showAddForm ? (
-              <div className="space-y-3">
-                {filteredBuildings.map(building => (
-                  <Card
-                    key={building.id}
-                    className="hover:shadow-md transition-shadow"
-                  >
-                    <CardContent className="pt-6">
-                      <div className="space-y-3">
-                        <div>
-                          <p className="font-semibold text-lg">
-                            {building.full_address}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {building.city}
-                          </p>
-                        </div>
+              <>
+                {filteredBuildings.length <= 4 ? (
+                  <div className="space-y-3">
+                    {filteredBuildings.map(building => (
+                      <Card
+                        key={building.id}
+                        className="hover:shadow-md transition-shadow"
+                      >
+                        <CardContent className="pt-6">
+                          <div className="space-y-3">
+                            <div>
+                              <p className="font-semibold text-lg">
+                                {building.full_address}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {building.city}
+                              </p>
+                            </div>
 
-                        {building.apartment_count !== null && (
-                          <div>
-                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                              Apartments
-                            </p>
-                            <p className="font-semibold">
-                              {building.apartment_count}
-                            </p>
+                            <div className="flex gap-2 pt-3">
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                asChild
+                              >
+                                <Link
+                                  href={`/management?building=${building.id}`}
+                                >
+                                  Manage
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditBuilding(building)}
+                              >
+                                Edit
+                              </Button>
+                            </div>
                           </div>
-                        )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(showAllBuildings
+                        ? filteredBuildings
+                        : filteredBuildings.slice(0, 4)
+                      ).map(building => (
+                        <Card
+                          key={building.id}
+                          className="hover:shadow-md transition-shadow"
+                        >
+                          <CardContent className="pt-4 pb-4">
+                            <div className="space-y-2">
+                              <div>
+                                <p className="font-semibold text-sm">
+                                  {building.full_address}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {building.city}
+                                </p>
+                              </div>
 
-                        <div className="flex gap-2 pt-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            asChild
-                          >
-                            <Link href={`/management?building=${building.id}`}>
-                              Manage
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setChangeManagerBuildingId(building.id)
-                              loadUsersForManagerChange()
-                            }}
-                          >
-                            Change Manager
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteBuilding(building.id)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
+                              <div className="flex gap-1 pt-2">
+                                <Button
+                                  size="sm"
+                                  className="flex-1 text-xs"
+                                  asChild
+                                >
+                                  <Link
+                                    href={`/management?building=${building.id}`}
+                                  >
+                                    Manage
+                                  </Link>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs px-2"
+                                  onClick={() => handleEditBuilding(building)}
+                                >
+                                  Edit
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    {filteredBuildings.length > 4 && (
+                      <div className="flex justify-center mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowAllBuildings(!showAllBuildings)}
+                        >
+                          {showAllBuildings
+                            ? "Show Less"
+                            : `Show All (${filteredBuildings.length})`}
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    )}
+                  </>
+                )}
+              </>
             ) : null}
           </div>
         </div>
@@ -604,6 +793,191 @@ export default function ManagerHubPage() {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Edit Building Overlay */}
+        {editBuildingId && editBuildingData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+              <CardContent className="pt-6">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-semibold">Edit Building</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditBuildingId(null)
+                        setEditBuildingData(null)
+                        setSearchUserQuery("")
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+
+                  {/* Building Information Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-medium flex items-center gap-2">
+                      <Edit2 className="h-5 w-5" />
+                      Building Information
+                    </h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Address</label>
+                        <Input
+                          type="text"
+                          value={editBuildingData.full_address}
+                          onChange={e =>
+                            setEditBuildingData({
+                              ...editBuildingData,
+                              full_address: e.target.value,
+                            })
+                          }
+                          placeholder="Enter full address"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">City</label>
+                        <Input
+                          type="text"
+                          value={editBuildingData.city}
+                          onChange={e =>
+                            setEditBuildingData({
+                              ...editBuildingData,
+                              city: e.target.value,
+                            })
+                          }
+                          placeholder="Enter city"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleUpdateBuilding}
+                        className="flex-1"
+                      >
+                        Save Changes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditBuildingId(null)
+                          setEditBuildingData(null)
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Change Manager Section */}
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="text-lg font-medium flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Change Manager
+                    </h4>
+
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search by name or email..."
+                        value={searchUserQuery}
+                        onChange={e => {
+                          const value = e.target.value
+                          setSearchUserQuery(value)
+                          // Debounce search
+                          if (searchTimeoutRef.current) {
+                            clearTimeout(searchTimeoutRef.current)
+                          }
+                          searchTimeoutRef.current = setTimeout(() => {
+                            searchUsersForManagerChange(value)
+                          }, 300)
+                        }}
+                        className="pl-10"
+                      />
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto space-y-2">
+                      {isSearchingUsers ? (
+                        <p className="text-center text-muted-foreground py-4">
+                          Searching...
+                        </p>
+                      ) : !searchUserQuery.trim() ? (
+                        <p className="text-center text-muted-foreground py-4">
+                          Type to search for users...
+                        </p>
+                      ) : searchUserQuery.length < 2 ? (
+                        <p className="text-center text-muted-foreground py-4">
+                          Type at least 2 characters to search...
+                        </p>
+                      ) : allUsers.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4">
+                          No users found matching "{searchUserQuery}"
+                        </p>
+                      ) : (
+                        allUsers.map(user => (
+                          <div
+                            key={user.id}
+                            className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/30"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {user.email}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                handleChangeManager(editBuildingId, user.id)
+                                setEditBuildingId(null)
+                                setEditBuildingData(null)
+                              }}
+                            >
+                              Select
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Delete Building Section */}
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="text-lg font-medium flex items-center gap-2 text-destructive">
+                      <Trash2 className="h-5 w-5" />
+                      Delete Building
+                    </h4>
+
+                    <p className="text-sm text-muted-foreground">
+                      This action cannot be undone. All associated data will be
+                      permanently removed.
+                    </p>
+
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        handleDeleteBuilding(editBuildingId)
+                        setEditBuildingId(null)
+                        setEditBuildingData(null)
+                      }}
+                      className="w-full"
+                    >
+                      Delete Building
+                    </Button>
                   </div>
                 </div>
               </CardContent>
