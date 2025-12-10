@@ -88,14 +88,21 @@ export function NoticeBoard({
     })
     .sort((a, b) => {
       // Sort by expires_at descending (most recently expired first)
-      const aDate = a.expires_at ? new Date(a.expires_at) : new Date(a.created_at)
-      const bDate = b.expires_at ? new Date(b.expires_at) : new Date(b.created_at)
+      const aDate = a.expires_at
+        ? new Date(a.expires_at)
+        : new Date(a.created_at)
+      const bDate = b.expires_at
+        ? new Date(b.expires_at)
+        : new Date(b.created_at)
       return bDate.getTime() - aDate.getTime()
     })
 
   const archivedNotices = notices
     .filter(notice => notice.is_archived && matchesFilters(notice))
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
 
   const loadNotices = async () => {
     try {
@@ -364,9 +371,9 @@ export function NoticeBoard({
         : "",
     )
     setEventDate(
-      notice.event_date ? 
-      new Date(notice.event_date).toISOString().split("T")[0] : 
-      ""
+      notice.event_date
+        ? new Date(notice.event_date).toISOString().split("T")[0]
+        : "",
     )
     setSelectedFiles([])
     setExistingAttachments(notice.attachments || [])
@@ -383,11 +390,11 @@ export function NoticeBoard({
         .delete()
         .eq("id", noticeId)
       if (error) throw error
-      
+
       // Import and emit event for other components
       const { eventBus, EVENTS } = await import("@/lib/events")
       eventBus.emit(EVENTS.NOTICE_DELETED, { noticeId, buildingId })
-      
+
       loadNotices()
     } catch (err: any) {
       setError(err.message || "Failed to delete notice")
