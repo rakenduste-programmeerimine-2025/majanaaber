@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98.4%;
+    --background: 0 0% 96%;
     --foreground: 0 0% 13.3%;
     --card: 0 0% 98.4%;
     --card-foreground: 0 0% 13.3%;
@@ -32,7 +32,7 @@
     --radius: 0.5rem;
   }
   .dark {
-    --background: 220 13% 6.3%;
+    --background: 220 13% 4%;
     --foreground: 0 0% 98%;
     --card: 220 13% 6.3%;
     --card-foreground: 0 0% 98%;
@@ -47,7 +47,7 @@
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
     --theme-button-hover: 0 0% 20%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 75% 65%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;

@@ -9,7 +9,6 @@ export interface BuildingAddressData {
   city: string
   county: string
   postal_code: string
-  apartment_count: string
 }
 
 interface BuildingAddressProps {
