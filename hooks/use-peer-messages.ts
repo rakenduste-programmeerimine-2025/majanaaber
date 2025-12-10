@@ -75,24 +75,32 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
               .eq("id", payload.new.id)
               .single()
 
-            if (data && data.reply_to_message_id) {
-              const { data: repliedMsg } = await supabase
-                .from("peer_messages")
-                .select(`
-                  id,
-                  content,
-                  sender:profiles!peer_messages_sender_id_fkey(first_name, last_name)
-                `)
-                .eq("id", data.reply_to_message_id)
-                .single()
-
-              if (repliedMsg) {
-                data.replied_message = repliedMsg
-              }
-            }
-
             if (data) {
-              setMessages(prev => [...prev, data as unknown as PeerMessage])
+              // Construct message with replied_message property
+              let messageWithReply: typeof data & {
+                replied_message: { id: string; content: string; sender: { first_name: string; last_name: string }[] } | null
+              } = { ...data, replied_message: null }
+
+              if (data.reply_to_message_id) {
+                const { data: repliedMsg } = await supabase
+                  .from("peer_messages")
+                  .select(`
+                    id,
+                    content,
+                    sender:profiles!peer_messages_sender_id_fkey(first_name, last_name)
+                  `)
+                  .eq("id", data.reply_to_message_id)
+                  .single()
+
+                if (repliedMsg) {
+                  messageWithReply = {
+                    ...data,
+                    replied_message: repliedMsg as { id: string; content: string; sender: { first_name: string; last_name: string }[] },
+                  }
+                }
+              }
+
+              setMessages(prev => [...prev, messageWithReply as unknown as PeerMessage])
             }
           },
         )

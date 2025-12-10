@@ -14,6 +14,23 @@ interface ReadReceipt {
   }
 }
 
+// Supabase returns FK joins as arrays in types, transform to expected shape
+function transformReadReceipt(row: {
+  id: string
+  notice_id: string
+  user_id: string
+  read_at: string
+  reader: { first_name: string; last_name: string }[] | null
+}): ReadReceipt {
+  return {
+    id: row.id,
+    notice_id: row.notice_id,
+    user_id: row.user_id,
+    read_at: row.read_at,
+    reader: row.reader?.[0],
+  }
+}
+
 export function useNoticeReadReceipts(noticeId: string | null) {
   const [readReceipts, setReadReceipts] = useState<ReadReceipt[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,7 +60,7 @@ export function useNoticeReadReceipts(noticeId: string | null) {
       if (error) {
         console.error("Error fetching read receipts:", error)
       } else {
-        setReadReceipts(data || [])
+        setReadReceipts((data || []).map(transformReadReceipt))
       }
       setLoading(false)
     }
@@ -78,7 +95,7 @@ export function useNoticeReadReceipts(noticeId: string | null) {
             .single()
 
           if (data) {
-            setReadReceipts(prev => [data, ...prev])
+            setReadReceipts(prev => [transformReadReceipt(data), ...prev])
           }
         },
       )

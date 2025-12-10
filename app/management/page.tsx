@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { NoticeBoard } from "@/components/notices"
@@ -52,7 +52,7 @@ interface Notice {
   event_date: string | null
 }
 
-export default function ManagerDashboard() {
+function ManagerDashboardContent() {
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
   const [showResidentsOverlay, setShowResidentsOverlay] = useState(false)
@@ -752,5 +752,19 @@ export default function ManagerDashboard() {
       {/* Empty space at bottom */}
       <div className="h-[10vh]" />
     </div>
+  )
+}
+
+export default function ManagerDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-lg">Loading...</p>
+        </div>
+      }
+    >
+      <ManagerDashboardContent />
+    </Suspense>
   )
 }
