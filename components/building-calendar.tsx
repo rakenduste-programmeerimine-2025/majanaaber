@@ -88,11 +88,24 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
             const evDate = ev.event_date?.split("T")[0] ?? ev.event_date
             return evDate === dateStr
           })
+
+          // Check if this is today
+          const today = new Date()
+          const isToday = 
+            today.getFullYear() === year &&
+            today.getMonth() === month &&
+            today.getDate() === day
+
           return (
             <button
               key={idx}
-              className={`p-2 rounded text-sm relative
-                  ${dayEvents.length > 0 ? "bg-primary/20 hover:bg-primary/30" : "bg-muted/30 hover:bg-muted/50"}
+              className={`p-2 rounded text-sm relative transition-colors
+                  ${isToday 
+                    ? "bg-blue-500 text-white font-semibold hover:bg-blue-600"
+                    : dayEvents.length > 0 
+                      ? "bg-primary/20 hover:bg-primary/30" 
+                      : "bg-muted/30 hover:bg-muted/50"
+                  }
                   `}
             >
               {day}
@@ -103,7 +116,9 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
                   {dayEvents.slice(0, 3).map(ev => (
                     <div
                       key={ev.id}
-                      className="w-1.5 h-1.5 bg-primary rounded-full"
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        isToday ? "bg-white" : "bg-primary"
+                      }`}
                     ></div>
                   ))}
                 </div>
