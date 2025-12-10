@@ -24,9 +24,9 @@ export function formatTimestamp(timestamp: string): string {
     })}`
   }
 
-  return `${messageDate.toLocaleDateString([], {
-    month: "short",
-    day: "numeric",
+  return `${messageDate.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
   })} ${messageDate.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",

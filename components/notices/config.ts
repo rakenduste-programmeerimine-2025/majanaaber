@@ -84,10 +84,10 @@ export function formatDateHeader(dateString: string): string {
   if (isYesterday) return "Yesterday"
   if (isTomorrow) return "Tomorrow"
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-GB", {
     weekday: "long",
-    month: "long",
-    day: "numeric",
+    day: "2-digit",
+    month: "long", 
     year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
   })
 }
