@@ -383,6 +383,11 @@ export function NoticeBoard({
         .delete()
         .eq("id", noticeId)
       if (error) throw error
+      
+      // Import and emit event for other components
+      const { eventBus, EVENTS } = await import("@/lib/events")
+      eventBus.emit(EVENTS.NOTICE_DELETED, { noticeId, buildingId })
+      
       loadNotices()
     } catch (err: any) {
       setError(err.message || "Failed to delete notice")
