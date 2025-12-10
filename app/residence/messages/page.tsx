@@ -116,13 +116,13 @@ export default function MessagesPage() {
 
     console.log("Fetching contacts for building:", buildingId)
 
-    // Get all residents in the building
+    // Get all residents in the building using the specific foreign key relationship
     const { data: buildingResidents, error: residentsError } = await supabase
       .from("building_residents")
       .select(
         `
         profile_id,
-        profiles!inner(id, first_name, last_name)
+        profiles!building_residents_profile_id_fkey(id, first_name, last_name)
       `,
       )
       .eq("building_id", buildingId)
@@ -131,6 +131,14 @@ export default function MessagesPage() {
 
     if (residentsError) {
       console.error("Error fetching residents:", residentsError)
+      console.error("Residents error details:", {
+        message: residentsError.message,
+        details: residentsError.details,
+        hint: residentsError.hint,
+        code: residentsError.code,
+      })
+    } else {
+      console.log("Successfully fetched residents:", buildingResidents)
     }
 
     // Also get the building manager
@@ -167,8 +175,8 @@ export default function MessagesPage() {
     // Add residents
     if (buildingResidents && buildingResidents.length > 0) {
       buildingResidents.forEach((br: any) => {
-        // Don't add if already added as manager
-        if (!contactsList.some(c => c.id === br.profiles.id)) {
+        // Check if profile data exists and don't add if already added as manager
+        if (br.profiles && !contactsList.some(c => c.id === br.profiles.id)) {
           contactsList.push({
             id: br.profiles.id,
             first_name: br.profiles.first_name,

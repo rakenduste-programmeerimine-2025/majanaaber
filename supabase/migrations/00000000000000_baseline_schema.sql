@@ -576,17 +576,34 @@ ALTER TABLE public.peer_message_read_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.peer_message_attachments ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
+-- HELPER FUNCTIONS
+-- =====================================================
+
+-- Function to get building IDs for a user (security definer to bypass RLS)
+CREATE OR REPLACE FUNCTION public.get_user_building_ids(user_id UUID)
+RETURNS UUID[]
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  building_ids UUID[];
+BEGIN
+  SELECT ARRAY_AGG(DISTINCT building_id) 
+  INTO building_ids
+  FROM building_residents 
+  WHERE profile_id = user_id AND is_approved = true;
+  
+  RETURN COALESCE(building_ids, ARRAY[]::UUID[]);
+END;
+$$;
+
+-- =====================================================
 -- PROFILES POLICIES
 -- =====================================================
 
--- Users can read their own profile
-CREATE POLICY "Users can read their own profile"
-  ON public.profiles
-  FOR SELECT
-  USING (auth.uid() = id);
-
--- Users can view profiles based on building relationships
-CREATE POLICY "Users can view profiles in building context"
+-- Profiles policy using helper function to avoid RLS conflicts
+CREATE POLICY "Users can view profiles in appropriate contexts"
   ON public.profiles
   FOR SELECT
   USING (
@@ -601,23 +618,19 @@ CREATE POLICY "Users can view profiles in building context"
       SELECT 1 FROM public.buildings WHERE manager_id = auth.uid()
     )
     OR
-    -- Residents can see profiles of other people in their buildings
-    EXISTS (
-      SELECT 1 FROM public.building_residents br1
-      JOIN public.building_residents br2 ON br1.building_id = br2.building_id
-      WHERE br1.profile_id = auth.uid()
-      AND br1.is_approved = true
-      AND br2.profile_id = profiles.id
-      AND br2.is_approved = true
+    -- Residents can see profiles of other people in their buildings using helper function
+    id = ANY(
+      SELECT br.profile_id 
+      FROM building_residents br 
+      WHERE br.building_id = ANY(public.get_user_building_ids(auth.uid()))
+      AND br.is_approved = true
     )
     OR
-    -- Users can see profiles of building managers for buildings they're in
-    EXISTS (
-      SELECT 1 FROM public.building_residents br
-      JOIN public.buildings b ON b.id = br.building_id
-      WHERE br.profile_id = auth.uid()
-      AND br.is_approved = true
-      AND b.manager_id = profiles.id
+    -- Users can see building managers for buildings they're in
+    id IN (
+      SELECT b.manager_id 
+      FROM buildings b 
+      WHERE b.id = ANY(public.get_user_building_ids(auth.uid()))
     )
   );
 
@@ -635,67 +648,11 @@ CREATE POLICY "Users can update their own profile"
   WITH CHECK (auth.uid() = id);
 
 -- =====================================================
--- BUILDING RESIDENTS POLICIES
+-- BUILDING RESIDENTS POLICIES (DISABLED FOR DEBUGGING)
 -- =====================================================
 
--- Simple building residents policy to avoid recursion
-CREATE POLICY "Building managers and residents can view building residents"
-  ON public.building_residents
-  FOR SELECT
-  USING (
-    -- Building managers can see all building residents (via JWT role)
-    (auth.jwt() ->> 'role')::text = 'building_manager'
-    OR
-    -- Building managers can see all building residents (via buildings ownership)
-    EXISTS (
-      SELECT 1 FROM public.buildings WHERE manager_id = auth.uid()
-    )
-    OR
-    -- Users can always see their own building resident record
-    profile_id = auth.uid()
-  );
-
--- Building managers can create building resident records
-CREATE POLICY "Building managers can create building residents"
-  ON public.building_residents
-  FOR INSERT
-  WITH CHECK (
-    (auth.jwt() ->> 'role')::text = 'building_manager'
-    OR
-    EXISTS (
-      SELECT 1 FROM public.buildings b
-      WHERE b.id = building_residents.building_id
-      AND b.manager_id = auth.uid()
-    )
-  );
-
--- Building managers can update building resident records
-CREATE POLICY "Building managers can update building residents"
-  ON public.building_residents
-  FOR UPDATE
-  USING (
-    (auth.jwt() ->> 'role')::text = 'building_manager'
-    OR
-    EXISTS (
-      SELECT 1 FROM public.buildings b
-      WHERE b.id = building_residents.building_id
-      AND b.manager_id = auth.uid()
-    )
-  );
-
--- Building managers can delete building resident records
-CREATE POLICY "Building managers can delete building residents"
-  ON public.building_residents
-  FOR DELETE
-  USING (
-    (auth.jwt() ->> 'role')::text = 'building_manager'
-    OR
-    EXISTS (
-      SELECT 1 FROM public.buildings b
-      WHERE b.id = building_residents.building_id
-      AND b.manager_id = auth.uid()
-    )
-  );
+-- Temporarily disabled building_residents policies while RLS is off
+-- Will re-enable after confirming messaging functionality works
 
 -- =====================================================
 -- BUILDINGS POLICIES
@@ -733,13 +690,19 @@ CREATE POLICY "Managers can delete their buildings"
 -- BUILDING RESIDENTS POLICIES
 -- =====================================================
 
--- Users can read their own resident records and managers can read their building residents
-CREATE POLICY "Users can read their own resident records"
+-- Users can read their own resident records, managers can read their building residents, and residents can see other residents in same building
+CREATE POLICY "Users can read building resident records"
   ON public.building_residents
   FOR SELECT
   USING (
+    -- Users can see their own resident record
     profile_id = auth.uid()
-    OR (SELECT manager_id FROM public.buildings WHERE id = building_residents.building_id) = auth.uid()
+    OR
+    -- Building managers can see all residents in their buildings
+    (SELECT manager_id FROM public.buildings WHERE id = building_residents.building_id) = auth.uid()
+    OR
+    -- Residents can see other residents in buildings they belong to
+    building_id = ANY(public.get_user_building_ids(auth.uid()))
   );
 
 -- Building managers can insert residents
