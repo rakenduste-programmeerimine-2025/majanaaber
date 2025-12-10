@@ -25,6 +25,7 @@ export default function ResidentHubPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [apartmentSearchQuery, setApartmentSearchQuery] = useState("")
+  const [showAllApartments, setShowAllApartments] = useState(false)
 
   const loadData = async () => {
     try {
@@ -168,73 +169,158 @@ export default function ResidentHubPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {filteredApartments.map(apartment => (
-              <Card
-                key={apartment.id}
-                className="hover:shadow-md transition-shadow"
-              >
-                <CardContent className="pt-6">
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Building</p>
-                      <p className="font-semibold text-lg">
-                        {apartment.building.full_address}
-                      </p>
-                    </div>
+          <>
+            {filteredApartments.length <= 4 ? (
+              <div className="space-y-3">
+                {filteredApartments.map(apartment => (
+                  <Card
+                    key={apartment.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardContent className="pt-6">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Building
+                          </p>
+                          <p className="font-semibold text-lg">
+                            {apartment.building.full_address}
+                          </p>
+                        </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                          Apartment
-                        </p>
-                        <p className="font-semibold text-lg">
-                          {apartment.apartment_number}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                          Role
-                        </p>
-                        <Badge
-                          variant={
-                            apartment.resident_role === "apartment_owner"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {apartment.resident_role === "apartment_owner"
-                            ? "Apt. Owner"
-                            : "Resident"}
-                        </Badge>
-                      </div>
-                    </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                              Apartment
+                            </p>
+                            <p className="font-semibold text-lg">
+                              {apartment.apartment_number}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                              Role
+                            </p>
+                            <Badge
+                              variant={
+                                apartment.resident_role === "apartment_owner"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {apartment.resident_role === "apartment_owner"
+                                ? "Apt. Owner"
+                                : "Resident"}
+                            </Badge>
+                          </div>
+                        </div>
 
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                          Location
-                        </p>
-                        <p className="text-foreground">
-                          {apartment.building.city}
-                        </p>
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                              Location
+                            </p>
+                            <p className="text-foreground">
+                              {apartment.building.city}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            asChild
+                          >
+                            <Link
+                              href={`/residence?building=${apartment.building_id}`}
+                            >
+                              Select
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        size="sm"
-                        asChild
-                      >
-                        <Link
-                          href={`/residence?building=${apartment.building_id}`}
-                        >
-                          Select
-                        </Link>
-                      </Button>
-                    </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(showAllApartments
+                    ? filteredApartments
+                    : filteredApartments.slice(0, 4)
+                  ).map(apartment => (
+                    <Card
+                      key={apartment.id}
+                      className="hover:shadow-md transition-shadow"
+                    >
+                      <CardContent className="pt-4 pb-4">
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              Building
+                            </p>
+                            <p className="font-semibold text-sm">
+                              {apartment.building.full_address}
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Apt.
+                              </p>
+                              <p className="font-semibold">
+                                {apartment.apartment_number}
+                              </p>
+                            </div>
+                            <div>
+                              <Badge
+                                variant={
+                                  apartment.resident_role === "apartment_owner"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {apartment.resident_role === "apartment_owner"
+                                  ? "Owner"
+                                  : "Resident"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {apartment.building.city}
+                            </span>
+                            <Button
+                              size="sm"
+                              asChild
+                            >
+                              <Link
+                                href={`/residence?building=${apartment.building_id}`}
+                              >
+                                Select
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                {filteredApartments.length > 4 && (
+                  <div className="flex justify-center mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAllApartments(!showAllApartments)}
+                    >
+                      {showAllApartments
+                        ? "Show Less"
+                        : `Show All (${filteredApartments.length})`}
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </div>
     </div>
