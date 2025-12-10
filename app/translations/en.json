@@ -1,0 +1,81 @@
+{
+    "error.message.1": "Sorry, something went wrong",
+    "error.code": "Code error:",
+    "error.message.2": "An unspecified error occurred.",
+    "backMainPage.message": "Back to Main Page",
+    "signup.thankYou": "Thank you for signing up!",
+    "signup.checkEmail": "Check your email to confirm",
+    "signup.successMessage": "You've successfully signed up. Please check your email to confirm your account before signing in.",
+    "signup.resendButton": "Resend verification email",
+    "signup.sending": "Sending...",
+    "signup.backToLogin": "Back to login",
+    "signup.emailNotFound": "Email not found. Please sign up again.",
+    "signup.verificationSentRemaining": "Verification email sent! You have {count} resend(s) remaining.",
+    "signup.verificationSent": "Verification email sent! Please check your inbox.",
+    "signup.failedSend": "Failed to send verification email",
+        "messages": {
+            "directMessages": "Direct Messages",
+            "newMessageButton": "+ New Message",
+            "conversationsTitle": "Conversations",
+            "noConversationSelected": "No conversation selected",
+            "selectOrStartConversation": "Select a conversation or start a new one",
+            "newMessageHeader": "New Message",
+            "noResidentsFound": "No residents found",
+            "accessDenied.title": "Access Denied",
+            "accessDenied.description": "You do not have permission to access this page.",
+            "accessDenied.note": "Only building managers can access direct messages here.",
+            "accessDenied.link": "Go to Resident Messages",
+        "layout": {
+            "buildingManagement": "Building management",
+            "home": "Home",
+            "profile": "Profile"
+        },
+        "dashboard": {
+            "loading": "Loading...",
+            "buildingLoadError": "Unable to load building",
+            "noPermission": "You may not have permission to manage this building.",
+            "noBuildingSelected": "No building selected",
+            "addViewResidents": "Add/View Residents",
+            "directMessages": "Direct Messages",
+            "residents": {
+            "title": "Residents",
+            "searchLabel": "Search and Add Resident",
+            "searchPlaceholder": "Search by name or email...",
+            "selected": "Selected",
+            "select": "Select",
+            "addDetails": "Add Resident Details",
+            "apartmentNumber": "Apartment Number *",
+            "role": "Role",
+            "roleOptions": {
+                "resident": "Resident",
+                "owner": "Apartment Owner"
+            },
+            "addButton": "Add Resident",
+            "cancelButton": "Cancel",
+            "currentTitle": "Current Residents",
+            "none": "No residents added yet. Search and add residents above.",
+            "editTitle": "Edit Resident",
+            "saveButton": "Save",
+            "removeButton": "Remove",
+            "editButton": "Edit",
+                "errors": {
+                "mustBeLoggedIn": "You must be logged in to access this page",
+                "noBuildingFound": "No building found. Please create a building first.",
+                "notAuthorized": "You are not authorized to manage this building",
+                "alreadyResident": "This user is already a resident of this apartment",
+                "apartmentRequired": "Please enter an apartment number",
+                "apartmentTooLong": "Apartment number is too long (maximum 20 characters)",
+                "apartmentInvalid": "Apartment number contains invalid characters. Use only letters, numbers, hyphens, periods, slashes, and spaces.",
+                "addResidentFailed": "Failed to add resident:",
+                "removeResidentFailed": "Failed to remove resident:",
+                "updateResidentFailed": "Failed to update resident:",
+                "confirmRemoveResident": "Are you sure you want to remove this resident?",
+                "loadingBuilding": "Error loading building:",
+                "loadingNotices": "Error loading notices:",
+                "loadingResidents": "Error loading residents:",
+                "searchingUsers": "Error searching users:"
+    }
+    }
+    }
+}
+}

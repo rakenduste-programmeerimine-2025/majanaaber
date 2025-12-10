@@ -2,11 +2,13 @@ import { ThemeSwitcher } from "@/components/theme-switcher"
 import { AuthButton } from "@/components/auth-button"
 import Link from "next/link"
 import { BackButton } from "@/components/back-button"
+import { useTranslations } from "next-intl"
 interface ManagerLayoutProps {
   children: React.ReactNode
 }
 
 export default function ManagerLayout({ children }: ManagerLayoutProps) {
+  const t = useTranslations()
   return (
     <main className="min-h-screen flex flex-col">
       {/* Top header */}
@@ -15,20 +17,20 @@ export default function ManagerLayout({ children }: ManagerLayoutProps) {
           <div className="flex gap-5 items-center font-semibold">
             <BackButton />
             <span className="text-muted-foreground">|</span>
-            <span>Building management</span>
+            <span>{t("layout.buildingManagement")}</span>
           </div>
           <div className="flex items-center gap-4">
             <Link
               href="/manager"
               className="text-sm hover:underline"
             >
-              Home
+              {t("layout.home")}
             </Link>
             <Link
               href="/profile"
               className="text-sm hover:underline"
             >
-              Profile
+              {t("layout.profile")}
             </Link>
             <ThemeSwitcher />
             <AuthButton />

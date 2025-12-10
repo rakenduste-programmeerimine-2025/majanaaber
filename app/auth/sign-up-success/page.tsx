@@ -12,8 +12,10 @@ import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { resendVerificationEmail } from "@/app/actions/auth"
+import { useTranslations } from "next-intl"
 
 export default function Page() {
+  const t = useTranslations()
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +25,7 @@ export default function Page() {
 
   const handleResendEmail = async () => {
     if (!email) {
-      setError("Email not found. Please sign up again.")
+      setError(t("signup.emailNotFound"))
       return
     }
 
@@ -37,11 +39,13 @@ export default function Page() {
     if (result.success) {
       setMessage(
         result.remainingAttempts !== undefined && result.remainingAttempts > 0
-          ? `Verification email sent! You have ${result.remainingAttempts} resend${result.remainingAttempts !== 1 ? "s" : ""} remaining.`
-          : "Verification email sent! Please check your inbox."
+          ? t("signup.verificationSentRemaining", {
+              count: result.remainingAttempts,
+            })
+          : t("signup.verificationSent"),
       )
     } else {
-      setError(result.error || "Failed to send verification email")
+      setError(result.error || t("signup.failedSend"))
       if (result.rateLimited) {
         setIsRateLimited(true)
       }
@@ -56,16 +60,13 @@ export default function Page() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">
-                Thank you for signing up!
-              </CardTitle>
-              <CardDescription>Check your email to confirm</CardDescription>
+              <CardTitle className="text-2xl">{t("signup.thankYou")}</CardTitle>
+              <CardDescription>{t("signup.checkEmail")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-4">
                 <p className="text-sm text-muted-foreground">
-                  You&apos;ve successfully signed up. Please check your email to
-                  confirm your account before signing in.
+                  {t("signup.successMessage")}
                 </p>
 
                 {message && (
@@ -104,7 +105,7 @@ export default function Page() {
                     variant="outline"
                     className="w-full"
                   >
-                    {isLoading ? "Sending..." : "Resend verification email"}
+                    {isLoading ? t("signup.sending") : t("signup.resendButton")}
                   </Button>
                 )}
 
@@ -113,7 +114,7 @@ export default function Page() {
                     href="/auth/login"
                     className="underline underline-offset-4"
                   >
-                    Back to login
+                    {t("signup.backToLogin")}
                   </Link>
                 </div>
               </div>

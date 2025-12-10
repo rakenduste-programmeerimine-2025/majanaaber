@@ -6,8 +6,10 @@ import { usePeerMessages } from "@/hooks/use-peer-messages"
 import { ConversationsList } from "@/components/conversations-list"
 import { PeerChatBox } from "@/components/peer-chat-box"
 import { createClient } from "@/lib/supabase/client"
+import { useTranslations } from "next-intl"
 
 export default function ManagerMessagesPage() {
+  const t = useTranslations()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
@@ -88,19 +90,19 @@ export default function ManagerMessagesPage() {
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col items-center justify-center h-64">
           <h1 className="text-2xl font-bold text-destructive mb-4">
-            Access Denied
+            {t("messages.accessDenied.title")}
           </h1>
           <p className="text-muted-foreground">
-            You do not have permission to access this page.
+            {t("messages.accessDenied.description")}
           </p>
           <p className="text-muted-foreground mt-2">
-            Only building managers can access direct messages here.
+            {t("messages.accessDenied.note")}
           </p>
           <a
             href="/residence/messages"
             className="mt-4 text-primary hover:underline"
           >
-            Go to Resident Messages
+            {t("messages.accessDenied.link")}
           </a>
         </div>
       </div>
@@ -172,19 +174,21 @@ export default function ManagerMessagesPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Direct Messages</h1>
+        <h1 className="text-3xl font-bold">{t("messages.directMessages")}</h1>
         <button
           onClick={handleStartNewConversation}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
         >
-          + New Message
+          {t("messages.newMessageButton")}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1 bg-card rounded-lg border overflow-hidden">
           <div className="p-4 border-b bg-muted/30">
-            <h2 className="font-semibold">Conversations</h2>
+            <h2 className="font-semibold">
+              {t("messages.conversationsTitle")}
+            </h2>
           </div>
           <div className="overflow-y-auto max-h-[600px]">
             <ConversationsList
@@ -216,9 +220,11 @@ export default function ManagerMessagesPage() {
           ) : (
             <div className="h-[600px] border rounded-lg bg-card flex items-center justify-center text-muted-foreground">
               <div className="text-center">
-                <p className="text-lg font-medium">No conversation selected</p>
+                <p className="text-lg font-medium">
+                  {t("messages.noConversationSelected")}
+                </p>
                 <p className="text-sm mt-2">
-                  Select a conversation or start a new one
+                  {t("messages.selectOrStartConversation")}
                 </p>
               </div>
             </div>
@@ -230,7 +236,9 @@ export default function ManagerMessagesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">New Message</h2>
+              <h2 className="text-xl font-semibold">
+                {t("messages.newMessageHeader")}
+              </h2>
               <button
                 onClick={() => setShowNewMessageModal(false)}
                 className="text-muted-foreground hover:text-foreground"
@@ -242,7 +250,7 @@ export default function ManagerMessagesPage() {
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {residents.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4">
-                  No residents found
+                  {t("messages.noResidentsFound")}
                 </p>
               ) : (
                 residents.map(resident => (

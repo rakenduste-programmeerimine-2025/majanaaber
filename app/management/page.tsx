@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { BuildingCalendar } from "@/components/building-calendar"
 import Link from "next/link"
 import { MessageSquare } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 interface Building {
   id: string
@@ -53,6 +54,7 @@ interface Notice {
 }
 
 export default function ManagerDashboard() {
+  const t = useTranslations()
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
   const [showResidentsOverlay, setShowResidentsOverlay] = useState(false)
@@ -98,7 +100,7 @@ export default function ManagerDashboard() {
           error: userError,
         } = await supabase.auth.getUser()
         if (userError || !user) {
-          throw new Error("You must be logged in to access this page")
+          throw new Error(t("dashboard.errors.mustBeLoggedIn"))
         }
 
         setCurrentUserId(user.id)
@@ -114,7 +116,7 @@ export default function ManagerDashboard() {
 
           if (buildingError || !managerBuilding) {
             throw new Error(
-              "No building found. Please create a building first.",
+              t("dashboard.errors.noBuildingFound"),
             )
           }
 
@@ -134,7 +136,7 @@ export default function ManagerDashboard() {
 
         // Verify the current user is the manager
         if (data.manager_id !== user.id) {
-          throw new Error("You are not authorized to manage this building")
+          throw new Error(t("dashboard.errors.notAuthorized"))
         }
 
         setBuilding(data)
@@ -147,7 +149,7 @@ export default function ManagerDashboard() {
     }
 
     loadBuilding()
-  }, [buildingId])
+  }, [buildingId, t])
 
   useEffect(() => {
     const loadNotices = async () => {
@@ -160,7 +162,7 @@ export default function ManagerDashboard() {
         .order("event_date", { ascending: true })
 
       if (error) {
-        console.error("Error loading notices:", error)
+        console.error(t("dashboard.errors.loadingNotices"), error)
         return
       }
 
@@ -168,7 +170,7 @@ export default function ManagerDashboard() {
     }
 
     loadNotices()
-  }, [buildingId])
+  }, [buildingId, t])
   const loadResidents = async () => {
     if (!buildingId) return
 
@@ -205,7 +207,7 @@ export default function ManagerDashboard() {
 
       setResidents(mappedData as Resident[])
     } catch (err: any) {
-      console.error("Error loading residents:", err)
+      console.error(t("dashboard.errors.loadingResidents"), err)
     }
   }
 
@@ -229,7 +231,7 @@ export default function ManagerDashboard() {
       if (error) throw error
       setSearchResults(data || [])
     } catch (err: any) {
-      console.error("Error searching users:", err)
+      console.error(t("dashboard.errors.searchingUsers"), err)
     } finally {
       setIsSearching(false)
     }
@@ -246,27 +248,25 @@ export default function ManagerDashboard() {
           r.apartment_number === residentForm.apartmentNumber,
       )
     ) {
-      alert("This user is already a resident of this apartment")
+      alert(t("dashboard.errors.alreadyResident"))
       return
     }
 
     // Validate apartment number
     if (!residentForm.apartmentNumber.trim()) {
-      alert("Please enter an apartment number")
+      alert(t("dashboard.errors.apartmentRequired"))
       return
     }
 
     // Validate apartment number length
     if (residentForm.apartmentNumber.length > 20) {
-      alert("Apartment number is too long (maximum 20 characters)")
+      alert(t("dashboard.errors.apartmentTooLong"))
       return
     }
 
     // Validate apartment number format - only alphanumeric, hyphens, periods, slashes, and spaces
     if (!/^[a-zA-Z0-9\-\.\/\s]+$/.test(residentForm.apartmentNumber)) {
-      alert(
-        "Apartment number contains invalid characters. Use only letters, numbers, hyphens, periods, slashes, and spaces.",
-      )
+      alert(t("dashboard.errors.apartmentInvalid"))
       return
     }
 
@@ -293,12 +293,12 @@ export default function ManagerDashboard() {
       })
     } catch (err: any) {
       console.error("Error adding resident:", err)
-      alert("Failed to add resident: " + err.message)
+      alert(t("dashboard.errors.addResidentFailed") + err.message)
     }
   }
 
   const removeResident = async (residentId: string) => {
-    if (!confirm("Are you sure you want to remove this resident?")) return
+    if (!confirm(t("dashboard.errors.confirmRemoveResident"))) return
 
     try {
       const supabase = createClient()
@@ -313,7 +313,7 @@ export default function ManagerDashboard() {
       await loadResidents()
     } catch (err: any) {
       console.error("Error removing resident:", err)
-      alert("Failed to remove resident: " + err.message)
+      alert(t("dashboard.errors.removeResidentFailed") + err.message)
     }
   }
 
@@ -322,13 +322,13 @@ export default function ManagerDashboard() {
 
     // Validate apartment number
     if (!editingResident.apartmentNumber.trim()) {
-      alert("Please enter an apartment number")
+      alert(t("dashboard.errors.apartmentRequired"))
       return
     }
 
     // Validate apartment number length
     if (editingResident.apartmentNumber.length > 20) {
-      alert("Apartment number is too long (maximum 20 characters)")
+      alert(t("dashboard.errors.apartmentTooLong"))
       return
     }
 
