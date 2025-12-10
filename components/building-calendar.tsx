@@ -91,7 +91,7 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
 
           // Check if this is today
           const today = new Date()
-          const isToday = 
+          const isToday =
             today.getFullYear() === year &&
             today.getMonth() === month &&
             today.getDate() === day
@@ -100,11 +100,12 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
             <button
               key={idx}
               className={`p-2 rounded text-sm relative transition-colors
-                  ${isToday 
-                    ? "bg-blue-500 text-white font-semibold hover:bg-blue-600"
-                    : dayEvents.length > 0 
-                      ? "bg-primary/20 hover:bg-primary/30" 
-                      : "bg-muted/30 hover:bg-muted/50"
+                  ${
+                    isToday
+                      ? "bg-blue-500 text-white font-semibold hover:bg-blue-600"
+                      : dayEvents.length > 0
+                        ? "bg-primary/20 hover:bg-primary/30"
+                        : "bg-muted/30 hover:bg-muted/50"
                   }
                   `}
             >
