@@ -14,7 +14,9 @@ export default function Page() {
           ← Back to Main Page
         </Link>
       </header>
+      <div className="w-full max-w-sm">
         <SignUpForm />
       </div>
+    </div>
   );
 }

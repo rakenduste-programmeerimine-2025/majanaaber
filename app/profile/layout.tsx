@@ -1,7 +1,7 @@
 import { AuthButton } from "@/components/auth-button"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { BackButton } from "@/components/back-button"
-import Link from "next/link"
+import { HomeLink } from "@/components/home-link"
 
 export default function ProfileLayout({
   children,
@@ -15,16 +15,11 @@ export default function ProfileLayout({
         <div className="max-w-7xl mx-auto flex justify-between items-center p-3 px-5">
           <div className="flex gap-5 items-center font-semibold">
             <BackButton />
-            <span className="text-gray-400">|</span>
+            <span className="text-muted-foreground">|</span>
             <span>Profile</span>
             </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/resident"
-              className="text-sm hover:underline"
-            >
-              Home
-            </Link>
+            <HomeLink className="text-sm hover:underline" />
             <ThemeSwitcher />
             <AuthButton />
           </div>
