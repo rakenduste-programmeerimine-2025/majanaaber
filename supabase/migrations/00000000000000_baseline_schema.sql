@@ -863,7 +863,65 @@ CREATE POLICY "Users can manage their notification preferences"
   USING (user_id = auth.uid());
 
 -- =====================================================
--- 8. REALTIME SUBSCRIPTIONS
+-- 8. STORAGE BUCKETS
+-- =====================================================
+
+-- Create storage buckets for file attachments
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES 
+  ('notice-attachments', 'notice-attachments', false, 52428800, '{"image/*", "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}'),
+  ('message-attachments', 'message-attachments', false, 52428800, '{"image/*", "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}')
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for notice attachments
+CREATE POLICY "Users can view notice attachments"
+  ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'notice-attachments');
+
+CREATE POLICY "Building managers can upload notice attachments"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'notice-attachments' AND
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+  );
+
+CREATE POLICY "Building managers can delete notice attachments"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'notice-attachments' AND
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+  );
+
+-- Storage policies for message attachments
+CREATE POLICY "Users can view their message attachments"
+  ON storage.objects
+  FOR SELECT
+  USING (
+    bucket_id = 'message-attachments' AND
+    (auth.uid()::text = split_part(name, '/', 1))
+  );
+
+CREATE POLICY "Users can upload their own message attachments"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'message-attachments' AND
+    (auth.uid()::text = split_part(name, '/', 1))
+  );
+
+CREATE POLICY "Users can delete their own message attachments"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'message-attachments' AND
+    (auth.uid()::text = split_part(name, '/', 1))
+  );
+
+-- =====================================================
+-- 9. REALTIME SUBSCRIPTIONS
 -- =====================================================
 
 -- Enable realtime for key tables
