@@ -34,21 +34,75 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
       // Set up real-time subscription for notices changes
       const channel = supabase.channel(`calendar_events_${buildingId}`)
 
-      channel
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "notices",
-            filter: `building_id=eq.${buildingId}`,
-          },
-          () => loadEvents(),
-        )
-        .subscribe()
+      // Subscribe to INSERT events
+      channel.on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notices",
+          filter: `building_id=eq.${buildingId}`,
+        },
+        (payload) => {
+          if (payload.new?.event_date) {
+            loadEvents()
+          }
+        }
+      )
+
+      // Subscribe to UPDATE events  
+      channel.on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public", 
+          table: "notices",
+          filter: `building_id=eq.${buildingId}`,
+        },
+        (payload) => {
+          // Reload if event_date was added, removed, or changed
+          if (payload.old?.event_date || payload.new?.event_date) {
+            loadEvents()
+          }
+        }
+      )
+
+      // Subscribe to DELETE events
+      channel.on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notices", 
+          filter: `building_id=eq.${buildingId}`,
+        },
+        (payload) => {
+          // Always reload on delete since we can't check if deleted notice had event_date
+          loadEvents()
+        }
+      )
+
+      channel.subscribe()
+
+      // Fallback: Listen to local events from notice board as backup
+      const handleNoticeDeleted = (data: { buildingId: string }) => {
+        if (data.buildingId === buildingId) {
+          loadEvents()
+        }
+      }
+
+      // Dynamically import to avoid dependency issues
+      import("@/lib/events").then(({ eventBus, EVENTS }) => {
+        eventBus.on(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
+      })
 
       return () => {
         channel.unsubscribe()
+        
+        // Clean up event bus listener
+        import("@/lib/events").then(({ eventBus, EVENTS }) => {
+          eventBus.off(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
+        })
       }
     }
   }, [buildingId])
