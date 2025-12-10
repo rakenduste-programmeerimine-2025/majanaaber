@@ -123,7 +123,10 @@ export default function ResidentHubPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Apartments</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold">My Apartments</h1>
+            <Badge variant="outline">{apartments.length}</Badge>
+          </div>
           <p className="text-muted-foreground">
             View and access your apartments
           </p>
@@ -134,10 +137,6 @@ export default function ResidentHubPage() {
             <p className="text-destructive">{error}</p>
           </div>
         )}
-
-        <div className="flex items-center justify-between mb-6">
-          <Badge variant="outline">{apartments.length} apartments</Badge>
-        </div>
 
         {apartments.length > 0 && (
           <div className="relative w-full mb-6">

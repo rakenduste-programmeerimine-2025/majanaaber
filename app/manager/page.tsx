@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { changeBuildingManager } from "@/app/actions/auth"
 import { AddBuildingForm } from "@/components/add-building-form"
@@ -54,6 +54,9 @@ export default function ManagerHubPage() {
     full_address: string
     city: string
   } | null>(null)
+
+  // Ref to store timeout for search debouncing
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const loadData = async () => {
     try {
@@ -894,8 +897,10 @@ export default function ManagerHubPage() {
                           const value = e.target.value
                           setSearchUserQuery(value)
                           // Debounce search
-                          clearTimeout(window.searchTimeout)
-                          window.searchTimeout = setTimeout(() => {
+                          if (searchTimeoutRef.current) {
+                            clearTimeout(searchTimeoutRef.current)
+                          }
+                          searchTimeoutRef.current = setTimeout(() => {
                             searchUsersForManagerChange(value)
                           }, 300)
                         }}
