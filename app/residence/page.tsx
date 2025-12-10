@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { Building } from "@/lib/types/chat"
 import { useBuildingMessages } from "@/hooks/use-building-messages"
@@ -19,6 +20,8 @@ export default function ResidentDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const buildingIdFromUrl = searchParams.get("building")
   const supabase = createClient()
 
   const {
@@ -50,44 +53,65 @@ export default function ResidentDashboard() {
         setCurrentUserId(user.id)
         let userBuilding = null
 
-        // First get user profile to check role
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single()
-
-        // Only check for managed buildings if user is actually a building manager
-        if (profile?.role === "building_manager") {
-          const { data: managerBuilding } = await supabase
-            .from("buildings")
-            .select("id, full_address")
-            .eq("manager_id", user.id)
-            .limit(1)
+        // If building ID is specified in URL, try to load that specific building
+        if (buildingIdFromUrl) {
+          // Verify user has access to this building (as resident or manager)
+          const { data: residentAccess } = await supabase
+            .from("building_residents")
+            .select(
+              "building_id, buildings!building_residents_building_id_fkey(id, full_address)",
+            )
+            .eq("profile_id", user.id)
+            .eq("building_id", buildingIdFromUrl)
+            .eq("is_approved", true)
             .single()
 
-          if (managerBuilding) {
-            userBuilding = managerBuilding
+          if (residentAccess) {
+            userBuilding = residentAccess.buildings as any
+          } else {
+            // Check if they manage this building
+            const { data: managerAccess } = await supabase
+              .from("buildings")
+              .select("id, full_address")
+              .eq("id", buildingIdFromUrl)
+              .eq("manager_id", user.id)
+              .single()
+
+            if (managerAccess) {
+              userBuilding = managerAccess
+            }
           }
         }
 
-        // If no managed building found, check for resident building
+        // If no specific building from URL or no access, fall back to default logic
         if (!userBuilding) {
+          // For /residence page, prioritize residential building over managed building
+          // Check for resident building first
           const { data: residentData, error: residentError } = await supabase
             .from("building_residents")
-            .select("building_id, buildings(id, full_address)")
+            .select(
+              "building_id, buildings!building_residents_building_id_fkey(id, full_address)",
+            )
             .eq("profile_id", user.id)
             .eq("is_approved", true)
             .limit(1)
             .single()
 
-          if (residentError || !residentData) {
-            setError("You are not assigned to any building yet")
-            setLoading(false)
-            return
-          }
+          if (!residentError && residentData) {
+            userBuilding = residentData.buildings as any
+          } else {
+            // If no resident building, check if they manage a building (fallback)
+            const { data: managerBuilding } = await supabase
+              .from("buildings")
+              .select("id, full_address")
+              .eq("manager_id", user.id)
+              .limit(1)
+              .single()
 
-          userBuilding = residentData.buildings as any
+            if (managerBuilding) {
+              userBuilding = managerBuilding
+            }
+          }
         }
 
         if (!userBuilding) {
@@ -109,7 +133,7 @@ export default function ResidentDashboard() {
     }
 
     loadBuilding()
-  }, [])
+  }, [buildingIdFromUrl])
 
   if (loading) {
     return (

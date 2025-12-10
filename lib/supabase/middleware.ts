@@ -101,24 +101,47 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Protect /management routes - only building managers can access
+    // Protect /management routes - check if resident is also a manager
     if (
       pathname.startsWith("/management") &&
       userRole !== "building_manager"
     ) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/resident";
-      return NextResponse.redirect(url);
+      // Check if the resident is also a building manager
+      const { data: managerRecord } = await supabase
+        .from("buildings")
+        .select("id")
+        .eq("manager_id", user.sub)
+        .limit(1)
+        .single();
+
+      // Only redirect if they don't manage any buildings
+      if (!managerRecord) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/resident";
+        return NextResponse.redirect(url);
+      }
     }
 
-    // Protect /residence routes - only residents can access
+    // Protect /residence routes - check if building manager is also a resident
     if (
       pathname.startsWith("/residence") &&
       userRole === "building_manager"
     ) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/manager";
-      return NextResponse.redirect(url);
+      // Check if the building manager is also a resident somewhere
+      const { data: residentRecord } = await supabase
+        .from("building_residents")
+        .select("id")
+        .eq("profile_id", user.sub)
+        .eq("is_approved", true)
+        .limit(1)
+        .single();
+
+      // Only redirect if they're not a resident anywhere
+      if (!residentRecord) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/manager";
+        return NextResponse.redirect(url);
+      }
     }
   }
 
