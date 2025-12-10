@@ -11,7 +11,7 @@ export default function Page() {
           href="/"
           className="text-sm px-3 py-1 border rounded hover:bg-muted"
         >
-          ← Back
+          ← Back to Main Page
         </Link>
       </header>
 

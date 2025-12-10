@@ -8,10 +8,10 @@ export default function Page() {
       {/* Minimal header */}
       <header className="w-full max-w-sm mb-6 flex items-center justify-between">
         <Link
-          href="/auth/login"
+          href="/"
           className="text-sm px-3 py-1 border rounded hover:bg-muted"
         >
-          ← Back
+          ← Back to Main Page
         </Link>
       </header>
         <SignUpForm />
