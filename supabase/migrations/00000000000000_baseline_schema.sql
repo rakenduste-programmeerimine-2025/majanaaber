@@ -576,26 +576,61 @@ ALTER TABLE public.peer_message_read_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.peer_message_attachments ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
+-- HELPER FUNCTIONS
+-- =====================================================
+
+-- Function to get building IDs for a user (security definer to bypass RLS)
+CREATE OR REPLACE FUNCTION public.get_user_building_ids(user_id UUID)
+RETURNS UUID[]
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  building_ids UUID[];
+BEGIN
+  SELECT ARRAY_AGG(DISTINCT building_id) 
+  INTO building_ids
+  FROM building_residents 
+  WHERE profile_id = user_id AND is_approved = true;
+  
+  RETURN COALESCE(building_ids, ARRAY[]::UUID[]);
+END;
+$$;
+
+-- =====================================================
 -- PROFILES POLICIES
 -- =====================================================
 
--- Users can read their own profile
-CREATE POLICY "Users can read their own profile"
-  ON public.profiles
-  FOR SELECT
-  USING (auth.uid() = id);
-
--- Building managers can view all profiles to find residents
-CREATE POLICY "Building managers can view all profiles"
+-- Profiles policy using helper function to avoid RLS conflicts
+CREATE POLICY "Users can view profiles in appropriate contexts"
   ON public.profiles
   FOR SELECT
   USING (
     -- Users can always see their own profile
     auth.uid() = id
     OR
-    -- Building managers can see all profiles (check if they manage any buildings)
+    -- Building managers can see all profiles (check via auth metadata)
+    (auth.jwt() ->> 'role')::text = 'building_manager'
+    OR
+    -- Building managers can see all profiles (fallback check via buildings table)
     EXISTS (
       SELECT 1 FROM public.buildings WHERE manager_id = auth.uid()
+    )
+    OR
+    -- Residents can see profiles of other people in their buildings using helper function
+    id = ANY(
+      SELECT br.profile_id 
+      FROM building_residents br 
+      WHERE br.building_id = ANY(public.get_user_building_ids(auth.uid()))
+      AND br.is_approved = true
+    )
+    OR
+    -- Users can see building managers for buildings they're in
+    id IN (
+      SELECT b.manager_id 
+      FROM buildings b 
+      WHERE b.id = ANY(public.get_user_building_ids(auth.uid()))
     )
   );
 
@@ -611,6 +646,13 @@ CREATE POLICY "Users can update their own profile"
   FOR UPDATE
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
+
+-- =====================================================
+-- BUILDING RESIDENTS POLICIES (DISABLED FOR DEBUGGING)
+-- =====================================================
+
+-- Temporarily disabled building_residents policies while RLS is off
+-- Will re-enable after confirming messaging functionality works
 
 -- =====================================================
 -- BUILDINGS POLICIES
@@ -648,13 +690,19 @@ CREATE POLICY "Managers can delete their buildings"
 -- BUILDING RESIDENTS POLICIES
 -- =====================================================
 
--- Users can read their own resident records and managers can read their building residents
-CREATE POLICY "Users can read their own resident records"
+-- Users can read their own resident records, managers can read their building residents, and residents can see other residents in same building
+CREATE POLICY "Users can read building resident records"
   ON public.building_residents
   FOR SELECT
   USING (
+    -- Users can see their own resident record
     profile_id = auth.uid()
-    OR (SELECT manager_id FROM public.buildings WHERE id = building_residents.building_id) = auth.uid()
+    OR
+    -- Building managers can see all residents in their buildings
+    (SELECT manager_id FROM public.buildings WHERE id = building_residents.building_id) = auth.uid()
+    OR
+    -- Residents can see other residents in buildings they belong to
+    building_id = ANY(public.get_user_building_ids(auth.uid()))
   );
 
 -- Building managers can insert residents
@@ -736,6 +784,62 @@ CREATE POLICY "Building managers can delete notices"
 -- MESSAGING POLICIES
 -- =====================================================
 
+-- Message attachments policies
+CREATE POLICY "Users can view message attachments for their buildings"
+  ON public.message_attachments
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.building_messages bm
+      WHERE bm.id = message_attachments.message_id
+      AND (
+        -- Building managers can see all messages
+        (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+        OR
+        -- Residents can see messages for buildings they belong to
+        EXISTS (
+          SELECT 1 FROM public.building_residents br
+          WHERE br.building_id = bm.building_id
+          AND br.profile_id = auth.uid()
+          AND br.is_approved = true
+        )
+      )
+    )
+  );
+
+CREATE POLICY "Users can create message attachments for their buildings"
+  ON public.message_attachments
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.building_messages bm
+      WHERE bm.id = message_attachments.message_id
+      AND (
+        -- Building managers can create attachments
+        (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+        OR
+        -- Residents can create attachments for buildings they belong to
+        EXISTS (
+          SELECT 1 FROM public.building_residents br
+          WHERE br.building_id = bm.building_id
+          AND br.profile_id = auth.uid()
+          AND br.is_approved = true
+        )
+      )
+    )
+  );
+
+CREATE POLICY "Users can delete their own message attachments"
+  ON public.message_attachments
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.building_messages bm
+      WHERE bm.id = message_attachments.message_id
+      AND bm.sender_id = auth.uid()
+    )
+  );
+
 -- Building messages policies
 CREATE POLICY "Users can view messages in their buildings"
   ON public.building_messages
@@ -814,6 +918,17 @@ CREATE POLICY "Users can send messages in their conversations"
     )
   );
 
+CREATE POLICY "Users can update their own messages"
+  ON public.peer_messages
+  FOR UPDATE
+  USING (sender_id = auth.uid())
+  WITH CHECK (sender_id = auth.uid());
+
+CREATE POLICY "Users can delete their own messages"
+  ON public.peer_messages
+  FOR DELETE
+  USING (sender_id = auth.uid());
+
 -- =====================================================
 -- ADDITIONAL POLICIES (Reactions, Read Receipts, etc.)
 -- =====================================================
@@ -856,6 +971,33 @@ CREATE POLICY "Users can manage their peer message read receipts"
   FOR ALL
   USING (user_id = auth.uid());
 
+-- Peer message reactions
+CREATE POLICY "Users can manage reactions on peer messages they have access to"
+  ON public.peer_message_reactions
+  FOR ALL
+  USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM public.peer_messages pm
+      JOIN public.conversations c ON pm.conversation_id = c.id
+      WHERE pm.id = peer_message_reactions.message_id
+      AND (c.participant1_id = auth.uid() OR c.participant2_id = auth.uid())
+    )
+  );
+
+-- Peer message attachments
+CREATE POLICY "Users can manage attachments in their conversations"
+  ON public.peer_message_attachments
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.peer_messages pm
+      JOIN public.conversations c ON pm.conversation_id = c.id
+      WHERE pm.id = peer_message_attachments.message_id
+      AND (c.participant1_id = auth.uid() OR c.participant2_id = auth.uid())
+    )
+  );
+
 -- Notification preferences
 CREATE POLICY "Users can manage their notification preferences"
   ON public.notification_preferences
@@ -863,7 +1005,96 @@ CREATE POLICY "Users can manage their notification preferences"
   USING (user_id = auth.uid());
 
 -- =====================================================
--- 8. REALTIME SUBSCRIPTIONS
+-- 8. STORAGE BUCKETS
+-- =====================================================
+
+-- Create storage buckets for file attachments
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES 
+  ('notice-attachments', 'notice-attachments', false, 52428800, '{"image/*", "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}'),
+  ('message-attachments', 'message-attachments', false, 52428800, '{"image/*", "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}')
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for notice attachments
+CREATE POLICY "Users can view notice attachments"
+  ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'notice-attachments');
+
+CREATE POLICY "Building managers can upload notice attachments"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'notice-attachments' AND
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+  );
+
+CREATE POLICY "Building managers can delete notice attachments"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'notice-attachments' AND
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+  );
+
+-- Storage policies for message attachments
+CREATE POLICY "Users can view message attachments in their conversations"
+  ON storage.objects
+  FOR SELECT
+  USING (
+    bucket_id = 'message-attachments' AND
+    (
+      -- Users can view their own uploaded attachments
+      (auth.uid()::text = split_part(name, '/', 1))
+      OR
+      -- Users can view attachments in peer conversations they participate in
+      EXISTS (
+        SELECT 1 FROM public.peer_message_attachments pma
+        JOIN public.peer_messages pm ON pm.id = pma.message_id
+        JOIN public.conversations c ON c.id = pm.conversation_id
+        WHERE pma.file_path = name
+        AND (c.participant1_id = auth.uid() OR c.participant2_id = auth.uid())
+      )
+      OR
+      -- Users can view attachments in building messages they have access to
+      EXISTS (
+        SELECT 1 FROM public.message_attachments ma
+        JOIN public.building_messages bm ON bm.id = ma.message_id
+        WHERE ma.file_path = name
+        AND (
+          -- Building managers can see all messages
+          (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+          OR
+          -- Residents can see messages for buildings they belong to
+          EXISTS (
+            SELECT 1 FROM public.building_residents br
+            WHERE br.building_id = bm.building_id
+            AND br.profile_id = auth.uid()
+            AND br.is_approved = true
+          )
+        )
+      )
+    )
+  );
+
+CREATE POLICY "Users can upload their own message attachments"
+  ON storage.objects
+  FOR INSERT
+  WITH CHECK (
+    bucket_id = 'message-attachments' AND
+    (auth.uid()::text = split_part(name, '/', 1))
+  );
+
+CREATE POLICY "Users can delete their own message attachments"
+  ON storage.objects
+  FOR DELETE
+  USING (
+    bucket_id = 'message-attachments' AND
+    (auth.uid()::text = split_part(name, '/', 1))
+  );
+
+-- =====================================================
+-- 9. REALTIME SUBSCRIPTIONS
 -- =====================================================
 
 -- Enable realtime for key tables
