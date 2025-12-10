@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { Search, Edit2, Trash2, User } from "lucide-react"
 import { ErrorDisplay } from "@/components/ui/error-display"
 import { useErrorHandler } from "@/hooks/use-error-handler"
 
@@ -17,7 +17,6 @@ interface Building {
   id: string
   full_address: string
   city: string
-  apartment_count: number | null
   created_at: string
 }
 
@@ -50,6 +49,11 @@ export default function ManagerHubPage() {
   const [isSearchingUsers, setIsSearchingUsers] = useState(false)
   const [showAllApartments, setShowAllApartments] = useState(false)
   const [showAllBuildings, setShowAllBuildings] = useState(false)
+  const [editBuildingId, setEditBuildingId] = useState<string | null>(null)
+  const [editBuildingData, setEditBuildingData] = useState<{
+    full_address: string
+    city: string
+  } | null>(null)
 
   const loadData = async () => {
     try {
@@ -65,7 +69,7 @@ export default function ManagerHubPage() {
 
       const { data: buildingsData, error: buildingsError } = await supabase
         .from("buildings")
-        .select("id, full_address, city, apartment_count, created_at")
+        .select("id, full_address, city, created_at")
         .eq("manager_id", user.id)
         .order("created_at", { ascending: false })
 
@@ -172,6 +176,40 @@ export default function ManagerHubPage() {
       loadData()
     } catch (err: any) {
       handleError(err, "Failed to delete building")
+    }
+  }
+
+  const handleEditBuilding = (building: Building) => {
+    setEditBuildingId(building.id)
+    setEditBuildingData({
+      full_address: building.full_address,
+      city: building.city,
+    })
+    loadUsersForManagerChange()
+  }
+
+  const handleUpdateBuilding = async () => {
+    if (!editBuildingId || !editBuildingData) return
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("buildings")
+        .update({
+          full_address: editBuildingData.full_address,
+          city: editBuildingData.city,
+        })
+        .eq("id", editBuildingId)
+
+      if (error) {
+        throw error
+      }
+
+      setEditBuildingId(null)
+      setEditBuildingData(null)
+      loadData()
+    } catch (err: any) {
+      handleError(err, "Failed to update building")
     }
   }
 
@@ -568,20 +606,8 @@ export default function ManagerHubPage() {
                               </p>
                             </div>
 
-                            {building.apartment_count !== null && (
-                              <div>
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                                  Apartments
-                                </p>
-                                <p className="font-semibold">
-                                  {building.apartment_count}
-                                </p>
-                              </div>
-                            )}
-
                             <div className="flex gap-2 pt-3">
                               <Button
-                                variant="outline"
                                 size="sm"
                                 className="flex-1"
                                 asChild
@@ -595,21 +621,9 @@ export default function ManagerHubPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                  setChangeManagerBuildingId(building.id)
-                                  loadUsersForManagerChange()
-                                }}
+                                onClick={() => handleEditBuilding(building)}
                               >
-                                Change Manager
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() =>
-                                  handleDeleteBuilding(building.id)
-                                }
-                              >
-                                Delete
+                                Edit
                               </Button>
                             </div>
                           </div>
@@ -638,19 +652,9 @@ export default function ManagerHubPage() {
                                   {building.city}
                                 </p>
                               </div>
-                              {building.apartment_count !== null && (
-                                <div>
-                                  <p className="text-xs text-muted-foreground">
-                                    Apartments
-                                  </p>
-                                  <p className="font-semibold text-sm">
-                                    {building.apartment_count}
-                                  </p>
-                                </div>
-                              )}
+
                               <div className="flex gap-1 pt-2">
                                 <Button
-                                  variant="outline"
                                   size="sm"
                                   className="flex-1 text-xs"
                                   asChild
@@ -664,12 +668,10 @@ export default function ManagerHubPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="flex-1 text-xs"
-                                  onClick={() =>
-                                    setChangeManagerBuildingId(building.id)
-                                  }
+                                  className="text-xs px-2"
+                                  onClick={() => handleEditBuilding(building)}
                                 >
-                                  Change
+                                  Edit
                                 </Button>
                               </div>
                             </div>
@@ -775,6 +777,173 @@ export default function ManagerHubPage() {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Edit Building Overlay */}
+        {editBuildingId && editBuildingData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+              <CardContent className="pt-6">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-semibold">Edit Building</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditBuildingId(null)
+                        setEditBuildingData(null)
+                        setSearchUserQuery("")
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+
+                  {/* Building Information Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-medium flex items-center gap-2">
+                      <Edit2 className="h-5 w-5" />
+                      Building Information
+                    </h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Address</label>
+                        <Input
+                          type="text"
+                          value={editBuildingData.full_address}
+                          onChange={e =>
+                            setEditBuildingData({
+                              ...editBuildingData,
+                              full_address: e.target.value,
+                            })
+                          }
+                          placeholder="Enter full address"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">City</label>
+                        <Input
+                          type="text"
+                          value={editBuildingData.city}
+                          onChange={e =>
+                            setEditBuildingData({
+                              ...editBuildingData,
+                              city: e.target.value,
+                            })
+                          }
+                          placeholder="Enter city"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleUpdateBuilding}
+                        className="flex-1"
+                      >
+                        Save Changes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditBuildingId(null)
+                          setEditBuildingData(null)
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Change Manager Section */}
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="text-lg font-medium flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Change Manager
+                    </h4>
+
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search by name or email..."
+                        value={searchUserQuery}
+                        onChange={e => setSearchUserQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto space-y-2">
+                      {isSearchingUsers ? (
+                        <p className="text-center text-muted-foreground py-4">
+                          Loading users...
+                        </p>
+                      ) : filteredUsers.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4">
+                          No users found
+                        </p>
+                      ) : (
+                        filteredUsers.slice(0, 5).map(user => (
+                          <div
+                            key={user.id}
+                            className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/30"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {user.email}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                handleChangeManager(editBuildingId, user.id)
+                                setEditBuildingId(null)
+                                setEditBuildingData(null)
+                              }}
+                            >
+                              Select
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Delete Building Section */}
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="text-lg font-medium flex items-center gap-2 text-destructive">
+                      <Trash2 className="h-5 w-5" />
+                      Delete Building
+                    </h4>
+
+                    <p className="text-sm text-muted-foreground">
+                      This action cannot be undone. All associated data will be
+                      permanently removed.
+                    </p>
+
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        handleDeleteBuilding(editBuildingId)
+                        setEditBuildingId(null)
+                        setEditBuildingData(null)
+                      }}
+                      className="w-full"
+                    >
+                      Delete Building
+                    </Button>
                   </div>
                 </div>
               </CardContent>
