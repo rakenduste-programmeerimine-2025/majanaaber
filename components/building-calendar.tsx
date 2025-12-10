@@ -26,9 +26,32 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
       setEvents(data || [])
     }
   }
+
   useEffect(() => {
-    if (buildingId) loadEvents()
-  }, [buildingId, currentDate])
+    if (buildingId) {
+      loadEvents()
+
+      // Set up real-time subscription for notices changes
+      const channel = supabase.channel(`calendar_events_${buildingId}`)
+
+      channel
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "notices",
+            filter: `building_id=eq.${buildingId}`,
+          },
+          () => loadEvents(),
+        )
+        .subscribe()
+
+      return () => {
+        channel.unsubscribe()
+      }
+    }
+  }, [buildingId])
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
