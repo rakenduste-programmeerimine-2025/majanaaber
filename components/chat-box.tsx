@@ -926,7 +926,7 @@ export function ChatBox({
               <input
                 ref={inputRef}
                 type="text"
-                className="border border-border rounded p-2 flex-1 bg-background text-foreground placeholder-muted-foreground focus:outline-none"
+                className="border border-border rounded p-2 flex-1 bg-card text-foreground placeholder-muted-foreground focus:outline-none"
                 value={input}
                 onChange={e => {
                   if (e.target.value.length <= MAX_MESSAGE_LENGTH) {
@@ -976,7 +976,7 @@ export function ChatBox({
 
         {messageToDelete && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-background rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+            <div className="bg-card rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
               <h3 className="text-lg font-semibold mb-2">Delete Message</h3>
               <p className="text-muted-foreground mb-6">
                 Are you sure you want to delete this message? This action cannot

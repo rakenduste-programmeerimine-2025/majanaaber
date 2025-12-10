@@ -369,7 +369,7 @@ export function PeerChatBox({
 
   return (
     <>
-      <section className="flex flex-col h-[600px] border rounded-lg bg-background">
+      <section className="flex flex-col h-[600px] border rounded-lg bg-card">
         <div className="border-b p-4 bg-card">
           <h2 className="text-lg font-semibold">{otherUserName}</h2>
         </div>
@@ -768,7 +768,7 @@ export function PeerChatBox({
 
       {messageToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-background rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+          <div className="bg-card rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
             <h3 className="text-lg font-semibold mb-2">Delete Message</h3>
             <p className="text-muted-foreground mb-6">
               Are you sure you want to delete this message? This action cannot
