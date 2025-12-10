@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { changeBuildingManager } from "@/app/actions/auth"
 import { AddBuildingForm } from "@/components/add-building-form"
@@ -98,7 +99,7 @@ export default function ManagerHubPage() {
           : item.building,
       }))
       setApartments(mappedApartments as Apartment[])
-    } catch (err: any) {
+    } catch (err) {
       handleError(err, "Failed to load data")
     } finally {
       setLoading(false)
@@ -168,7 +169,7 @@ export default function ManagerHubPage() {
       }
 
       loadData()
-    } catch (err: any) {
+    } catch (err) {
       handleError(err, "Failed to delete building")
     }
   }
@@ -196,9 +197,9 @@ export default function ManagerHubPage() {
       if (error) throw error
 
       setAllUsers(data || [])
-    } catch (err: any) {
-      console.error("Error loading users:", err)
-      alert("Failed to load users: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to load users: " + message)
     } finally {
       setIsSearchingUsers(false)
     }
@@ -228,7 +229,7 @@ export default function ManagerHubPage() {
 
       // Hard refresh to ensure middleware runs and new user is redirected to appropriate dashboard
       window.location.reload()
-    } catch (err: any) {
+    } catch (err) {
       handleError(err, "Failed to change manager")
     }
   }

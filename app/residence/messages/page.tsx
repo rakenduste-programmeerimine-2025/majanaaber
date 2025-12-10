@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { useConversations } from "@/hooks/use-conversations"
 import { usePeerMessages } from "@/hooks/use-peer-messages"
 import { ConversationsList } from "@/components/conversations-list"
@@ -110,7 +111,7 @@ export default function MessagesPage() {
     }
 
     if (!buildingId) {
-      alert("You are not associated with any building.")
+      toast.error("You are not associated with any building.")
       return
     }
 

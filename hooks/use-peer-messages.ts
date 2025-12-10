@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import type { RealtimeChannel } from "@supabase/supabase-js"
 import type { PeerMessage } from "@/lib/types/chat"
 
 const MAX_MESSAGE_LENGTH = 1000
@@ -14,7 +16,7 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
   const [isSending, setIsSending] = useState(false)
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const channelRef = useRef<any>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
   const userNameRef = useRef<string>("")
   const userIdRef = useRef<string>("")
   const supabase = createClient()
@@ -223,7 +225,7 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
     }
 
     const messagesWithReplies = await Promise.all(
-      (data || []).map(async (msg: any) => {
+      (data || []).map(async (msg) => {
         if (msg.reply_to_message_id) {
           const { data: repliedMsg } = await supabase
             .from("peer_messages")
@@ -336,9 +338,9 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           )
         }
       }
-    } catch (err: any) {
-      console.error("Error sending message:", err)
-      alert("Failed to send message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to send message: " + message)
     } finally {
       setIsSending(false)
     }
@@ -368,9 +370,9 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           payload: { messageId },
         })
       }
-    } catch (err: any) {
-      console.error("Error deleting message:", err)
-      alert("Failed to delete message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to delete message: " + message)
     }
   }
 
@@ -404,9 +406,9 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           payload: { messageId, content: newContent.trim(), edited_at },
         })
       }
-    } catch (err: any) {
-      console.error("Error editing message:", err)
-      alert("Failed to edit message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to edit message: " + message)
     }
   }
 
@@ -491,16 +493,17 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           ),
         )
       }
-    } catch (err: any) {
-      if (err.code === '23505') {
+    } catch (err) {
+      // Handle duplicate key constraint violation (PostgreSQL error code 23505)
+      const pgError = err as { code?: string }
+      if (pgError.code === "23505") {
         // Race condition: reaction was added between our check and insert
-        // This is expected behavior in real-time systems, not an error
-        console.debug("Reaction already exists (race condition):", { messageId, emoji })
         return
       }
 
-      console.error("Error adding reaction:", err)
-      alert("Failed to add reaction: " + err.message)
+      // Real error - show to user
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to add reaction: " + message)
     }
   }
 
@@ -531,9 +534,9 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
             : msg,
         ),
       )
-    } catch (err: any) {
-      console.error("Error removing reaction:", err)
-      alert("Failed to remove reaction: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to remove reaction: " + message)
     }
   }
 
@@ -585,9 +588,11 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           ),
         )
       }
-    } catch (err: any) {
-      if (err.code !== '23505') {
-        console.error("Error marking message as read:", err)
+    } catch (err) {
+      // Silently ignore duplicate key errors (PostgreSQL error code 23505)
+      const pgError = err as { code?: string }
+      if (pgError.code !== "23505") {
+        // Silent failure for read receipts - not critical
       }
     }
   }

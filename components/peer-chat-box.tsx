@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, memo } from "react"
+import { toast } from "sonner"
 import type { PeerMessage, PeerAttachment } from "@/lib/types/chat"
 import { formatTimestamp } from "@/lib/utils/date-formatting"
 import { createClient } from "@/lib/supabase/client"
@@ -272,7 +273,7 @@ export function PeerChatBox({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length + selectedFiles.length > MAX_FILES_PER_MESSAGE) {
-      alert(
+      toast.error(
         `You can only upload up to ${MAX_FILES_PER_MESSAGE} files per message`,
       )
       return

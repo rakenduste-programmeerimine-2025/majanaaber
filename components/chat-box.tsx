@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef, memo } from "react"
-import type { Message, Attachment } from "@/lib/types/chat"
+import { toast } from "sonner"
+import type { Message, Attachment, Reaction } from "@/lib/types/chat"
 import { formatTimestamp } from "@/lib/utils/date-formatting"
 import { createClient } from "@/lib/supabase/client"
 
@@ -294,7 +295,7 @@ export function ChatBox({
     const availableSlots = MAX_FILES_PER_MESSAGE - currentCount
 
     if (availableSlots <= 0) {
-      alert(`Maximum ${MAX_FILES_PER_MESSAGE} files per message`)
+      toast.error(`Maximum ${MAX_FILES_PER_MESSAGE} files per message`)
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
@@ -303,7 +304,7 @@ export function ChatBox({
 
     const filesToAdd = files.slice(0, availableSlots)
     if (files.length > availableSlots) {
-      alert(
+      toast.warning(
         `Only adding ${availableSlots} file(s). Maximum ${MAX_FILES_PER_MESSAGE} files per message.`,
       )
     }
@@ -394,7 +395,7 @@ export function ChatBox({
     }
   }
 
-  const groupReactions = (reactions: any[] | undefined) => {
+  const groupReactions = (reactions: Reaction[] | undefined) => {
     if (!reactions) return []
 
     const groups: Record<
