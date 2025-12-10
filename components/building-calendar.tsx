@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { eventBus, EVENTS } from "@/lib/events"
 
 interface CalendarEvent {
   id: string
@@ -91,18 +92,11 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
         }
       }
 
-      // Dynamically import to avoid dependency issues
-      import("@/lib/events").then(({ eventBus, EVENTS }) => {
-        eventBus.on(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
-      })
+      eventBus.on(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
 
       return () => {
         channel.unsubscribe()
-
-        // Clean up event bus listener
-        import("@/lib/events").then(({ eventBus, EVENTS }) => {
-          eventBus.off(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
-        })
+        eventBus.off(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
       }
     }
   }, [buildingId])

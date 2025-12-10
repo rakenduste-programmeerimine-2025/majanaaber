@@ -1,5 +1,6 @@
 // Simple event system for coordinating between components
-type EventCallback = (data?: unknown) => void
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EventCallback = (data?: any) => void
 
 class EventBus {
   private events: { [key: string]: EventCallback[] } = {}
@@ -16,7 +17,8 @@ class EventBus {
     this.events[event] = this.events[event].filter(cb => cb !== callback)
   }
 
-  emit(event: string, data?: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  emit(event: string, data?: any) {
     if (!this.events[event]) return
     this.events[event].forEach(callback => callback(data))
   }
