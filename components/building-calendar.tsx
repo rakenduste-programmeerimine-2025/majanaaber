@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { eventBus, EVENTS } from "@/lib/events"
 
 interface CalendarEvent {
   id: string
@@ -26,9 +27,79 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
       setEvents(data || [])
     }
   }
+
   useEffect(() => {
-    if (buildingId) loadEvents()
-  }, [buildingId, currentDate])
+    if (buildingId) {
+      loadEvents()
+
+      // Set up real-time subscription for notices changes
+      const channel = supabase.channel(`calendar_events_${buildingId}`)
+
+      // Subscribe to INSERT events
+      channel.on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notices",
+          filter: `building_id=eq.${buildingId}`,
+        },
+        payload => {
+          if (payload.new?.event_date) {
+            loadEvents()
+          }
+        },
+      )
+
+      // Subscribe to UPDATE events
+      channel.on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notices",
+          filter: `building_id=eq.${buildingId}`,
+        },
+        payload => {
+          // Reload if event_date was added, removed, or changed
+          if (payload.old?.event_date || payload.new?.event_date) {
+            loadEvents()
+          }
+        },
+      )
+
+      // Subscribe to DELETE events
+      channel.on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notices",
+          filter: `building_id=eq.${buildingId}`,
+        },
+        payload => {
+          // Always reload on delete since we can't check if deleted notice had event_date
+          loadEvents()
+        },
+      )
+
+      channel.subscribe()
+
+      // Fallback: Listen to local events from notice board as backup
+      const handleNoticeDeleted = (data: { buildingId: string }) => {
+        if (data.buildingId === buildingId) {
+          loadEvents()
+        }
+      }
+
+      eventBus.on(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
+
+      return () => {
+        channel.unsubscribe()
+        eventBus.off(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
+      }
+    }
+  }, [buildingId])
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -88,11 +159,25 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
             const evDate = ev.event_date?.split("T")[0] ?? ev.event_date
             return evDate === dateStr
           })
+
+          // Check if this is today
+          const today = new Date()
+          const isToday =
+            today.getFullYear() === year &&
+            today.getMonth() === month &&
+            today.getDate() === day
+
           return (
             <button
               key={idx}
-              className={`p-2 rounded text-sm relative
-                  ${dayEvents.length > 0 ? "bg-primary/20 hover:bg-primary/30" : "bg-muted/30 hover:bg-muted/50"}
+              className={`p-2 rounded text-sm relative transition-colors
+                  ${
+                    isToday
+                      ? "bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
+                      : dayEvents.length > 0
+                        ? "bg-primary/20 hover:bg-primary/30"
+                        : "bg-muted/30 hover:bg-muted/50"
+                  }
                   `}
             >
               {day}
@@ -103,7 +188,9 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
                   {dayEvents.slice(0, 3).map(ev => (
                     <div
                       key={ev.id}
-                      className="w-1.5 h-1.5 bg-primary rounded-full"
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        isToday ? "bg-white" : "bg-primary"
+                      }`}
                     ></div>
                   ))}
                 </div>

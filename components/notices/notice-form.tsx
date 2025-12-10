@@ -33,6 +33,9 @@ interface NoticeFormProps {
   setCategory: (value: Category) => void
   expiresAt: string
   setExpiresAt: (value: string) => void
+
+  eventDate: string
+  setEventDate: (value: string) => void
   selectedFiles: File[]
   existingAttachments: NoticeAttachment[]
   fileInputRef: RefObject<HTMLInputElement | null>
@@ -62,6 +65,8 @@ export function NoticeForm({
   onFileSelect,
   onRemoveSelectedFile,
   onRemoveExistingAttachment,
+  eventDate,
+  setEventDate,
 }: NoticeFormProps) {
   return (
     <Card className="mb-4">
@@ -185,6 +190,18 @@ export function NoticeForm({
             />
             <p className="text-xs text-muted-foreground mt-1">
               Leave empty for no expiration
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="event_date">Event Date (optional)</Label>
+            <Input
+              id="event_date"
+              type="date"
+              value={eventDate}
+              onChange={e => setEventDate(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              For events that happen on a specific day
             </p>
           </div>
 

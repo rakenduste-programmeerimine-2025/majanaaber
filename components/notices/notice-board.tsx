@@ -36,6 +36,7 @@ export function NoticeBoard({
   const [priority, setPriority] = useState<Priority>("normal")
   const [category, setCategory] = useState<Category>("general")
   const [expiresAt, setExpiresAt] = useState("")
+  const [eventDate, setEventDate] = useState<string>("")
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [existingAttachments, setExistingAttachments] = useState<
     NoticeAttachment[]
@@ -87,14 +88,21 @@ export function NoticeBoard({
     })
     .sort((a, b) => {
       // Sort by expires_at descending (most recently expired first)
-      const aDate = a.expires_at ? new Date(a.expires_at) : new Date(a.created_at)
-      const bDate = b.expires_at ? new Date(b.expires_at) : new Date(b.created_at)
+      const aDate = a.expires_at
+        ? new Date(a.expires_at)
+        : new Date(a.created_at)
+      const bDate = b.expires_at
+        ? new Date(b.expires_at)
+        : new Date(b.created_at)
       return bDate.getTime() - aDate.getTime()
     })
 
   const archivedNotices = notices
     .filter(notice => notice.is_archived && matchesFilters(notice))
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
 
   const loadNotices = async () => {
     try {
@@ -178,6 +186,7 @@ export function NoticeBoard({
     setPriority("normal")
     setCategory("general")
     setExpiresAt("")
+    setEventDate("")
     setSelectedFiles([])
     setExistingAttachments([])
     setShowAddForm(false)
@@ -273,9 +282,9 @@ export function NoticeBoard({
             priority,
             category,
             expires_at: expiresAt || null,
+            event_date: eventDate || null,
           })
           .eq("id", editingNotice.id)
-
         if (updateError) throw updateError
 
         // Delete removed attachments
@@ -311,6 +320,7 @@ export function NoticeBoard({
             priority,
             category,
             expires_at: expiresAt || null,
+            event_date: eventDate || null,
             created_by: user.id,
           })
           .select()
@@ -360,6 +370,11 @@ export function NoticeBoard({
         ? new Date(notice.expires_at).toISOString().split("T")[0]
         : "",
     )
+    setEventDate(
+      notice.event_date
+        ? new Date(notice.event_date).toISOString().split("T")[0]
+        : "",
+    )
     setSelectedFiles([])
     setExistingAttachments(notice.attachments || [])
     setShowAddForm(true)
@@ -375,6 +390,11 @@ export function NoticeBoard({
         .delete()
         .eq("id", noticeId)
       if (error) throw error
+
+      // Import and emit event for other components
+      const { eventBus, EVENTS } = await import("@/lib/events")
+      eventBus.emit(EVENTS.NOTICE_DELETED, { noticeId, buildingId })
+
       loadNotices()
     } catch (err: any) {
       setError(err.message || "Failed to delete notice")
@@ -496,6 +516,8 @@ export function NoticeBoard({
             setCategory={setCategory}
             expiresAt={expiresAt}
             setExpiresAt={setExpiresAt}
+            eventDate={eventDate}
+            setEventDate={setEventDate}
             selectedFiles={selectedFiles}
             existingAttachments={existingAttachments}
             fileInputRef={fileInputRef}

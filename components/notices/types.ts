@@ -30,6 +30,7 @@ export interface Notice {
   priority: Priority
   category: Category
   expires_at: string | null
+  event_date?: string | null
   // Legacy single attachment fields (for backwards compatibility)
   attachment_url: string | null
   attachment_name: string | null

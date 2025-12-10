@@ -165,8 +165,8 @@ export default function MessagesPage() {
     // Add residents
     if (buildingResidents && buildingResidents.length > 0) {
       buildingResidents.forEach((br: any) => {
-        // Don't add if already added as manager
-        if (!contactsList.some(c => c.id === br.profiles.id)) {
+        // Check if profile data exists and don't add if already added as manager
+        if (br.profiles && !contactsList.some(c => c.id === br.profiles.id)) {
           contactsList.push({
             id: br.profiles.id,
             first_name: br.profiles.first_name,

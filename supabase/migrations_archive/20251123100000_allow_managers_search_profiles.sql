@@ -5,10 +5,20 @@
 -- Enable RLS on profiles if not already enabled
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can read their own profile" ON public.profiles;
-DROP POLICY IF EXISTS "Building owners can read all profiles" ON public.profiles;
-DROP POLICY IF EXISTS "Authenticated users can read profiles" ON public.profiles;
+-- Drop existing policies if they exist (check existence first)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Users can read their own profile') THEN
+    DROP POLICY "Users can read their own profile" ON public.profiles;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Building owners can read all profiles') THEN
+    DROP POLICY "Building owners can read all profiles" ON public.profiles;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'profiles' AND policyname = 'Authenticated users can read profiles') THEN
+    DROP POLICY "Authenticated users can read profiles" ON public.profiles;
+  END IF;
+END
+$$;
 
 -- Policy 1: Users can read their own profile
 CREATE POLICY "Users can read their own profile"
@@ -30,12 +40,26 @@ CREATE POLICY "Building managers can view all profiles"
 -- Enable RLS on building_residents if not already enabled
 ALTER TABLE public.building_residents ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can read their own resident records" ON public.building_residents;
-DROP POLICY IF EXISTS "Building managers can manage residents" ON public.building_residents;
-DROP POLICY IF EXISTS "Building managers can insert residents" ON public.building_residents;
-DROP POLICY IF EXISTS "Building managers can delete residents" ON public.building_residents;
-DROP POLICY IF EXISTS "Building managers can update residents" ON public.building_residents;
+-- Drop existing policies if they exist (check existence first)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'building_residents' AND policyname = 'Users can read their own resident records') THEN
+    DROP POLICY "Users can read their own resident records" ON public.building_residents;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'building_residents' AND policyname = 'Building managers can manage residents') THEN
+    DROP POLICY "Building managers can manage residents" ON public.building_residents;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'building_residents' AND policyname = 'Building managers can insert residents') THEN
+    DROP POLICY "Building managers can insert residents" ON public.building_residents;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'building_residents' AND policyname = 'Building managers can delete residents') THEN
+    DROP POLICY "Building managers can delete residents" ON public.building_residents;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'building_residents' AND policyname = 'Building managers can update residents') THEN
+    DROP POLICY "Building managers can update residents" ON public.building_residents;
+  END IF;
+END
+$$;
 
 -- Create policy for users to read their own resident records
 CREATE POLICY "Users can read their own resident records"

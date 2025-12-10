@@ -144,7 +144,7 @@ export async function loginWithRateLimit(
         .single();
 
       const redirectTo =
-        profile?.role === "building_manager" ? "/management" : "/residence";
+        profile?.role === "building_manager" ? "/manager" : "/resident";
 
       return {
         success: true,

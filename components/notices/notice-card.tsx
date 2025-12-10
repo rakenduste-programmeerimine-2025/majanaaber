@@ -82,9 +82,9 @@ export function NoticeCard({
               </span>
               <span>·</span>
               <span>
-                {new Date(notice.created_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
+                {new Date(notice.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "2-digit",
                   year: "numeric",
                 })}
               </span>
@@ -104,9 +104,10 @@ export function NoticeCard({
                   <span className="flex items-center gap-0.5 text-orange-600 dark:text-orange-400">
                     <Clock className="h-3 w-3" />
                     Expires{" "}
-                    {new Date(notice.expires_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
+                    {new Date(notice.expires_at).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
                     })}
                   </span>
                 </>
