@@ -475,10 +475,10 @@ export function ChatBox({
                       data-message-id={msg.id}
                     >
                       <div
-                        className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}
+                        className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} group`}
                       >
                         <div
-                          className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group break-words overflow-hidden ${
+                          className={`max-w-[75%] p-3 rounded-lg shadow-sm relative break-words ${
                             msg.is_deleted
                               ? "bg-muted text-muted-foreground"
                               : isOwnMessage
