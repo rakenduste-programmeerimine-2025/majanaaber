@@ -69,6 +69,18 @@ export async function updateSession(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
     const isDeactivated = profile && profile.deactivated_at !== null;
 
+    // Redirect logged-in users away from auth pages
+    if (pathname.startsWith("/auth/login") || pathname.startsWith("/auth/sign-up")) {
+      const url = request.nextUrl.clone();
+      // Redirect based on user role
+      if (userRole === "building_manager") {
+        url.pathname = "/manager";
+      } else {
+        url.pathname = "/resident";
+      }
+      return NextResponse.redirect(url);
+    }
+
     if (isDeactivated && !pathname.startsWith("/auth")) {
       await supabase.auth.signOut();
       const url = request.nextUrl.clone();
