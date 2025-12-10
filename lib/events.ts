@@ -1,5 +1,5 @@
 // Simple event system for coordinating between components
-type EventCallback = (data?: any) => void
+type EventCallback = (data?: unknown) => void
 
 class EventBus {
   private events: { [key: string]: EventCallback[] } = {}
@@ -16,7 +16,7 @@ class EventBus {
     this.events[event] = this.events[event].filter(cb => cb !== callback)
   }
 
-  emit(event: string, data?: any) {
+  emit(event: string, data?: unknown) {
     if (!this.events[event]) return
     this.events[event].forEach(callback => callback(data))
   }
@@ -26,7 +26,5 @@ export const eventBus = new EventBus()
 
 // Event types
 export const EVENTS = {
-  NOTICE_DELETED: 'notice:deleted',
-  NOTICE_CREATED: 'notice:created', 
-  NOTICE_UPDATED: 'notice:updated',
+  NOTICE_DELETED: "notice:deleted",
 } as const

@@ -179,7 +179,7 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
               className={`p-2 rounded text-sm relative transition-colors
                   ${
                     isToday
-                      ? "bg-blue-500 text-white font-semibold hover:bg-blue-600"
+                      ? "bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
                       : dayEvents.length > 0
                         ? "bg-primary/20 hover:bg-primary/30"
                         : "bg-muted/30 hover:bg-muted/50"
