@@ -43,28 +43,28 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
           table: "notices",
           filter: `building_id=eq.${buildingId}`,
         },
-        (payload) => {
+        payload => {
           if (payload.new?.event_date) {
             loadEvents()
           }
-        }
+        },
       )
 
-      // Subscribe to UPDATE events  
+      // Subscribe to UPDATE events
       channel.on(
         "postgres_changes",
         {
           event: "UPDATE",
-          schema: "public", 
+          schema: "public",
           table: "notices",
           filter: `building_id=eq.${buildingId}`,
         },
-        (payload) => {
+        payload => {
           // Reload if event_date was added, removed, or changed
           if (payload.old?.event_date || payload.new?.event_date) {
             loadEvents()
           }
-        }
+        },
       )
 
       // Subscribe to DELETE events
@@ -73,13 +73,13 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
         {
           event: "DELETE",
           schema: "public",
-          table: "notices", 
+          table: "notices",
           filter: `building_id=eq.${buildingId}`,
         },
-        (payload) => {
+        payload => {
           // Always reload on delete since we can't check if deleted notice had event_date
           loadEvents()
-        }
+        },
       )
 
       channel.subscribe()
@@ -98,7 +98,7 @@ export function BuildingCalendar({ buildingId }: { buildingId: string }) {
 
       return () => {
         channel.unsubscribe()
-        
+
         // Clean up event bus listener
         import("@/lib/events").then(({ eventBus, EVENTS }) => {
           eventBus.off(EVENTS.NOTICE_DELETED, handleNoticeDeleted)
