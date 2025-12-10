@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       .select(
         `
         profile_id,
-        profiles!building_residents_profile_id_fkey(id, email, first_name, last_name)
+        profiles!inner(id, email, first_name, last_name)
       `,
       )
       .eq("building_id", building_id)
