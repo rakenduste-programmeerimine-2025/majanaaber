@@ -185,7 +185,9 @@ export default function ManagerHubPage() {
       full_address: building.full_address,
       city: building.city,
     })
-    loadUsersForManagerChange()
+    // Clear any previous user search data
+    setAllUsers([])
+    setSearchUserQuery("")
   }
 
   const handleUpdateBuilding = async () => {
@@ -213,7 +215,16 @@ export default function ManagerHubPage() {
     }
   }
 
-  const loadUsersForManagerChange = async () => {
+  const searchUsersForManagerChange = async (query: string) => {
+    if (!query.trim()) {
+      setAllUsers([])
+      return
+    }
+
+    if (query.length < 2) {
+      return // Don't search for very short queries
+    }
+
     try {
       setIsSearchingUsers(true)
       const supabase = createClient()
@@ -231,14 +242,17 @@ export default function ManagerHubPage() {
         .from("profiles")
         .select("id, first_name, last_name, email")
         .neq("id", user.id)
-        .limit(100)
+        .or(
+          `first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`,
+        )
+        .limit(10)
 
       if (error) throw error
 
       setAllUsers(data || [])
     } catch (err: any) {
-      console.error("Error loading users:", err)
-      alert("Failed to load users: " + err.message)
+      console.error("Error searching users:", err)
+      handleError(err, "Failed to search users")
     } finally {
       setIsSearchingUsers(false)
     }
@@ -876,7 +890,15 @@ export default function ManagerHubPage() {
                         type="text"
                         placeholder="Search by name or email..."
                         value={searchUserQuery}
-                        onChange={e => setSearchUserQuery(e.target.value)}
+                        onChange={e => {
+                          const value = e.target.value
+                          setSearchUserQuery(value)
+                          // Debounce search
+                          clearTimeout(window.searchTimeout)
+                          window.searchTimeout = setTimeout(() => {
+                            searchUsersForManagerChange(value)
+                          }, 300)
+                        }}
                         className="pl-10"
                       />
                     </div>
@@ -884,14 +906,22 @@ export default function ManagerHubPage() {
                     <div className="max-h-48 overflow-y-auto space-y-2">
                       {isSearchingUsers ? (
                         <p className="text-center text-muted-foreground py-4">
-                          Loading users...
+                          Searching...
                         </p>
-                      ) : filteredUsers.length === 0 ? (
+                      ) : !searchUserQuery.trim() ? (
                         <p className="text-center text-muted-foreground py-4">
-                          No users found
+                          Type to search for users...
+                        </p>
+                      ) : searchUserQuery.length < 2 ? (
+                        <p className="text-center text-muted-foreground py-4">
+                          Type at least 2 characters to search...
+                        </p>
+                      ) : allUsers.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4">
+                          No users found matching "{searchUserQuery}"
                         </p>
                       ) : (
-                        filteredUsers.slice(0, 5).map(user => (
+                        allUsers.map(user => (
                           <div
                             key={user.id}
                             className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/30"
