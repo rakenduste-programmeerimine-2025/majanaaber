@@ -736,6 +736,62 @@ CREATE POLICY "Building managers can delete notices"
 -- MESSAGING POLICIES
 -- =====================================================
 
+-- Message attachments policies
+CREATE POLICY "Users can view message attachments for their buildings"
+  ON public.message_attachments
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.building_messages bm
+      WHERE bm.id = message_attachments.message_id
+      AND (
+        -- Building managers can see all messages
+        (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+        OR
+        -- Residents can see messages for buildings they belong to
+        EXISTS (
+          SELECT 1 FROM public.building_residents br
+          WHERE br.building_id = bm.building_id
+          AND br.profile_id = auth.uid()
+          AND br.is_approved = true
+        )
+      )
+    )
+  );
+
+CREATE POLICY "Users can create message attachments for their buildings"
+  ON public.message_attachments
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.building_messages bm
+      WHERE bm.id = message_attachments.message_id
+      AND (
+        -- Building managers can create attachments
+        (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+        OR
+        -- Residents can create attachments for buildings they belong to
+        EXISTS (
+          SELECT 1 FROM public.building_residents br
+          WHERE br.building_id = bm.building_id
+          AND br.profile_id = auth.uid()
+          AND br.is_approved = true
+        )
+      )
+    )
+  );
+
+CREATE POLICY "Users can delete their own message attachments"
+  ON public.message_attachments
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.building_messages bm
+      WHERE bm.id = message_attachments.message_id
+      AND bm.sender_id = auth.uid()
+    )
+  );
+
 -- Building messages policies
 CREATE POLICY "Users can view messages in their buildings"
   ON public.building_messages
