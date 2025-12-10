@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef, memo } from "react"
-import type { Message, Attachment } from "@/lib/types/chat"
+import { toast } from "sonner"
+import type { Message, Attachment, Reaction } from "@/lib/types/chat"
 import { formatTimestamp } from "@/lib/utils/date-formatting"
 import { createClient } from "@/lib/supabase/client"
 
@@ -33,11 +34,6 @@ const AttachmentDisplay = memo(
     const supabase = createClient()
 
     useEffect(() => {
-      console.log(
-        "[IMAGE] AttachmentDisplay mounted for:",
-        attachment.file_name,
-      )
-
       const getFileUrl = async () => {
         try {
           const { data, error } = await supabase.storage
@@ -45,17 +41,15 @@ const AttachmentDisplay = memo(
             .createSignedUrl(attachment.file_path, 3600)
 
           if (error) {
-            console.error("[IMAGE] Storage error:", error)
             setIsLoading(false)
             return
           }
 
           if (data?.signedUrl) {
-            console.log("[IMAGE] Got signed URL for:", attachment.file_name)
             setFileUrl(data.signedUrl)
           }
-        } catch (err) {
-          console.error("[IMAGE] Failed to get file URL:", err)
+        } catch {
+          // Failed to get file URL
         } finally {
           setIsLoading(false)
         }
@@ -108,11 +102,7 @@ const AttachmentDisplay = memo(
                   e.stopPropagation()
                   window.open(fileUrl, "_blank")
                 }}
-                onLoad={() =>
-                  console.log("[IMAGE] Loaded:", attachment.file_name)
-                }
                 onError={() => {
-                  console.log("[IMAGE] Error loading:", attachment.file_name)
                   setImageError(true)
                 }}
               />
@@ -201,7 +191,6 @@ export function ChatBox({
   const markedAsReadRef = useRef<Set<string>>(new Set())
 
   const scrollToBottom = () => {
-    console.log("[SCROLL] Scrolling to bottom")
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
@@ -210,20 +199,10 @@ export function ChatBox({
 
   // Simple scroll: only when user sends a message
   useEffect(() => {
-    console.log(
-      "[MESSAGES] Messages updated. Count:",
-      messages.length,
-      "Previous:",
-      prevMessagesLengthRef.current,
-      "isUserSending:",
-      isUserSendingRef.current,
-    )
-
     if (
       messages.length > prevMessagesLengthRef.current &&
       isUserSendingRef.current
     ) {
-      console.log("[SCROLL] Scheduling scroll to bottom in 100ms")
       setTimeout(() => scrollToBottom(), 100)
       isUserSendingRef.current = false
     }
@@ -260,17 +239,6 @@ export function ChatBox({
       const isAtBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight <
         50
-
-      console.log(
-        "[SCROLL EVENT] scrollTop:",
-        container.scrollTop,
-        "scrollHeight:",
-        container.scrollHeight,
-        "clientHeight:",
-        container.clientHeight,
-        "isAtBottom:",
-        isAtBottom,
-      )
 
       setShowScrollButton(!isAtBottom)
     }
@@ -327,7 +295,7 @@ export function ChatBox({
     const availableSlots = MAX_FILES_PER_MESSAGE - currentCount
 
     if (availableSlots <= 0) {
-      alert(`Maximum ${MAX_FILES_PER_MESSAGE} files per message`)
+      toast.error(`Maximum ${MAX_FILES_PER_MESSAGE} files per message`)
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
@@ -336,7 +304,7 @@ export function ChatBox({
 
     const filesToAdd = files.slice(0, availableSlots)
     if (files.length > availableSlots) {
-      alert(
+      toast.warning(
         `Only adding ${availableSlots} file(s). Maximum ${MAX_FILES_PER_MESSAGE} files per message.`,
       )
     }
@@ -427,7 +395,7 @@ export function ChatBox({
     }
   }
 
-  const groupReactions = (reactions: any[] | undefined) => {
+  const groupReactions = (reactions: Reaction[] | undefined) => {
     if (!reactions) return []
 
     const groups: Record<
@@ -508,10 +476,10 @@ export function ChatBox({
                       data-message-id={msg.id}
                     >
                       <div
-                        className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}
+                        className={`flex flex-col w-full ${isOwnMessage ? "items-end" : "items-start"} group`}
                       >
                         <div
-                          className={`max-w-[75%] p-3 rounded-lg shadow-sm relative group break-words overflow-hidden ${
+                          className={`max-w-[75%] p-3 rounded-lg shadow-sm relative ${
                             msg.is_deleted
                               ? "bg-muted text-muted-foreground"
                               : isOwnMessage
@@ -564,7 +532,7 @@ export function ChatBox({
                                 {showMessageMenu === msg.id && (
                                   <div
                                     onClick={e => e.stopPropagation()}
-                                    className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? "-left-32" : "-right-32"} bg-card border border-border rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                                    className={`absolute top-0 ${isOwnMessage ? "-left-32" : "-right-32"} bg-card border border-border rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
                                   >
                                     <button
                                       onClick={() => {
@@ -691,13 +659,7 @@ export function ChatBox({
                                   )}
                                   {msg.content &&
                                     msg.content !== "(attached file)" && (
-                                      <p
-                                        className="text-sm break-words word-break"
-                                        style={{
-                                          overflowWrap: "break-word",
-                                          wordBreak: "break-word",
-                                        }}
-                                      >
+                                      <p className="text-sm whitespace-pre-wrap break-words">
                                         {msg.content}
                                       </p>
                                     )}

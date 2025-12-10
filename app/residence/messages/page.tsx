@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { useConversations } from "@/hooks/use-conversations"
 import { usePeerMessages } from "@/hooks/use-peer-messages"
 import { ConversationsList } from "@/components/conversations-list"
@@ -110,19 +111,17 @@ export default function MessagesPage() {
     }
 
     if (!buildingId) {
-      alert("You are not associated with any building.")
+      toast.error("You are not associated with any building.")
       return
     }
 
-    console.log("Fetching contacts for building:", buildingId)
-
-    // Get all residents in the building using the specific foreign key relationship
+    // Get all residents in the building
     const { data: buildingResidents, error: residentsError } = await supabase
       .from("building_residents")
       .select(
         `
         profile_id,
-        profiles!building_residents_profile_id_fkey(id, first_name, last_name)
+        profiles!inner(id, first_name, last_name)
       `,
       )
       .eq("building_id", buildingId)
@@ -131,14 +130,6 @@ export default function MessagesPage() {
 
     if (residentsError) {
       console.error("Error fetching residents:", residentsError)
-      console.error("Residents error details:", {
-        message: residentsError.message,
-        details: residentsError.details,
-        hint: residentsError.hint,
-        code: residentsError.code,
-      })
-    } else {
-      console.log("Successfully fetched residents:", buildingResidents)
     }
 
     // Also get the building manager
@@ -186,7 +177,6 @@ export default function MessagesPage() {
       })
     }
 
-    console.log("Contacts list:", contactsList)
     setResidents(contactsList)
     setShowNewMessageModal(true)
   }

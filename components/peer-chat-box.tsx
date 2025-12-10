@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, memo } from "react"
+import { toast } from "sonner"
 import type { PeerMessage, PeerAttachment } from "@/lib/types/chat"
 import { formatTimestamp } from "@/lib/utils/date-formatting"
 import { createClient } from "@/lib/supabase/client"
@@ -272,7 +273,7 @@ export function PeerChatBox({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length + selectedFiles.length > MAX_FILES_PER_MESSAGE) {
-      alert(
+      toast.error(
         `You can only upload up to ${MAX_FILES_PER_MESSAGE} files per message`,
       )
       return
@@ -508,7 +509,7 @@ export function PeerChatBox({
                         {openMenuId === message.id && (
                           <div
                             onClick={e => e.stopPropagation()}
-                            className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? "-left-32" : "-right-32"} bg-background border border-border rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
+                            className={`absolute top-0 ${isOwnMessage ? "-left-32" : "-right-32"} bg-background border border-border rounded-lg shadow-lg py-1 z-30 min-w-[120px]`}
                           >
                             <button
                               onClick={() => {
@@ -547,7 +548,7 @@ export function PeerChatBox({
                         {showEmojiPicker === message.id && (
                           <div
                             onClick={e => e.stopPropagation()}
-                            className={`absolute top-1/2 -translate-y-full -mt-6 ${isOwnMessage ? "-left-48" : "-right-48"} bg-background border border-border rounded-lg shadow-lg p-2 flex gap-1 z-30`}
+                            className={`absolute top-0 ${isOwnMessage ? "-left-48" : "-right-48"} bg-background border border-border rounded-lg shadow-lg p-2 flex gap-1 z-30`}
                           >
                             {commonEmojis.map(emoji => (
                               <button

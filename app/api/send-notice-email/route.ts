@@ -1,7 +1,20 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
-const MOCK_EMAIL = true
+// Set MOCK_EMAIL=true in env to disable actual email sending (for development)
+const MOCK_EMAIL = process.env.MOCK_EMAIL === "true"
+
+// HTML escape function to prevent XSS
+function escapeHtml(text: string): string {
+  const htmlEntities: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }
+  return text.replace(/[&<>"']/g, char => htmlEntities[char])
+}
 
 export async function POST(request: Request) {
   try {
@@ -96,7 +109,6 @@ export async function POST(request: Request) {
     })
 
     if (!recipientsToEmail || recipientsToEmail.length === 0) {
-      console.log("No recipients to email")
       return NextResponse.json(
         { message: "No recipients to email", sent: 0 },
         { status: 200 },
@@ -115,30 +127,7 @@ export async function POST(request: Request) {
           ? "🔵"
           : "⚪"
 
-    console.log(
-      `📧 [${MOCK_EMAIL ? "MOCK" : "REAL"}] Sending notice email to ${recipientsToEmail.length} recipients`,
-    )
-    console.log(`   Notice: ${notice.title}`)
-    console.log(`   Building: ${building.full_address}`)
-    console.log(`   Priority: ${notice.priority}`)
-    console.log(
-      `   Recipients: ${recipientsToEmail.map((r: any) => r.profiles.email).join(", ")}`,
-    )
-
     if (MOCK_EMAIL) {
-      console.log("\n📮 Email Preview:")
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      console.log(`From: Building Notices <notices@majanaaber.app>`)
-      console.log(`Subject: New Notice: ${notice.title}`)
-      console.log(`To: ${recipientsToEmail.map((r: any) => r.profiles.email).join(", ")}`)
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      console.log(`${priorityEmoji} ${notice.title}`)
-      console.log(`Posted by: ${authorName}`)
-      console.log(`Category: ${notice.category}`)
-      console.log(`Priority: ${notice.priority.toUpperCase()}`)
-      console.log(`\n${notice.content}\n`)
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-
       return NextResponse.json({
         message: `[MOCK] Would send ${recipientsToEmail.length} emails`,
         recipients: recipientsToEmail.length,
@@ -172,17 +161,17 @@ export async function POST(request: Request) {
           <div class="container">
             <div class="header">
               <h1>📢 New Notice Posted</h1>
-              <p>${building.full_address}</p>
+              <p>${escapeHtml(building.full_address)}</p>
             </div>
             <div class="content">
               <div class="notice-title">
-                ${priorityEmoji} ${notice.title}
-                <span class="priority priority-${notice.priority}">${notice.priority.toUpperCase()}</span>
+                ${priorityEmoji} ${escapeHtml(notice.title)}
+                <span class="priority priority-${escapeHtml(notice.priority)}">${escapeHtml(notice.priority.toUpperCase())}</span>
               </div>
-              <p><strong>Posted by:</strong> ${authorName}</p>
-              <p><strong>Category:</strong> ${notice.category}</p>
+              <p><strong>Posted by:</strong> ${escapeHtml(authorName)}</p>
+              <p><strong>Category:</strong> ${escapeHtml(notice.category || "general")}</p>
               <div class="notice-content">
-                <p>${notice.content.replace(/\n/g, "<br>")}</p>
+                <p>${escapeHtml(notice.content).replace(/\n/g, "<br>")}</p>
               </div>
             </div>
             <div class="footer">
@@ -197,17 +186,13 @@ export async function POST(request: Request) {
     const emailPromises = recipientsToEmail.map(async (recipient: any) => {
       try {
         await resend.emails.send({
-          from: "Building Notices <onboarding@resend.dev>",
+          from: process.env.EMAIL_FROM || "Building Notices <onboarding@resend.dev>",
           to: [recipient.profiles.email],
           subject: `New Notice: ${notice.title}`,
           html: emailHtml,
         })
         return true
-      } catch (error) {
-        console.error(
-          `Failed to send email to ${recipient.profiles.email}:`,
-          error,
-        )
+      } catch {
         return false
       }
     })

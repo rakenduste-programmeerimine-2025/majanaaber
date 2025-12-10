@@ -43,13 +43,11 @@ export function AddBuildingForm({ onSuccess }: AddBuildingFormProps) {
   }
 
   const handleAddressSelect = (address: EstonianAddressData) => {
-    console.log("Address selected:", address)
     setSelectedAddress(address)
     setError(null)
   }
 
   const handleAddressError = (errorMessage: string) => {
-    console.log("Address error:", errorMessage)
     setError(errorMessage)
     setSelectedAddress(null)
 

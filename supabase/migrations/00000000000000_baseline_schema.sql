@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS public.notices (
   building_id UUID REFERENCES public.buildings(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
-  category TEXT DEFAULT 'general' CHECK (category IN ('general', 'maintenance', 'event', 'urgent', 'announcement')),
+  category TEXT DEFAULT 'general' CHECK (category IN ('general', 'maintenance', 'meeting', 'payment', 'safety', 'event')),
   priority TEXT DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'urgent')),
   event_date DATE,
   expires_at TIMESTAMPTZ,
@@ -780,6 +780,43 @@ CREATE POLICY "Building managers can delete notices"
     (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
   );
 
+-- Notice attachments policies
+CREATE POLICY "Users can view notice attachments"
+  ON public.notice_attachments
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.notices n
+      WHERE n.id = notice_attachments.notice_id
+      AND (
+        -- Building managers can see all notice attachments
+        (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+        OR
+        -- Residents can see attachments for notices in their buildings
+        EXISTS (
+          SELECT 1 FROM public.building_residents br
+          WHERE br.building_id = n.building_id
+          AND br.profile_id = auth.uid()
+          AND br.is_approved = true
+        )
+      )
+    )
+  );
+
+CREATE POLICY "Building managers can create notice attachments"
+  ON public.notice_attachments
+  FOR INSERT
+  WITH CHECK (
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+  );
+
+CREATE POLICY "Building managers can delete notice attachments"
+  ON public.notice_attachments
+  FOR DELETE
+  USING (
+    (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'building_manager'
+  );
+
 -- =====================================================
 -- MESSAGING POLICIES
 -- =====================================================
@@ -1010,9 +1047,9 @@ CREATE POLICY "Users can manage their notification preferences"
 
 -- Create storage buckets for file attachments
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES 
-  ('notice-attachments', 'notice-attachments', false, 52428800, '{"image/*", "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}'),
-  ('message-attachments', 'message-attachments', false, 52428800, '{"image/*", "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}')
+VALUES
+  ('notice-attachments', 'notice-attachments', true, 52428800, '{"image/*", "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}'),
+  ('message-attachments', 'message-attachments', true, 52428800, '{"image/*", "application/pdf", "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for notice attachments

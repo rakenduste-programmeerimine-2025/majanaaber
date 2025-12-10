@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
+import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -202,14 +203,14 @@ export function NoticeBoard({
     const availableSlots = MAX_FILES_PER_NOTICE - currentCount
 
     if (availableSlots <= 0) {
-      alert(`Maximum ${MAX_FILES_PER_NOTICE} files per notice`)
+      toast.error(`Maximum ${MAX_FILES_PER_NOTICE} files per notice`)
       if (fileInputRef.current) fileInputRef.current.value = ""
       return
     }
 
     const filesToAdd = files.slice(0, availableSlots)
     if (files.length > availableSlots) {
-      alert(
+      toast.warning(
         `Only adding ${availableSlots} file(s). Maximum ${MAX_FILES_PER_NOTICE} files per notice.`,
       )
     }

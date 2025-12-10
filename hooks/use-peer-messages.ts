@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import type { RealtimeChannel } from "@supabase/supabase-js"
 import type { PeerMessage } from "@/lib/types/chat"
 
 const MAX_MESSAGE_LENGTH = 1000
@@ -14,7 +16,7 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
   const [isSending, setIsSending] = useState(false)
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const channelRef = useRef<any>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
   const userNameRef = useRef<string>("")
   const userIdRef = useRef<string>("")
   const supabase = createClient()
@@ -75,24 +77,42 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
               .eq("id", payload.new.id)
               .single()
 
-            if (data && data.reply_to_message_id) {
-              const { data: repliedMsg } = await supabase
-                .from("peer_messages")
-                .select(`
-                  id,
-                  content,
-                  sender:profiles!peer_messages_sender_id_fkey(first_name, last_name)
-                `)
-                .eq("id", data.reply_to_message_id)
-                .single()
-
-              if (repliedMsg) {
-                data.replied_message = repliedMsg
-              }
-            }
-
             if (data) {
-              setMessages(prev => [...prev, data as unknown as PeerMessage])
+              // Construct message with replied_message property
+              let messageWithReply: typeof data & {
+                replied_message: { id: string; content: string; sender: { first_name: string; last_name: string }[] } | null
+              } = { ...data, replied_message: null }
+
+              if (data.reply_to_message_id) {
+                const { data: repliedMsg } = await supabase
+                  .from("peer_messages")
+                  .select(`
+                    id,
+                    content,
+                    sender:profiles!peer_messages_sender_id_fkey(first_name, last_name)
+                  `)
+                  .eq("id", data.reply_to_message_id)
+                  .single()
+
+                if (repliedMsg) {
+                  messageWithReply = {
+                    ...data,
+                    replied_message: repliedMsg as { id: string; content: string; sender: { first_name: string; last_name: string }[] },
+                  }
+                }
+              }
+
+              // Check if message already exists (from optimistic update)
+              setMessages(prev => {
+                const existingIndex = prev.findIndex(m => m.id === data.id)
+                if (existingIndex !== -1) {
+                  // Update existing message with full data (including replied_message)
+                  const updated = [...prev]
+                  updated[existingIndex] = messageWithReply as unknown as PeerMessage
+                  return updated
+                }
+                return [...prev, messageWithReply as unknown as PeerMessage]
+              })
             }
           },
         )
@@ -215,7 +235,7 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
     }
 
     const messagesWithReplies = await Promise.all(
-      (data || []).map(async (msg: any) => {
+      (data || []).map(async (msg) => {
         if (msg.reply_to_message_id) {
           const { data: repliedMsg } = await supabase
             .from("peer_messages")
@@ -299,6 +319,13 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
       } = await supabase.auth.getUser()
       if (!user) return
 
+      // Get user profile for optimistic update
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .single()
+
       const { data: newMessage, error } = await supabase
         .from("peer_messages")
         .insert({
@@ -312,6 +339,28 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
         .single()
 
       if (error) throw error
+
+      // Optimistic update - add message to state immediately
+      if (newMessage) {
+        const optimisticMessage: PeerMessage = {
+          id: newMessage.id,
+          content: newMessage.content,
+          created_at: newMessage.created_at,
+          edited_at: null,
+          is_deleted: false,
+          sender_id: user.id,
+          receiver_id: otherUserId,
+          conversation_id: conversationId,
+          reply_to_message_id: replyToMessageId || null,
+          sender: profile ? { first_name: profile.first_name, last_name: profile.last_name } : null,
+          receiver: null,
+          reactions: [],
+          read_receipts: [],
+          attachments: [],
+          replied_message: null,
+        }
+        setMessages(prev => [...prev, optimisticMessage])
+      }
 
       if (files && files.length > 0 && newMessage) {
         const uploadedAttachments = await uploadFiles(newMessage.id, files, user.id)
@@ -328,9 +377,9 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           )
         }
       }
-    } catch (err: any) {
-      console.error("Error sending message:", err)
-      alert("Failed to send message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to send message: " + message)
     } finally {
       setIsSending(false)
     }
@@ -360,9 +409,9 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           payload: { messageId },
         })
       }
-    } catch (err: any) {
-      console.error("Error deleting message:", err)
-      alert("Failed to delete message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to delete message: " + message)
     }
   }
 
@@ -396,9 +445,9 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           payload: { messageId, content: newContent.trim(), edited_at },
         })
       }
-    } catch (err: any) {
-      console.error("Error editing message:", err)
-      alert("Failed to edit message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to edit message: " + message)
     }
   }
 
@@ -483,16 +532,17 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           ),
         )
       }
-    } catch (err: any) {
-      if (err.code === '23505') {
+    } catch (err) {
+      // Handle duplicate key constraint violation (PostgreSQL error code 23505)
+      const pgError = err as { code?: string }
+      if (pgError.code === "23505") {
         // Race condition: reaction was added between our check and insert
-        // This is expected behavior in real-time systems, not an error
-        console.debug("Reaction already exists (race condition):", { messageId, emoji })
         return
       }
 
-      console.error("Error adding reaction:", err)
-      alert("Failed to add reaction: " + err.message)
+      // Real error - show to user
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to add reaction: " + message)
     }
   }
 
@@ -523,9 +573,9 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
             : msg,
         ),
       )
-    } catch (err: any) {
-      console.error("Error removing reaction:", err)
-      alert("Failed to remove reaction: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to remove reaction: " + message)
     }
   }
 
@@ -577,9 +627,11 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
           ),
         )
       }
-    } catch (err: any) {
-      if (err.code !== '23505') {
-        console.error("Error marking message as read:", err)
+    } catch (err) {
+      // Silently ignore duplicate key errors (PostgreSQL error code 23505)
+      const pgError = err as { code?: string }
+      if (pgError.code !== "23505") {
+        // Silent failure for read receipts - not critical
       }
     }
   }

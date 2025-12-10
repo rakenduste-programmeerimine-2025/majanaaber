@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { NoticeBoard } from "@/components/notices"
 import { ChatBox } from "@/components/chat-box"
@@ -42,6 +43,7 @@ interface ResidentForm {
 
 interface EditingResident {
   id: string
+  profileId: string
   apartmentNumber: string
   residentRole: "resident" | "apartment_owner"
 }
@@ -52,7 +54,7 @@ interface Notice {
   event_date: string | null
 }
 
-export default function ManagerDashboard() {
+function ManagerDashboardContent() {
   const [building, setBuilding] = useState<Building | null>(null)
   const [loading, setLoading] = useState(true)
   const [showResidentsOverlay, setShowResidentsOverlay] = useState(false)
@@ -138,8 +140,7 @@ export default function ManagerDashboard() {
         }
 
         setBuilding(data)
-      } catch (err: any) {
-        console.error("Error loading building:", err)
+      } catch {
         setBuilding(null)
       } finally {
         setLoading(false)
@@ -204,8 +205,8 @@ export default function ManagerDashboard() {
       }))
 
       setResidents(mappedData as Resident[])
-    } catch (err: any) {
-      console.error("Error loading residents:", err)
+    } catch {
+      // Silent failure - residents will show as empty
     }
   }
 
@@ -228,8 +229,8 @@ export default function ManagerDashboard() {
 
       if (error) throw error
       setSearchResults(data || [])
-    } catch (err: any) {
-      console.error("Error searching users:", err)
+    } catch {
+      // Silent failure - search results will show as empty
     } finally {
       setIsSearching(false)
     }
@@ -246,25 +247,25 @@ export default function ManagerDashboard() {
           r.apartment_number === residentForm.apartmentNumber,
       )
     ) {
-      alert("This user is already a resident of this apartment")
+      toast.error("This user is already a resident of this apartment")
       return
     }
 
     // Validate apartment number
     if (!residentForm.apartmentNumber.trim()) {
-      alert("Please enter an apartment number")
+      toast.error("Please enter an apartment number")
       return
     }
 
     // Validate apartment number length
     if (residentForm.apartmentNumber.length > 20) {
-      alert("Apartment number is too long (maximum 20 characters)")
+      toast.error("Apartment number is too long (maximum 20 characters)")
       return
     }
 
     // Validate apartment number format - only alphanumeric, hyphens, periods, slashes, and spaces
     if (!/^[a-zA-Z0-9\-\.\/\s]+$/.test(residentForm.apartmentNumber)) {
-      alert(
+      toast.error(
         "Apartment number contains invalid characters. Use only letters, numbers, hyphens, periods, slashes, and spaces.",
       )
       return
@@ -272,15 +273,27 @@ export default function ManagerDashboard() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("building_residents").insert({
-        building_id: buildingId,
-        profile_id: profileId,
-        apartment_number: residentForm.apartmentNumber,
-        resident_role: residentForm.residentRole,
-        is_approved: true,
-      })
+      const { error: residentError } = await supabase
+        .from("building_residents")
+        .insert({
+          building_id: buildingId,
+          profile_id: profileId,
+          apartment_number: residentForm.apartmentNumber,
+          resident_role: residentForm.residentRole,
+          is_approved: true,
+        })
 
-      if (error) throw error
+      if (residentError) throw residentError
+
+      // Also update the profile's role to match
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          role: residentForm.residentRole,
+        })
+        .eq("id", profileId)
+
+      if (profileError) throw profileError
 
       // Reload residents list
       await loadResidents()
@@ -291,9 +304,9 @@ export default function ManagerDashboard() {
         apartmentNumber: "",
         residentRole: "resident",
       })
-    } catch (err: any) {
-      console.error("Error adding resident:", err)
-      alert("Failed to add resident: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to add resident: " + message)
     }
   }
 
@@ -311,9 +324,9 @@ export default function ManagerDashboard() {
 
       // Reload residents list
       await loadResidents()
-    } catch (err: any) {
-      console.error("Error removing resident:", err)
-      alert("Failed to remove resident: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to remove resident: " + message)
     }
   }
 
@@ -322,19 +335,19 @@ export default function ManagerDashboard() {
 
     // Validate apartment number
     if (!editingResident.apartmentNumber.trim()) {
-      alert("Please enter an apartment number")
+      toast.error("Please enter an apartment number")
       return
     }
 
     // Validate apartment number length
     if (editingResident.apartmentNumber.length > 20) {
-      alert("Apartment number is too long (maximum 20 characters)")
+      toast.error("Apartment number is too long (maximum 20 characters)")
       return
     }
 
     // Validate apartment number format - only alphanumeric, hyphens, periods, slashes, and spaces
     if (!/^[a-zA-Z0-9\-\.\/\s]+$/.test(editingResident.apartmentNumber)) {
-      alert(
+      toast.error(
         "Apartment number contains invalid characters. Use only letters, numbers, hyphens, periods, slashes, and spaces.",
       )
       return
@@ -342,7 +355,9 @@ export default function ManagerDashboard() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase
+
+      // Update building_residents role
+      const { error: residentError } = await supabase
         .from("building_residents")
         .update({
           apartment_number: editingResident.apartmentNumber,
@@ -350,14 +365,24 @@ export default function ManagerDashboard() {
         })
         .eq("id", editingResident.id)
 
-      if (error) throw error
+      if (residentError) throw residentError
+
+      // Also update the profile's role to match
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          role: editingResident.residentRole,
+        })
+        .eq("id", editingResident.profileId)
+
+      if (profileError) throw profileError
 
       // Reload residents list
       await loadResidents()
       setEditingResident(null)
-    } catch (err: any) {
-      console.error("Error updating resident:", err)
-      alert("Failed to update resident: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to update resident: " + message)
     }
   }
 
@@ -665,6 +690,7 @@ export default function ManagerDashboard() {
                                 onClick={() =>
                                   setEditingResident({
                                     id: resident.id,
+                                    profileId: resident.profile_id,
                                     apartmentNumber:
                                       resident.apartment_number || "",
                                     residentRole: resident.resident_role as
@@ -752,5 +778,19 @@ export default function ManagerDashboard() {
       {/* Empty space at bottom */}
       <div className="h-[10vh]" />
     </div>
+  )
+}
+
+export default function ManagerDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-lg">Loading...</p>
+        </div>
+      }
+    >
+      <ManagerDashboardContent />
+    </Suspense>
   )
 }

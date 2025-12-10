@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import type { RealtimeChannel } from "@supabase/supabase-js"
 import type { Message } from "@/lib/types/chat"
 
 const MAX_MESSAGE_LENGTH = 1000
@@ -14,7 +16,7 @@ export function useBuildingMessages(buildingId: string | null) {
   const [isSending, setIsSending] = useState(false)
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const channelRef = useRef<any>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
   const userNameRef = useRef<string>("")
   const userIdRef = useRef<string>("")
   const supabase = createClient()
@@ -72,25 +74,36 @@ export function useBuildingMessages(buildingId: string | null) {
               .eq("id", payload.new.id)
               .single()
 
-            // Fetch replied message separately if it exists
-            if (data && data.reply_to_message_id) {
-              const { data: repliedMsg } = await supabase
-                .from("building_messages")
-                .select(`
-                  id,
-                  content,
-                  sender:profiles!building_messages_sender_id_fkey(first_name, last_name)
-                `)
-                .eq("id", data.reply_to_message_id)
-                .single()
-
-              if (repliedMsg) {
-                data.replied_message = repliedMsg
-              }
-            }
-
             if (data) {
-              setMessages(prev => [...prev, data as unknown as Message])
+              // Fetch replied message separately if it exists
+              let messageWithReply: typeof data & { replied_message: { id: string; content: string; sender: { first_name: string; last_name: string }[] } | null } = { ...data, replied_message: null }
+              if (data.reply_to_message_id) {
+                const { data: repliedMsg } = await supabase
+                  .from("building_messages")
+                  .select(`
+                    id,
+                    content,
+                    sender:profiles!building_messages_sender_id_fkey(first_name, last_name)
+                  `)
+                  .eq("id", data.reply_to_message_id)
+                  .single()
+
+                if (repliedMsg) {
+                  messageWithReply = { ...data, replied_message: repliedMsg as { id: string; content: string; sender: { first_name: string; last_name: string }[] } }
+                }
+              }
+
+              // Check if message already exists (from optimistic update)
+              setMessages(prev => {
+                const existingIndex = prev.findIndex(m => m.id === data.id)
+                if (existingIndex !== -1) {
+                  // Update existing message with full data (including replied_message)
+                  const updated = [...prev]
+                  updated[existingIndex] = messageWithReply as unknown as Message
+                  return updated
+                }
+                return [...prev, messageWithReply as unknown as Message]
+              })
             }
           },
         )
@@ -211,7 +224,7 @@ export function useBuildingMessages(buildingId: string | null) {
 
     // Fetch replied messages separately for any messages that have replies
     const messagesWithReplies = await Promise.all(
-      (data || []).map(async (msg: any) => {
+      (data || []).map(async (msg) => {
         if (msg.reply_to_message_id) {
           const { data: repliedMsg } = await supabase
             .from("building_messages")
@@ -295,6 +308,13 @@ export function useBuildingMessages(buildingId: string | null) {
       } = await supabase.auth.getUser()
       if (!user) return
 
+      // Get user profile for optimistic update
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .single()
+
       const { data: newMessage, error } = await supabase
         .from("building_messages")
         .insert({
@@ -307,6 +327,25 @@ export function useBuildingMessages(buildingId: string | null) {
         .single()
 
       if (error) throw error
+
+      // Optimistic update - add message to state immediately
+      if (newMessage) {
+        const optimisticMessage: Message = {
+          id: newMessage.id,
+          content: newMessage.content,
+          created_at: newMessage.created_at,
+          edited_at: null,
+          is_deleted: false,
+          sender_id: user.id,
+          reply_to_message_id: replyToMessageId || null,
+          sender: profile ? { first_name: profile.first_name, last_name: profile.last_name } : null,
+          reactions: [],
+          read_receipts: [],
+          attachments: [],
+          replied_message: null,
+        }
+        setMessages(prev => [...prev, optimisticMessage])
+      }
 
       if (files && files.length > 0 && newMessage) {
         const uploadedAttachments = await uploadFiles(newMessage.id, files, user.id)
@@ -323,9 +362,9 @@ export function useBuildingMessages(buildingId: string | null) {
           )
         }
       }
-    } catch (err: any) {
-      console.error("Error sending message:", err)
-      alert("Failed to send message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to send message: " + message)
     } finally {
       setIsSending(false)
     }
@@ -355,9 +394,9 @@ export function useBuildingMessages(buildingId: string | null) {
           payload: { messageId },
         })
       }
-    } catch (err: any) {
-      console.error("Error deleting message:", err)
-      alert("Failed to delete message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to delete message: " + message)
     }
   }
 
@@ -391,9 +430,9 @@ export function useBuildingMessages(buildingId: string | null) {
           payload: { messageId, content: newContent.trim(), edited_at },
         })
       }
-    } catch (err: any) {
-      console.error("Error editing message:", err)
-      alert("Failed to edit message: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to edit message: " + message)
     }
   }
 
@@ -479,18 +518,17 @@ export function useBuildingMessages(buildingId: string | null) {
           ),
         )
       }
-    } catch (err: any) {
+    } catch (err) {
       // Handle duplicate key constraint violation (PostgreSQL error code 23505)
-      if (err.code === '23505') {
+      const pgError = err as { code?: string }
+      if (pgError.code === "23505") {
         // Race condition: reaction was added between our check and insert
-        // This is expected behavior in real-time systems, not an error
-        console.debug("Reaction already exists (race condition):", { messageId, emoji })
         return
       }
 
       // Real error - show to user
-      console.error("Error adding reaction:", err)
-      alert("Failed to add reaction: " + err.message)
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to add reaction: " + message)
     }
   }
 
@@ -521,9 +559,9 @@ export function useBuildingMessages(buildingId: string | null) {
             : msg,
         ),
       )
-    } catch (err: any) {
-      console.error("Error removing reaction:", err)
-      alert("Failed to remove reaction: " + err.message)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error"
+      toast.error("Failed to remove reaction: " + message)
     }
   }
 
@@ -576,10 +614,11 @@ export function useBuildingMessages(buildingId: string | null) {
           ),
         )
       }
-    } catch (err: any) {
+    } catch (err) {
       // Silently ignore duplicate key errors (PostgreSQL error code 23505)
-      if (err.code !== '23505') {
-        console.error("Error marking message as read:", err)
+      const pgError = err as { code?: string }
+      if (pgError.code !== "23505") {
+        // Silent failure for read receipts - not critical
       }
     }
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { Building } from "@/lib/types/chat"
@@ -15,7 +15,7 @@ interface ResidentBuilding extends Building {
   full_address: string
 }
 
-export default function ResidentDashboard() {
+function ResidentDashboardContent() {
   const [building, setBuilding] = useState<ResidentBuilding | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -225,5 +225,19 @@ export default function ResidentDashboard() {
 
       <div className="h-[10vh]" />
     </div>
+  )
+}
+
+export default function ResidentDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-lg">Loading...</p>
+        </div>
+      }
+    >
+      <ResidentDashboardContent />
+    </Suspense>
   )
 }

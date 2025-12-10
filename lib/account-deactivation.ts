@@ -23,9 +23,9 @@ export async function deactivateAccount(
     }
 
     return { success: data === true };
-  } catch (err: any) {
-    console.error("Error deactivating account:", err);
-    return { success: false, error: err.message };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { success: false, error: message };
   }
 }
 
@@ -44,9 +44,9 @@ export async function reactivateAccount(
     }
 
     return { success: data === true };
-  } catch (err: any) {
-    console.error("Error reactivating account:", err);
-    return { success: false, error: err.message };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { success: false, error: message };
   }
 }
 
@@ -65,8 +65,7 @@ export async function isAccountDeactivated(
     }
 
     return data === true;
-  } catch (err: any) {
-    console.error("Error checking account deactivation:", err);
+  } catch {
     return false;
   }
 }
@@ -93,8 +92,7 @@ export async function getAccountDeactivationInfo(
     }
 
     return null;
-  } catch (err: any) {
-    console.error("Error getting deactivation info:", err);
+  } catch {
     return null;
   }
 }
