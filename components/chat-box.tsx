@@ -476,10 +476,10 @@ export function ChatBox({
                       data-message-id={msg.id}
                     >
                       <div
-                        className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} group`}
+                        className={`flex flex-col w-full ${isOwnMessage ? "items-end" : "items-start"} group`}
                       >
                         <div
-                          className={`max-w-[75%] p-3 rounded-lg shadow-sm relative break-words ${
+                          className={`max-w-[75%] p-3 rounded-lg shadow-sm relative ${
                             msg.is_deleted
                               ? "bg-muted text-muted-foreground"
                               : isOwnMessage
@@ -659,13 +659,7 @@ export function ChatBox({
                                   )}
                                   {msg.content &&
                                     msg.content !== "(attached file)" && (
-                                      <p
-                                        className="text-sm break-words word-break"
-                                        style={{
-                                          overflowWrap: "break-word",
-                                          wordBreak: "break-word",
-                                        }}
-                                      >
+                                      <p className="text-sm whitespace-pre-wrap break-words">
                                         {msg.content}
                                       </p>
                                     )}

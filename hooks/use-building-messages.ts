@@ -93,7 +93,11 @@ export function useBuildingMessages(buildingId: string | null) {
                 }
               }
 
-              setMessages(prev => [...prev, messageWithReply as unknown as Message])
+              // Check if message already exists (avoid duplicates from optimistic update)
+              setMessages(prev => {
+                if (prev.some(m => m.id === data.id)) return prev
+                return [...prev, messageWithReply as unknown as Message]
+              })
             }
           },
         )
@@ -298,6 +302,13 @@ export function useBuildingMessages(buildingId: string | null) {
       } = await supabase.auth.getUser()
       if (!user) return
 
+      // Get user profile for optimistic update
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .single()
+
       const { data: newMessage, error } = await supabase
         .from("building_messages")
         .insert({
@@ -310,6 +321,25 @@ export function useBuildingMessages(buildingId: string | null) {
         .single()
 
       if (error) throw error
+
+      // Optimistic update - add message to state immediately
+      if (newMessage) {
+        const optimisticMessage: Message = {
+          id: newMessage.id,
+          content: newMessage.content,
+          created_at: newMessage.created_at,
+          edited_at: null,
+          is_deleted: false,
+          sender_id: user.id,
+          reply_to_message_id: replyToMessageId || null,
+          sender: profile ? { first_name: profile.first_name, last_name: profile.last_name } : null,
+          reactions: [],
+          read_receipts: [],
+          attachments: [],
+          replied_message: null,
+        }
+        setMessages(prev => [...prev, optimisticMessage])
+      }
 
       if (files && files.length > 0 && newMessage) {
         const uploadedAttachments = await uploadFiles(newMessage.id, files, user.id)
