@@ -15,7 +15,7 @@ export default function ResidentLayout({
           <div className="flex gap-5 items-center font-semibold">
             <BackButton />
             <span className="text-muted-foreground">|</span>
-            <span>Resident</span>
+            <span>Residence Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             <Link
