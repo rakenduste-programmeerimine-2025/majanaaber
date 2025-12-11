@@ -285,16 +285,6 @@ function ManagerDashboardContent() {
 
       if (residentError) throw residentError
 
-      // Also update the profile's role to match
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          role: residentForm.residentRole,
-        })
-        .eq("id", profileId)
-
-      if (profileError) throw profileError
-
       // Reload residents list
       await loadResidents()
       setSearchQuery("")
@@ -366,16 +356,6 @@ function ManagerDashboardContent() {
         .eq("id", editingResident.id)
 
       if (residentError) throw residentError
-
-      // Also update the profile's role to match
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          role: editingResident.residentRole,
-        })
-        .eq("id", editingResident.profileId)
-
-      if (profileError) throw profileError
 
       // Reload residents list
       await loadResidents()
