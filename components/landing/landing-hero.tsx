@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Building2, MessageSquare, FileText } from "lucide-react";
+import { Building2, MessageSquare, Bell } from "lucide-react";
 
 export function LandingHero() {
   return (
@@ -35,8 +35,8 @@ export function LandingHero() {
           <span>Real-time Communication</span>
         </div>
         <div className="flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          <span>Invoice Management</span>
+          <Bell className="w-5 h-5" />
+          <span>Announcement Board</span>
         </div>
         <div className="flex items-center gap-2">
           <Building2 className="w-5 h-5" />
