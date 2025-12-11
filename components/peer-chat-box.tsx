@@ -194,6 +194,15 @@ export function PeerChatBox({
 
   const prevMessagesLengthRef = useRef(messages.length)
   const isUserSendingRef = useRef(false)
+  const hasInitiallyScrolledRef = useRef(false)
+
+  // Scroll to bottom on initial load
+  useEffect(() => {
+    if (messages.length > 0 && !hasInitiallyScrolledRef.current) {
+      hasInitiallyScrolledRef.current = true
+      setTimeout(() => scrollToBottom(), 100)
+    }
+  }, [messages])
 
   useEffect(() => {
     if (
