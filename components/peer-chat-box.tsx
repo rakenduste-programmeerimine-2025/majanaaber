@@ -415,7 +415,7 @@ export function PeerChatBox({
                 className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`${isOwnMessage ? "items-end" : "items-start"} flex flex-col max-w-full`}
+                  className={`${isOwnMessage ? "items-end" : "items-start"} flex flex-col w-full`}
                 >
                   {!isOwnMessage && (
                     <span className="text-xs text-muted-foreground mb-1">
