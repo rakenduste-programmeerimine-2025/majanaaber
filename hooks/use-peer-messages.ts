@@ -226,6 +226,7 @@ export function usePeerMessages(conversationId: string | null, otherUserId: stri
       `,
       )
       .eq("conversation_id", conversationId)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: false })
       .limit(100)
 
