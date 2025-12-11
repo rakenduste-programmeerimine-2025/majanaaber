@@ -214,6 +214,7 @@ export function useBuildingMessages(buildingId: string | null) {
       `,
       )
       .eq("building_id", buildingId)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: false })
       .limit(100)
 
